@@ -2024,7 +2024,7 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v5.0.0</span>
+      <span class="ver" id="verBadge">v5.0.1</span>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
         <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
       </button>
@@ -2347,7 +2347,7 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.0.0";
+const APP_VERSION="5.0.1";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -6473,9 +6473,11 @@ const GEN_TYPES={
     d=d||2;
     const wr = d<=1? [2,4] : d>=3? [3,12] : [2,8];
     const x=randInt(wr[0],wr[1]), y=randInt(wr[0],wr[1]);
-    if(x===y) return "Первый рабочий делает работу за 4 часа, второй — за 6 часов. За сколько часов они сделают её вместе?";
+    /* 5.0.1: при равных временах раньше возвращалась одна и та же фраза — в листах
+       появлялись двойники. Теперь просто другое число. */
+    const yy=(x===y)? (y%(wr[1])+1 || wr[0]) : y;
     return "Первый рабочий делает работу за "+x+" "+pluralRu(x,["час","часа","часов"])+
-      ", второй — за "+y+" "+pluralRu(y,["час","часа","часов"])+". За сколько часов они сделают её вместе?";
+      ", второй — за "+yy+" "+pluralRu(yy,["час","часа","часов"])+". За сколько часов они сделают её вместе?";
   }},
   system:{title:"Системы уравнений", make:function(d){
     d=d||2;
@@ -6523,6 +6525,16 @@ function genSheet(key, count, diff){
        4(x + 0), дробь 9/9, несокращённая 6/3 — это выглядит как ошибка составителя */
     if(/[(]\s*x\s*[+−]\s*0\s*[)]/.test(q)) continue;
     if(/[+−]\s*0\s*=/.test(q)) continue;      /* 9x + 0 = 54 */
+    /* 5.0.1: вырожденные задания. В листах попадались «4x + 3 = 3 → x = 0»,
+       «3/4 − 3/4», «x² = 0», «Найдите k» при k = 1 — это не задание, а опечатка на вид.
+       Если все числа ответа — 0, 1 или −1, генератору даём ещё попытку. */
+    if(/^[^=]*[xуyи]/.test(ans) || ans.indexOf("=")>=0 || true){
+      const nums=String(ans).replace(/−/g,"-").match(/-?\d+(?:[.,]\d+)?/g)||[];
+      if(nums.length && nums.every(function(n){ const v=parseFloat(String(n).replace(",",".")); return Math.abs(v)<=1; })){
+        const easyKeys={lin:1,lin2:1,quad:1,frac:1,system:1,fl_kb:1,fl_two:1};
+        if(easyKeys[key]) continue;
+      }
+    }
     if(/\b(\d+)\s*\/\s*\1\b/.test(q)) continue;
     if((q.match(/\d+\s*\/\s*\d+/g)||[]).some(function(fr){
       const p=fr.split("/").map(function(z){ return parseInt(z.trim(),10); });
@@ -9300,7 +9312,7 @@ function clRenderPanel(){
       CLASS_STATE.grade=g;
       /* темы подставляем под класс, но не запираем: их можно менять дальше */
       CLASS_STATE.topics=gradeTopicsOf(g);
-      CLASS_STATE.built=null;          /* листы от прошлого класса больше не актуальны */
+      clInvalidateWork();              /* листы и код прошлой работы больше не актуальны */
       clSaveState();
       clRenderPanel();
     });
@@ -9313,6 +9325,7 @@ function clRenderPanel(){
       else CLASS_STATE.topics.push(k);
       b.classList.toggle("on");
       b.querySelector(".bx").textContent=b.classList.contains("on")? "✓":"";
+      clInvalidateWork();
       clSaveState();
     });
   });
@@ -9323,6 +9336,7 @@ function clRenderPanel(){
     if(gradeOwnTopics(g)) gradeSetOwnTopics(g, null);
     else gradeSetOwnTopics(g, CLASS_STATE.topics);
     CLASS_STATE.topics=gradeTopicsOf(g);
+    clInvalidateWork();
     clRenderPanel();
   });
   const resetBtn=document.getElementById("clreset");
@@ -9330,11 +9344,19 @@ function clRenderPanel(){
     const g=CLASS_STATE.grade;
     gradeSetOwnTopics(g, null);
     CLASS_STATE.topics=gradeTopicsOf(g);
-    CLASS_STATE.built=null;
+    clInvalidateWork();
     clRenderPanel();
   });
-  document.getElementById("clvars").addEventListener("change", function(e){ CLASS_STATE.vars=parseInt(e.target.value,10); clSaveState(); });
-  document.getElementById("clper").addEventListener("change", function(e){ CLASS_STATE.per=parseInt(e.target.value,10); clSaveState(); });
+  document.getElementById("clvars").addEventListener("change", function(e){
+    CLASS_STATE.vars=parseInt(e.target.value,10)||1;
+    clInvalidateWork();
+    clSaveState();
+  });
+  document.getElementById("clper").addEventListener("change", function(e){
+    CLASS_STATE.per=parseInt(e.target.value,10)||1;
+    clInvalidateWork();
+    clSaveState();
+  });
   document.getElementById("cltitle").addEventListener("input", function(e){ CLASS_STATE.title=e.target.value; clSaveState(); });
   document.getElementById("cllines").addEventListener("click", function(){
     CLASS_STATE.lines=!CLASS_STATE.lines;
@@ -9346,7 +9368,10 @@ function clRenderPanel(){
   });
   /* 4.11.5: как только человек правит код — снимаем прошлую ошибку */
   const ce=document.getElementById("clcode");
-  if(ce && !ce.__errBound){ ce.__errBound=true; ce.addEventListener("input", clCodeClear); }
+  if(ce && !ce.__errBound){
+    ce.__errBound=true;
+    ce.addEventListener("input", function(){ ce.__typed=true; clCodeClear(); });
+  }
   document.getElementById("clbuild").addEventListener("click", clBuild);
   document.getElementById("clans").addEventListener("click", function(){
     if(!isTeacher()){
@@ -9397,7 +9422,9 @@ window.__clPdf={
   makeCode:function(base,grade,per,vars,topics,variant){ return clMakeWorkCode(base,grade,per,vars,topics,variant||0); },
   parseCode:function(str){ return clParseWorkCode(str); },
   topics:function(){ return CLASS_TOPICS.map(function(t){ return {k:t.k, name:t.name}; }); },
-  variantCode:function(code,v){ return clVariantCode(code,v); }
+  variantCode:function(code,v){ return clVariantCode(code,v); },
+  /* для проверки генераторов: одна тема, n заданий */
+  gen:function(topic,n,diff){ return genSheet(topic, n||1, diff===undefined? 1: diff); }
 };
 
 /* один вариант: per заданий, темы идут по кругу, чтобы в каждом варианте было поровну */
@@ -9488,6 +9515,22 @@ function clMakeWorkCode(base, grade, per, vars, topics, variant){
   const head=String(base)+"-"+CL_CODE_ALPHA[g]+CL_CODE_ALPHA[p]+CL_CODE_ALPHA[v]+"-"+clCodeDigits(mask,3)+varCh;
   return head+clCodeCheck(head);
 }
+/* 5.0.1: изменили класс/темы/размер работы — прежние листы и код не актуальны.
+   Чистим и состояние, И поле ввода: иначе старый код в поле читался как ввод человека
+   и «Собрать» возвращала прежнюю работу с прежними настройками. */
+function clInvalidateWork(){
+  CLASS_STATE.built=null;
+  CLASS_STATE.code="";
+  const el=document.getElementById("clcode");
+  if(el){ el.value=""; el.__typed=false; }
+  clCodeClear();
+  const sh=document.getElementById("clsheets");
+  if(sh) sh.innerHTML="";
+  const vc=document.getElementById("clvcodes");
+  if(vc) vc.innerHTML="";
+}
+window.__clInvalidateWork=clInvalidateWork;
+
 /* код одного варианта из кода всей работы */
 function clVariantCode(fullCode, variant){
   const pr=clParseWorkCode(fullCode);
@@ -9544,9 +9587,24 @@ function clCodeClear(){
 function clBuild(){
   /* B7: задания строит ГПСЧ с зерном, поэтому работу можно повторить по коду */
   let codeEl=document.getElementById("clcode");
-  /* код из «недавних работ» важнее того, что осталось в поле от прошлой сборки */
-  let rawCode=(CLASS_STATE.pendingCode || (codeEl && codeEl.value) || "").trim();
+  /* 5.0.1: поле «код работы» хранит код ПРОШЛОЙ сборки — его же туда положила программа.
+     Раньше он читался как ввод человека: разбирался обратно и возвращал прежние класс и темы,
+     поэтому «Собрать» после смены фильтров выдавала старую работу. Свой код не читаем. */
+  const inField=(codeEl && codeEl.value || "").trim();
+  const own=String(CLASS_STATE.code||"").trim();
+  /* «свой» код в поле — это код прошлой сборки, а не ввод человека */
+  const isOwn=!!(inField && own && inField.replace(/\s/g,"")===own.replace(/\s/g,""));
+  /* всё, что в поле и не совпадает с нашим прошлым кодом, — ввод человека
+     (так работает и ученик, у которого своя карточка с полем) */
+  let rawCode=(CLASS_STATE.pendingCode || (isOwn? "" : inField) || "").trim();
   CLASS_STATE.pendingCode="";
+  /* 5.0.1: нажали «Собрать» второй раз, ничего не меняя, — оставляем ту же работу.
+     Иначе каждое нажатие выдавало новый код, и учитель диктовал классу уже другую работу. */
+  let keepBase="";
+  if(!rawCode && isOwn){
+    const p0=clParseWorkCode(own);
+    if(p0) keepBase=p0.base;
+  }
   /* полный код работы приносит с собой класс, темы и размер: у ученика
      настройки могут быть другими, а работа должна получиться та же */
   const parsed=clParseWorkCode(rawCode);
@@ -9576,7 +9634,7 @@ function clBuild(){
   CLASS_STATE.topics=CLASS_TOPICS.filter(function(t){ return (CLASS_STATE.topics||[]).indexOf(t.k)>=0; })
                                      .map(function(t){ return t.k; });
   let code=rawCode.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
-  if(!code) code=clNewCode();
+  if(!code) code=keepBase||clNewCode();
   const grade=CLASS_STATE.grade||0;
   const prof=GRADE_PROFILE[grade]||GRADE_PROFILE[0];
   const diff=prof.diff;
