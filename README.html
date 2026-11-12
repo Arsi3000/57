@@ -143,9 +143,9 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
 <header class="hero">
   <div class="chips">
     <span class="chip lic">Лицензия <b>MIT</b></span>
-    <span class="chip">версия <b>5.0.3</b></span>
+    <span class="chip">версия <b>5.1.0</b></span>
     <span class="chip ok">офлайн <b>100 %</b></span>
-    <span class="chip">код — <b>один файл</b>, ~916 КБ</span>
+    <span class="chip">код — <b>один файл</b>, ~944 КБ</span>
   </div>
   <h1>Пошаговый <em>решатель</em></h1>
   <p class="lead">Вставил уравнение, пример или условие задачи — получил ответ с пошаговым разбором,
@@ -158,11 +158,11 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
   <ol><li><a href="#зачем-это">Зачем это</a></li><li><a href="#возможности">Возможности</a></li><li><a href="#скриншоты">Скриншоты</a></li><li><a href="#быстрый-старт">Быстрый старт</a></li><li><a href="#как-пользоваться">Как пользоваться</a></li><li><a href="#как-устроено-приложение">Как устроено приложение</a></li><li><a href="#конструктор-вариантов-и-код-работы">Конструктор вариантов и код работы</a></li><li><a href="#для-учителя">Для учителя</a></li><li><a href="#разработчику">Разработчику</a></li><li><a href="#структура-репозитория">Структура репозитория</a></li><li><a href="#технические-детали">Технические детали</a></li><li><a href="#чего-приложение-не-делает">Чего приложение не делает</a></li><li><a href="#сборка-android-приложения">Сборка Android-приложения</a></li><li><a href="#лицензия">Лицензия</a></li></ol>
 </div>
 
-<h1 id="пошаговый-решатель">Пошаговый решатель</h1>
-<p><strong>Одно приложение для школы: вставил уравнение или условие задачи — получил ответ с разбором по шагам.</strong> Работает офлайн, без зависимостей и без сервера: весь код — в одном файле <code>index.html</code>.</p>
+<h1 id="решатель">Решатель</h1>
+<p><strong>Одно приложение для школы: вставил уравнение или условие задачи — получил ответ с разбором по шагам.</strong> Работает офлайн и без сервера: код приложения — в одном файле <code>index.html</code>, распознавание с фото — в папке <code>lib/</code>.</p>
 <p><a href="https://github.com/Arsi3000/57/blob/main/LICENSE"></a> <a href="https://github.com/Arsi3000/57/blob/main/CHANGELOG.md"></a> <a href="#технические-детали"></a> <a href="#технические-детали"></a></p>
 <p align="center">
-  <img src="docs/screenshots/01-main.png" width="820" alt="Главный экран «Пошагового решателя»">
+  <img src="docs/screenshots/01-main.png" width="820" alt="Главный экран «Решателя»">
 </p>
 
 <h2 id="зачем-это">Зачем это</h2>
@@ -178,7 +178,7 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
 <tbody>
 <tr class="odd">
 <td><strong>Решатель</strong></td>
-<td>Уравнения, примеры с дробями, проценты, единицы, геометрия, системы, текстовые задачи, линейная функция с графиком. Каждый ответ — с пошаговым разбором, проверкой и пояснением «почему так».</td>
+<td>Уравнения, примеры с дробями, проценты, единицы, геометрия, системы, текстовые задачи, линейная функция с графиком. Ввод — с клавиатуры, голосом или <strong>с фото задачи</strong>. Каждый ответ — с пошаговым разбором, проверкой и пояснением «почему так».</td>
 </tr>
 <tr class="even">
 <td><strong>Тренировка</strong></td>
@@ -207,6 +207,11 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
 <p><strong>Разбор по шагам</strong> — с проверкой подстановкой и пояснением «Почему?» на каждом шаге:</p>
 <p align="center">
   <img src="docs/screenshots/02-solve.png" width="760" alt="Разбор уравнения по шагам">
+</p>
+
+<p><strong>Задача с фото</strong> — офлайн-распознавание прямо в приложении: снимок → текст → решение. Кнопка «фото» стоит слева в поле ввода, рядом с голосом:</p>
+<p align="center">
+  <img src="docs/screenshots/15-ocr.png" width="360" alt="Распознавание задачи с фото">
 </p>
 
 <p><strong>График линейной функции</strong> — SVG, а не картинка: масштаб квадратный, точки с подписями, таблица значений:</p>
@@ -332,6 +337,11 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
 <h2 id="структура-репозитория">Структура репозитория</h2>
 <pre><code>reshatel/
 ├── index.html              ← всё приложение: разметка, стили, движок, интерфейс
+├── lib/                    ← распознавание с фото (tesseract.js 7 + русская модель), ~8,7 МБ
+│   ├── tesseract.min.js
+│   ├── worker.min.js
+│   ├── tesseract-core-simd-lstm.wasm.js
+│   └── rus.traineddata
 ├── sw.js                   ← service worker: офлайн-кэш, версия кэша в VERSION
 ├── README.md               ← этот файл
 ├── ARCHITECTURE.md         ← как устроен код
@@ -339,7 +349,7 @@ footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:v
 ├── CHANGELOG.md            ← история версий
 ├── LICENSE                 ← MIT
 └── docs/
-    ├── screenshots/        ← 10 скриншотов для README
+    ├── screenshots/        ← 15 скриншотов для README
     └── methods-for-teacher.pdf</code></pre>
 <p>PWA-манифест вшит в <code>index.html</code> как data-URI, поэтому отдельного <code>manifest.json</code> нет: приложению хватает двух файлов.</p>
 <h2 id="технические-детали">Технические детали</h2>
