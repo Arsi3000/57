@@ -39,17 +39,6 @@
     --edge:inset 0 1px 0 rgba(255,255,255,.06); /* светлая кромка = объём без тени */
     --lift:0 22px 48px -30px rgba(0,0,0,.8);    /* одна тень, только у всплывающего */
   }
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding:0;
-    margin:-1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
   /* ---------- ACCESSIBILITY: фокус и контраст (WCAG 2.1 AA) ---------- */
   :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
@@ -86,7 +75,7 @@
     opacity:.5}
   
 
-  .app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:52px 20px 80px}
+  .app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:32px 20px 60px}
 
   /* ---------- шапка ---------- */
   .brand{display:flex;align-items:center;gap:16px;margin-bottom:10px}
@@ -107,7 +96,9 @@
   
 
   /* ---------- строка поиска ---------- */
-  .searchbar{display:flex;align-items:center;gap:12px;margin:24px 0 8px;
+  /* z-index: у searchbar backdrop-filter создаёт свой контекст наложения,
+     и без этого поповер настроек уходил под карточку решения */
+  .searchbar{position:relative;z-index:60;display:flex;align-items:center;gap:12px;margin:16px 0 6px;
     background:rgba(255,255,255,.055);
     backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
     border:1px solid var(--line);border-radius:var(--r-lg);padding:8px 8px 8px 16px;
@@ -128,6 +119,81 @@
   .solve .arr{transition:transform .18s}
   .solve:hover .arr{transform:translateX(3px)}
 
+  /* ---------- 4.11.0: составной пилл прогресса ---------- */
+  .hud-compound{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 12px;
+    border-radius:var(--r);background:var(--glass);border:1px solid var(--line);
+    color:var(--ink-soft);font-family:inherit;font-size:13px;font-weight:700;line-height:1;
+    cursor:pointer;transition:.15s;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .hud-compound:hover{color:var(--ink);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.12)}
+  .hud-compound:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .hud-compound b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+  .hud-seg{display:inline-flex;align-items:center;gap:5px}
+  .hud-seg .ic{width:13px;height:13px;stroke-width:2;opacity:.85}
+  .hud-dot{opacity:.3;font-weight:400}
+  .hud-lv{display:inline-flex;align-items:center;gap:6px}
+  .hud-lv .lvnum{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
+    border-radius:var(--r-sm);font-size:12px;font-weight:800;color:#fff;flex:none;
+    background:linear-gradient(135deg,#7c6cff,#35d0ff)}
+  .hud-xp{width:34px;height:3px;border-radius:var(--r-sm);background:rgba(255,255,255,.16);overflow:hidden;flex:none}
+  .hud-xp i{display:block;height:100%;width:0;border-radius:var(--r-sm);
+    background:linear-gradient(90deg,#7c6cff,#35d0ff);transition:width .4s}
+  .hud-fire{display:inline-flex;align-items:center;line-height:1}
+  .hud-fire.off{filter:grayscale(1);opacity:.45}
+  body.light .hud-compound{background:#f7f8fd;border-color:rgba(20,25,45,.12);color:#4a5265}
+  body.light .hud-compound b{color:#111827}
+  body.light .hud-compound:hover{background:#ecebff;color:#1f2450}
+  body.light .hud-xp{background:rgba(20,25,45,.14)}
+  body[data-theme="neon"] .hud-compound{border-color:rgba(0,255,229,.28)}
+  body[data-theme="retro"] .hud-compound{border:2px solid #4a4f7a;background:#1b1e3a}
+
+  /* ---------- 4.11.0: кнопки внутри поиска и поповер настроек ---------- */
+  .icon-btn{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:none;
+    color:var(--ink-dim);display:inline-grid;place-items:center;cursor:pointer;
+    font-family:inherit;font-size:14px;transition:.15s;padding:0}
+  .icon-btn[hidden]{display:none}
+  .icon-btn:hover{background:rgba(255,255,255,.1);color:var(--ink)}
+  .icon-btn .ic{width:17px;height:17px;stroke-width:1.8}
+  #clear:hover{background:rgba(255,90,80,.2);color:#ffb4ad}
+  body.light .icon-btn:hover{background:rgba(20,25,45,.07);color:#111827}
+  body.light #clear:hover{background:rgba(255,90,80,.16);color:#c2332a}
+  .tool-menu{position:absolute;right:8px;top:calc(100% + 8px);z-index:960;min-width:236px;
+    display:flex;flex-direction:column;gap:4px;padding:8px;
+    background:var(--surface-3);border:1px solid var(--line);border-radius:var(--r);
+    box-shadow:var(--lift);animation:rise .18s ease-out}
+  .tool-menu[hidden]{display:none}
+  .tool-menu .fx-toggle{width:100%;justify-content:flex-start}
+  .tool-menu-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;
+    color:var(--ink-soft);font-family:inherit;font-size:12px;font-weight:600;
+    padding:9px 12px;border-radius:var(--r-sm);cursor:pointer;text-align:left}
+  .tool-menu-row:hover{background:rgba(124,108,255,.12);color:var(--ink)}
+  .tool-menu-row .ic{width:15px;height:15px;stroke-width:1.8}
+  body.light .tool-menu{background:#fff;box-shadow:0 20px 44px -24px rgba(20,25,45,.5)}
+
+  /* ---------- 4.11.0: шит «Примеры» по темам ---------- */
+  .exsheet{position:fixed;inset:0;z-index:950;display:flex;align-items:flex-end;justify-content:center;
+    background:rgba(6,8,20,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    padding:0;animation:fadein .16s ease-out}
+  .exsheet[hidden]{display:none}
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  .exsheet-card{width:100%;max-width:560px;max-height:80vh;overflow:auto;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0;
+    padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));
+    animation:exup .22s cubic-bezier(.22,1,.36,1)}
+  @keyframes exup{from{transform:translateY(18px);opacity:.6}to{transform:none;opacity:1}}
+  .exsheet-head{display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;font-size:14px}
+  .exsheet-head b{color:var(--ink);font-weight:750}
+  .exgroup{margin-bottom:14px}
+  .exgroup-t{font-size:11px;font-weight:750;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-dim);margin-bottom:8px}
+  .exgroup-chips{display:flex;flex-wrap:wrap;gap:6px}
+  .exgroup .chip{font-size:12px;padding:8px 10px}
+  body.light .exsheet-card{background:#fff}
+  @media (min-width:720px){
+    .exsheet{align-items:center}
+    .exsheet-card{border-radius:var(--r-lg);max-height:76vh;padding:20px}
+  }
+
   /* ---------- панель инструментов ---------- */
   .toolrow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 16px 2px}
   .clear-btn{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;font-family:inherit;
@@ -138,10 +204,9 @@
   .clear-btn:hover{color:#ffb4ad;border-color:rgba(255,120,110,.45);background:rgba(255,90,80,.09)}
   .clear-btn:hover .x{color:#ff8f86}
   .clear-btn.off{opacity:.38;pointer-events:none}
-  .toolhint{font-size:12px;color:#6f7899}
 
   /* ---------- примеры ---------- */
-  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
   .chips[hidden]{display:none}
   .chip{font-family:inherit;font-size:12px;color:var(--ink-soft);background:var(--glass);
     border:1px solid var(--line);border-radius:var(--r);padding:8px 16px;cursor:pointer;
@@ -154,13 +219,13 @@
 
   /* ---------- карточка решения ---------- */
   .card{position:relative;background:var(--surface-1);
-    border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 24px 24px;
+    border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 20px 20px;
     box-shadow:var(--edge);
     animation:rise .3s cubic-bezier(.22,1,.36,1)}
   @keyframes rise{from{opacity:0;transform:translateY(10px) scale(.995)}to{opacity:1;transform:none}}
 
   .cardhead{display:flex;align-items:center;justify-content:space-between;gap:16px;
-    flex-wrap:wrap;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid rgba(255,255,255,.07)}
+    flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.07)}
   .kind{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:750;
     letter-spacing:.11em;text-transform:uppercase;color:#bdb4ff}
   .kind .dot{width:7px;height:7px;border-radius:50%;flex:none;
@@ -168,10 +233,15 @@
   .seal{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;
     color:#7ff0bd;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.28);
     border-radius:var(--r-pill);padding:8px 12px}
+  /* 4.11.0: подтверждение — точка-галочка, а не третий акцент в карточке */
+  .seal-mini{width:22px;height:22px;padding:0;border-radius:50%;gap:0;
+    display:inline-grid;place-items:center;font-size:11px;line-height:1;
+    background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.3);
+    cursor:help;vertical-align:middle}
 
   /* ---------- этапы ---------- */
   .steps{list-style:none;padding:0;margin:0}
-  .steps > li{position:relative;display:flex;gap:16px;padding-bottom:24px}
+  .steps > li{position:relative;display:flex;gap:16px;padding-bottom:18px}
   .steps > li:not(:last-child):after{content:"";position:absolute;left:15px;top:42px;bottom:0;width:2px;border-radius:var(--r-sm);
     background:linear-gradient(180deg,rgba(124,108,255,.55),rgba(53,208,255,.14))}
   .steps > li:last-child{padding-bottom:4px}
@@ -435,11 +505,13 @@ body.light .cvline select option{background:#fff;color:#1a2038}
   .sys .sysl{font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:18px;line-height:1.5}
 
   /* ---------- кнопки под ответом ---------- */
-  .cardacts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-  .act{font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-soft);
-    background:var(--glass);border:1px solid var(--line);border-radius:var(--r);padding:8px 16px;
-    cursor:pointer;transition:.16s;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .act:hover{color:#dfe4ff;border-color:rgba(124,108,255,.5);background:rgba(124,108,255,.13)}
+  .cardacts{display:flex;flex-wrap:wrap;gap:4px;margin-top:14px}
+  /* 4.11.0: действия под ответом — тихие, чтобы не спорить с ответом за внимание */
+  .act{font-family:inherit;font-size:12px;font-weight:600;color:var(--ink-dim);
+    background:none;border:1px solid transparent;border-radius:var(--r-sm);padding:7px 12px;
+    cursor:pointer;transition:.16s}
+  .act:hover{color:#dfe4ff;border-color:rgba(124,108,255,.4);background:rgba(124,108,255,.1)}
+  body.light .act:hover{color:#3b2fb0}
   .act.primary{background:linear-gradient(135deg,#7c6cff,#35d0ff);color:#fff;border:0}
   .reveal{margin:16px 0 4px;width:100%;font-family:inherit;font-size:14px;font-weight:650;color:#cfd6f5;
     background:rgba(124,108,255,.12);border:1px dashed rgba(124,108,255,.5);border-radius:var(--r);
@@ -520,6 +592,10 @@ body.light .cvline select option{background:#fff;color:#1a2038}
   body.light #q::placeholder{color:#98a0b8}
   body.light .chip,body.light .clear-btn,body.light .key,body.light .act,
   body.light .fx-toggle,body.light .catpill,body.light .modesw{background:rgba(255,255,255,.88)}
+  /* 4.11.0: включённый тумблер в светлой теме был почти невидим (1,3:1) */
+  body.light .fx-toggle.on{color:#0b7a4c;background:#e9faf1;border-color:#9be3bf}
+  body.light .fx-toggle.on .b{background:rgba(16,150,110,.3)}
+  body.light .fx-toggle.on .b:after{background:#10b981}
   body.light .chip:hover,body.light .act:hover,body.light .key:hover{color:#262c4a}
   body.light .modebtn{color:#5f6884}
   body.light .modebtn:hover{color:#2a3050}
@@ -566,9 +642,6 @@ body.light .cvline select option{background:#fff;color:#1a2038}
   body.light .err .msg{color:#7f1d1d}
   body.light .err ul{color:#8a6a68}
   body.light footer{color:#7f88a8}
-  /* ---------- HIGH CONTRAST MODE (WCAG 2.1 AAA) ---------- */
-  
-
   /* ---------- ГОЛОС ---------- */
   .mic{flex:none;width:42px;height:42px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;
     font-size:16px;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--line);
@@ -740,7 +813,6 @@ body.light .cvline select option{background:#fff;color:#1a2038}
     75%{transform:translateX(-2px)}
   }
   .v4-shake{animation:v4-shake .45s ease}
-  .v4-wrongflash{box-shadow:0 0 0 2px rgba(251,146,60,.75),0 0 34px -10px rgba(251,146,60,.9)!important}
 
   /* мягкое появление разбора: шаг за шагом */
   @keyframes v4-step-in{
@@ -837,13 +909,6 @@ body.light .cvline select option{background:#fff;color:#1a2038}
     background:linear-gradient(90deg,#7c6cff,#35d0ff);transition:width .5s cubic-bezier(.22,1,.36,1)}
   body.light .dashxp{background:rgba(20,25,45,.1)}
   .dashnote{font-size:12px;color:var(--ink-dim);line-height:1.5}
-  .dashrow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed rgba(255,255,255,.08)}
-  .dashrow:last-child{border-bottom:0}
-  body.light .dashrow{border-color:rgba(20,25,45,.09)}
-  .dashrow .di{font-size:16px;flex:none;width:22px;text-align:center}
-  .dashrow .dt{font-size:12px;font-weight:650;color:var(--ink);flex:1;line-height:1.3}
-  .dashrow .dn{font-size:12px;font-weight:800;color:var(--ink-dim);font-variant-numeric:tabular-nums;flex:none}
-  body.light .dashrow .dt{color:#111827}
   .themebar{display:flex;gap:8px;flex-wrap:wrap}
   .themebar .themebtn{width:auto;min-width:64px;height:auto;min-height:36px;padding:8px 8px;
     flex-direction:column;gap:2px;font-size:12px;border:1px solid var(--line);
@@ -1228,26 +1293,10 @@ body.light .cvline select option{background:#fff;color:#1a2038}
   
 
 
-  /* ---------- MOBILE-FIRST: базовые стили для мобильных (перенесено в конец — иначе базовые правила ниже перекрывали) ---------- */
-  
-
-  /* ---------- мобильные правки v4.0 (в конце, чтобы перекрыть базовые) ---------- */
-  
-
-  /* ---------- компактная шапка на телефоне (v4.1) ---------- */
-  
-  
-
-  /* маскот и шпаргалка не должны закрывать разбор на телефоне */
-  
-
   /* маскот только в решателе (v4.1) */
   body.mode-other .mascot{display:none!important}
 
   .themebar .themebtn i{font-style:normal;font-size:12px;letter-spacing:.02em;opacity:.75;font-weight:600}
-
-  /* ---------- очень узкие экраны (≤380 px): вкладки и пилюли в одну строку ---------- */
-  
 
   /* ---------- РЕЖИМЫ: решатель и тренировка (v4.2) ---------- */
   body.mode-learn #modeSwitch{background:rgba(52,211,153,.16);border-color:rgba(52,211,153,.45);color:#0f9d63}
@@ -1450,7 +1499,6 @@ body.light .wkbar{background:rgba(20,25,45,.1)}
 .misfull .misrow{margin-bottom:10px}
 .misfull .misrow.done{opacity:.6}
 .mistools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 0}
-.mistab{display:flex;gap:8px;margin:12px 0 0}
 /* ---- экраны: контрольная, диагностика, отчёт ---- */
 .lessonwrap{position:fixed;inset:0;z-index:10006;overflow:auto;padding:20px;
   background:var(--bg);color:var(--ink)}
@@ -1598,7 +1646,6 @@ body.light .key.hint{background:#e7e6ff;border-color:#b6b0f5;color:#241f4d}
 .bigfont .btn{font-size:17px}
 .ic{width:1em;height:1em;display:inline-block;flex:none;fill:none;stroke:currentColor;
   stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
-.ic--sm{width:.9em;height:.9em}
 
 /* ================= B4 (4.9.0): второй макет — телефон ================= */
 .bottomnav{display:none}
@@ -1618,7 +1665,7 @@ body.light .key.hint{background:#e7e6ff;border-color:#b6b0f5;color:#241f4d}
 .mascot{right:10px;bottom:10px;width:66px;height:74px} .mascot .bubble{right:60px;font-size:12px;max-width:150px}
 .clcard{padding:16px 16px;border-radius:var(--r)} .clchip{font-size:12px;padding:8px 8px} .clacts .clbtn{flex:1;text-align:center;padding:12px 8px} .sheetpage{padding:16px 16px;font-size:12px} .sheetpage.answers ol{columns:1}
 .tcard{padding:16px 16px;border-radius:var(--r)} .topics{grid-template-columns:1fr 1fr;gap:8px} .topic{padding:8px;gap:8px;border-radius:var(--r)} .topic .ti{width:28px;height:28px;font-size:14px;border-radius:var(--r-sm)} .topic .tn{font-size:12px} .topic .tb{font-size:12px} .tq{font-size:18px} .tq.small{font-size:16px} .opts{grid-template-columns:1fr 1fr;gap:8px} .opt{padding:12px 12px;font-size:14px;gap:8px} .opt .ol{width:22px;height:22px;font-size:12px} .tbig{font-size:44px} .tact{flex:1;text-align:center;padding:12px 12px}
-.app{padding:32px 16px 60px} .brand{gap:12px} .mark{width:44px;height:44px;font-size:22px;border-radius:var(--r)} header h1{font-size:22px} header .sub{padding-left:0;margin-top:8px} .sub{font-size:14px} .searchbar{flex-wrap:nowrap;padding:8px 8px 8px 12px;border-radius:var(--r);gap:8px;align-items:center} .searchbar .ico{display:none} #q{font-size:14px;padding:8px 2px;min-height:44px} .solve{padding:12px 16px;font-size:14px;min-height:44px;flex:none} .solve .arr{display:none} .mic{width:40px;height:44px;min-height:44px} .card{padding:20px 16px 16px;border-radius:var(--r)} .steps>li{gap:12px} .eq{font-size:16px;white-space:normal;padding:12px 12px} .eq.big{font-size:18px} .rval{font-size:22px} .bento{grid-template-columns:1fr} .toolhint{display:none}
+.app{padding:32px 16px 60px} .brand{gap:12px} .mark{width:44px;height:44px;font-size:22px;border-radius:var(--r)} header h1{font-size:22px} header .sub{padding-left:0;margin-top:8px} .sub{font-size:14px} .searchbar{flex-wrap:nowrap;padding:8px 8px 8px 12px;border-radius:var(--r);gap:8px;align-items:center} .searchbar .ico{display:none} #q{font-size:14px;padding:8px 2px;min-height:44px} .solve{padding:12px 16px;font-size:14px;min-height:44px;flex:none} .solve .arr{display:none} .mic{width:40px;height:44px;min-height:44px} .card{padding:20px 16px 16px;border-radius:var(--r)} .steps>li{gap:12px} .eq{font-size:16px;white-space:normal;padding:12px 12px} .eq.big{font-size:18px} .rval{font-size:22px} .bento{grid-template-columns:1fr}
 .searchbar{flex-wrap:nowrap!important;align-items:center} .searchbar #q{flex:1 1 auto!important;width:auto!important;min-width:0!important} .searchbar .mic{flex:0 0 auto!important} .searchbar .solve{flex:0 0 auto!important;width:auto!important} .modesw{max-width:100%;overflow-x:auto!important;flex-wrap:nowrap!important} .hud{max-width:100%} .mascot svg{overflow:hidden} .cheat{width:100%!important}
 header h1{font-size:18px} header .sub{display:none} /* описание убираем: на телефоне это шум */ .brand{gap:8px} .mark{width:38px;height:38px;font-size:18px;border-radius:var(--r)} .modesw{width:100%;overflow:visible!important;display:flex;flex-wrap:nowrap;gap:4px;padding:4px} /* 4.8.0: высота вкладки не ниже 44px — иначе палец промахивается */ .modebtn{flex:1 1 0;min-width:0;padding:8px 4px;min-height:44px;font-size:12px;gap:0; border-radius:var(--r-sm);justify-content:center;overflow:hidden;text-overflow:ellipsis} .modebtn .mi{display:none} .hudbar{margin-top:8px} .cheatbtn{font-size:12px;padding:0 12px;min-height:40px;left:10px;bottom:10px} .mascot{bottom:64px} /* чтобы не наезжал на кнопку шпаргалки */
 .cheatbtn{width:46px;height:46px;min-height:46px;padding:0;border-radius:50%; font-size:18px;justify-content:center;left:10px;bottom:10px} .cheatbtn .cbtxt{display:none} /* 4.8.0: на телефоне маскот закрывал кнопки озвучки у шагов — прячем его совсем */ .mascot{display:none} .mascot.mini{opacity:.35;transform:scale(.82)} .mascot .bubble{right:52px;bottom:18px;font-size:12px;max-width:150px;padding:8px 8px} .mascot .bubble.on{opacity:1}
@@ -1650,7 +1697,7 @@ header h1{font-size:18px} header .sub{display:none} /* описание убир
 .cheat,.cheatbtn,.hud,.exam-timer{display:none!important}
 .testpanel{display:none!important}
 body{background:#fff;color:#111} .bg,.searchbar,.chips,.toolrow,footer,.copy,.seal,.modesw,.convcat,.cvswap,.cvrel,.cvrates{display:none!important} .app{padding:0;max-width:100%} .brand{gap:8px;margin-bottom:6px} .mark{background:#eef0ff;color:#4338ca;border:1px solid #c7c9f5;box-shadow:none; -webkit-text-fill-color:#4338ca;width:38px;height:38px;font-size:18px;border-radius:var(--r)} header h1{color:#111;font-size:22px} header h1 em{-webkit-text-fill-color:#4f46e5!important;color:#4f46e5!important; background:none!important;background-clip:border-box!important} .sub{color:#555;font-size:12px} .card{background:#fff;border:0;box-shadow:none;padding:0;backdrop-filter:none;border-radius:0} .cardhead{border-color:#e2e4ef;margin:16px 0 16px;padding-bottom:10px} .kind{color:#4338ca} .kind .dot{background:#4338ca;box-shadow:none} .steps > li{padding-bottom:8px;page-break-inside:avoid;break-inside:avoid;gap:8px} .steps > li:not(:last-child):after{background:#e5e7f2;left:12px;top:30px} .snum{background:#eef0ff;color:#4338ca;border-color:#c7c9f5;box-shadow:none; width:25px;height:25px;font-size:12px;flex:none} .sbody{padding-top:3px} .sh,.sb,.sb b{color:#111} .sh{margin-bottom:4px;font-size:12px} .sb{color:#333;font-size:12px;line-height:1.55} .sb p{margin:0 0 8px} .sb ul li:before{color:#6d6ae0} .eq{background:#f7f8fd;border:1px solid #e3e5f0;border-left:2px solid #9a94f0; color:#111;font-size:12px;white-space:normal;page-break-inside:avoid; padding:8px 12px;margin:8px 0} .eq.big{background:#f4f5ff;border:1px solid #d9dcf3;font-size:14px;padding:8px 12px} .eq .v{color:#1d4ed8} .result{background:#f2fdf7;border:1px solid #b9efcf;box-shadow:none; page-break-inside:avoid;break-inside:avoid;margin:0 0 16px;padding:12px 16px} .steps-title{color:#666;margin:16px 0 8px} .steps-title:after{background:#e5e7f2} .rlabel{color:#0e9f6e;margin-bottom:4px} .rval{color:#065f46;font-size:18px} .rval .v{color:#0b7285} .err{background:#fff6f6;border-color:#f3cccc} .err b{color:#991b1b} .err .msg{color:#7f1d1d} /* конвертер на печати */ .convpanel{display:block!important} .convpanel[hidden]{display:none!important} #convpanel{margin-top:2px} .convbox{background:#fff;border:0;box-shadow:none;padding:0;border-radius:0;backdrop-filter:none} #cvin,.cvout{font-size:28px;color:#111} .cvout{color:#0b7285;font-weight:700} .cvline select{background:none!important;background-image:none!important;border:0; color:#111;padding:0;font-size:14px;font-weight:600;opacity:1; -webkit-appearance:none;appearance:none;max-width:46%} .cvline{padding:0} .cvmiddle{border-color:#e5e7f2;margin:8px 0;padding:8px 0} .cvhint{color:#555;font-size:12px;margin:8px 0 0} .cvstepsbox{border:0;background:none;margin-top:8px;border-radius:0} .cvstepsbox>summary{color:#666;padding:0 0 8px;font-size:12px} .cvstepsbox>summary .chev{display:none} .cvstepsbox:not([open]) .cvsteps{display:block} .cvsteps{padding:0} .cvexamples{display:none!important}
-.cardacts,.why,.whybox,.reveal,.keyboard,.hist{display:none!important} .steps-wrap[hidden]{display:block!important} .sys .brc,.sys .sysl{color:#111} body.has-sheet .bg{display:none!important} body.has-sheet .app{max-width:100%;padding:0;margin:0} body.has-sheet .app > *:not(#sheet){display:none!important} body.has-sheet .sheet{margin:0} body.has-sheet .sheetacts{display:none!important} body.has-sheet .sheetpaper{box-shadow:none;border-radius:0;padding:0;background:#fff} body.has-sheet .sheetanswers{page-break-before:always;break-before:page;margin-top:0} @page{margin:16mm 16mm} /* печать вариантов: только листы, каждый со своей страницы */ body.has-class .bg,body.has-class header,body.has-class .modebtn, body.has-class .clcard,body.has-class .clhint{display:none!important} body.has-class .app > *:not(#classPanel){display:none!important} body.has-class .itabs{display:none!important} body.has-class .classpanel{display:block!important} body.has-class .classpanel > .clcard{display:none!important} body.has-class .sheets{display:block!important;margin:0} body.has-class .sheetpage{box-shadow:none;border-radius:0;padding:0;margin:0 0 0 0; page-break-after:always;break-after:page;background:#fff!important;color:#111!important} body.has-class .sheetpage:last-child{page-break-after:auto;break-after:auto} body.has-class .sheetpage.answers{border:0} @page{margin:16mm 12mm}
+.cardacts,.why,.whybox,.reveal,.keyboard,.hist{display:none!important} .steps-wrap[hidden]{display:block!important} .sys .brc,.sys .sysl{color:#111} body.has-sheet .bg{display:none!important} body.has-sheet .app{max-width:100%;padding:0;margin:0} body.has-sheet .app > *:not(#sheet){display:none!important} body.has-sheet .sheet{margin:0} body.has-sheet .sheetacts{display:none!important} body.has-sheet .sheetpaper{box-shadow:none;border-radius:0;padding:0;background:#fff} body.has-sheet .sheetanswers{page-break-before:always;break-before:page;margin-top:0} @page{margin:16mm 16mm} /* печать вариантов: только листы, каждый со своей страницы */ body.has-class .bg,body.has-class header,body.has-class .modebtn, body.has-class .clcard,body.has-class .clhint{display:none!important} body.has-class .app > *:not(#classPanel){display:none!important} body.has-class .classpanel{display:block!important} body.has-class .classpanel > .clcard{display:none!important} body.has-class .sheets{display:block!important;margin:0} body.has-class .sheetpage{box-shadow:none;border-radius:0;padding:0;margin:0 0 0 0; page-break-after:always;break-after:page;background:#fff!important;color:#111!important} body.has-class .sheetpage:last-child{page-break-after:auto;break-after:auto} body.has-class .sheetpage.answers{border:0} @page{margin:16mm 12mm}
 body.printing>*:not(.printreport){display:none!important} body.printing{overflow:visible;background:#fff} .printreport{position:static;padding:0;font-size:12pt} .printreport h1{font-size:18pt} .printreport h2{font-size:13pt} .prtable{font-size:11pt}
 }
 
@@ -1716,6 +1763,7 @@ body.light .lfwrap{background:#f7f8ff}
     <symbol id="i-chart" viewBox="0 0 24 24"><path d="M5 20v-8M12 20V4M19 20v-5"/></symbol>
     <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h13m0 0-3.2-3.2M17 8l-3.2 3.2"/><path d="M20 16H7m0 0 3.2-3.2M7 16l3.2 3.2"/></symbol>
     <symbol id="i-cap" viewBox="0 0 24 24"><path d="m3 9.5 9-4 9 4-9 4-9-4Z"/><path d="M7 11.5v4.8c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5v-4.8"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/></symbol>
     <symbol id="i-fire" viewBox="0 0 24 24"><path d="M12 3c3.2 3.9 5.2 6.2 5.2 9a5.2 5.2 0 0 1-10.4 0c0-1.7.7-3 1.8-4.3.5 1.4 1.4 2.2 2.4 2.4-.5-2.6.2-5 1-7.1Z"/></symbol>
     <symbol id="i-cup" viewBox="0 0 24 24"><path d="M7.2 4h9.6v4.6a4.8 4.8 0 0 1-9.6 0V4Z"/><path d="M12 13.4V17"/><path d="M8.4 20h7.2"/></symbol>
     <symbol id="i-quest" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3"/><circle cx="12" cy="12" r="2.2"/></symbol>
@@ -1770,26 +1818,31 @@ body.light .lfwrap{background:#f7f8ff}
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v4.10.1</span>
+      <span class="ver" id="verBadge">v4.11.4</span>
     </div>
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
 
-    <!-- компактная полоса прогресса: одна строка, подробности — во вкладке «Дэш» -->
+    <!-- 4.11.0: один составной пилл вместо пяти кнопок — и на десктопе, и на телефоне -->
     <div class="hudbar" id="hud">
-      <button type="button" class="btn btn--ghost pill lvl" id="pillLvl" title="Уровень и опыт — подробнее в «Дэш»">
-        <span class="lvnum" id="lvlNum">1</span>
-        <span class="lvtxt">ур.</span>
-        <span class="pillbar"><i id="xpBar"></i></span>
-      </button>
-      <button type="button" class="btn btn--ghost pill" id="dayPill" title="Сколько дней подряд вы решаете">
-        <span class="fire off" id="fireIco"><svg class="ic" aria-hidden="true"><use href="#i-fire"/></svg></span>
-        <b id="dayStreak">0</b>
-      </button>
-      <button type="button" class="btn btn--ghost pill" id="questsBtn" title="Квесты на сегодня">
-        <span aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-quest"/></svg></span><b id="questNum">0/3</b>
-      </button>
-      <button type="button" class="btn btn--ghost pill" id="achvBtn" title="Достижения">
-        <span aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg></span><b id="achvNum">0/8</b>
+      <button type="button" class="hud-compound" id="hudOpen"
+        title="Прогресс, квесты и награды — открыть «Дэш»">
+        <span class="hud-lv" aria-hidden="true">
+          <span class="lvnum" id="lvlNum">1</span>
+          <span class="hud-xp"><i id="xpBar"></i></span>
+        </span>
+        <span class="hud-dot" aria-hidden="true">·</span>
+        <span class="hud-seg" title="Дней подряд">
+          <span class="hud-fire off" id="fireIco" aria-hidden="true"><svg class="ic"><use href="#i-fire"/></svg></span>
+          <b id="dayStreak">0</b>
+        </span>
+        <span class="hud-dot" aria-hidden="true">·</span>
+        <span class="hud-seg" title="Квесты на сегодня">
+          <svg class="ic" aria-hidden="true"><use href="#i-quest"/></svg><b id="questNum">0/3</b>
+        </span>
+        <span class="hud-dot hud-achv" aria-hidden="true">·</span>
+        <span class="hud-seg hud-achv" title="Достижения">
+          <svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg><b id="achvNum">0/8</b>
+        </span>
       </button>
       <div class="exam-timer" id="examTimer" role="timer" aria-live="off"
         title="Режим экзамена: 15 минут на работу, подсказки и история скрыты"
@@ -1797,9 +1850,6 @@ body.light .lfwrap{background:#f7f8ff}
         <span aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg></span> <span id="examTime">15:00</span></div>
       <button type="button" class="btn btn--ghost pill" id="modeSwitch" title="Перейти в тренировку">
         <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg></span><span class="mswtxt">Тренировка</span>
-      </button>
-      <button type="button" class="btn btn--ghost pill dashbtn" id="dashBtn" title="Дэш: прогресс, квесты, награды, темы">
-        <span aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg></span> Дэш
       </button>
     </div>
     <span id="xpText" hidden>0 / 100 XP</span>
@@ -1892,30 +1942,38 @@ body.light .lfwrap{background:#f7f8ff}
   <section class="dashpanel" id="dashPanel" hidden></section>
 
   <form class="searchbar" id="form" autocomplete="off">
-    <span class="ico">⌕</span>
+    <span class="ico" aria-hidden="true">⌕</span>
     <input id="q" type="text" spellcheck="false"
       placeholder="Вставьте уравнение или текст задачи"
       aria-label="Уравнение или условие задачи" autocomplete="off">
+    <button type="button" class="icon-btn" id="clear" hidden title="Стереть поле" aria-label="Стереть">
+      <span aria-hidden="true">✕</span>
+    </button>
     <button type="button" class="mic" id="mic" title="Сказать задачу голосом" aria-label="Голосовой ввод"><svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg></button>
+    <button type="button" class="icon-btn" id="toolMenu" title="Настройки и история" aria-label="Настройки и история" aria-expanded="false" aria-controls="toolMenuPop">
+      <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
+    </button>
     <button class="btn btn--primary btn--md solve" type="submit">Решить <span class="arr">→</span></button>
+
+    <!-- 4.11.0: три редкие настройки и история свёрнуты в одну кнопку -->
+    <div class="tool-menu" id="toolMenuPop" hidden>
+      <button type="button" class="fx-toggle" id="checkbtn" title="Сначала только ответ, разбор — по кнопке">
+        <span class="b" aria-hidden="true"></span><span>Сначала только ответ</span>
+      </button>
+      <button type="button" class="fx-toggle" id="fxtoggle" title="Бегущая обводка вокруг готового ответа">
+        <span class="b" aria-hidden="true"></span><span>Подсветка ответа</span>
+      </button>
+      <button type="button" class="fx-toggle" id="kbbtn" title="Экранная клавиатура: x, ², дроби">
+        <span class="b" aria-hidden="true"></span><span>Экранная клавиатура</span>
+      </button>
+      <button type="button" class="tool-menu-row" id="histbtn" title="Что решали сегодня">
+        <svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>История решений</span>
+      </button>
+    </div>
   </form>
 
-  <div class="toolrow">
-    <button type="button" class="btn btn--ghost clear-btn" id="clear" title="Очистить поле и убрать решение">
-      <span class="x" aria-hidden="true">✕</span> Стереть
-    </button>
-    <button type="button" class="fx-toggle" id="checkbtn" title="Сначала только ответ, разбор — по кнопке">
-      <span class="b" aria-hidden="true"></span><span>Проверь меня</span>
-    </button>
-    <button type="button" class="fx-toggle" id="fxtoggle" title="Бегущая обводка вокруг готового ответа">
-      <span class="b" aria-hidden="true"></span><span>✨ Подсветка</span>
-    </button>
-    <button type="button" class="fx-toggle" id="kbbtn" title="Экранная клавиатура: x, ², дроби">
-      <span class="b" aria-hidden="true"></span><span>Клавиатура</span>
-    </button>
-    <button type="button" class="btn btn--ghost clear-btn" id="histbtn" title="Что решали сегодня">История</button>
-    <span class="streak" id="streak" title="Сколько примеров решено за сегодня"></span>
-  </div>
+  <!-- прежний .toolrow оставлен пустым якорем: на него ссылается переключение режимов -->
+  <div class="toolrow" hidden></div>
 
   <section class="hist" id="hist" hidden></section>
   <div class="keyboard" id="keyboard" hidden></div>
@@ -2013,7 +2071,7 @@ body.light .lfwrap{background:#f7f8ff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="4.10.1";
+const APP_VERSION="4.11.4";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -6291,7 +6349,7 @@ function render(res){
     '<article class="card">'+
       '<div class="cardhead">'+
         '<span class="kind"><span class="dot"></span>'+res.kind+'</span>'+
-        (sealText? '<span class="seal">'+sealText+'</span>' : '')+
+        (sealText? '<span class="seal seal-mini" title="'+sealText+'" aria-label="'+sealText+'">✓</span>' : '')+
       '</div>'+
       '<div class="result top" role="status" aria-live="polite" aria-label="Ответ" '+
         'data-answer="'+esc(String(res.answer).replace(/&nbsp;/g," "))+'">'+
@@ -6396,28 +6454,86 @@ document.getElementById("form").addEventListener("submit",function(ev){
   out.scrollIntoView({behavior:"smooth",block:"nearest"});
 });
 
+/* ============================================================
+   4.11.0: примеры — три быстрых + «Примеры ▾» с шитом по темам.
+   Раньше 4 чипа стояли в строке, а ещё 15 прятались под кнопкой
+   «ещё примеры» и разворачивались простынёй на пол-экрана.
+   ============================================================ */
 const chips=document.getElementById("chips");
-const more=document.createElement("div");
-more.className="chips"; more.style.margin="0 0 24px"; more.hidden=true;
-const toggle=document.createElement("button");
-toggle.type="button"; toggle.className="chip ghost";
-toggle.textContent="ещё примеры";
+const EX_QUICK=["2x + 5 = 13","3/4 + 5/6","5 км в метры"];
+const EX_GROUPS=[
+  {t:"Перевод единиц", ic:"⇄", items:["5 км в метры","2,5 кг в граммы","1,5 часа в минуты"]},
+  {t:"Дроби", ic:"½", items:["3/4 + 5/6","1/2 + 1/3 − 1/6","2 1/2 · 3","(1/2 + 1/3) · 6/5"]},
+  {t:"Уравнения", ic:"𝑥", items:["2x + 5 = 13","3(x − 2) = x + 4","(x+1)/2 = (2x−3)/3","x² − 5x + 6 = 0"]},
+  {t:"Функции и графики", ic:"↗", items:["y = −2x + 1 — построй график",
+     "проходит ли график y = 2x + 3 через точку (2; 7)?","найди точку пересечения прямых y = 2x + 3 и y = −x + 6"]},
+  {t:"Задачи", ic:"✎", items:["Товар стоил 2000 рублей, скидка 15%. Сколько он стал стоить?",
+     "Велосипедист ехал 3 часа со скоростью 15 км/ч. Какой путь он проехал?",
+     "Задумали число, умножили его на 5, прибавили 7 и получили 42",
+     "Первый рабочий делает работу за 6 часов, второй — за 12 часов. За сколько часов они сделают её вместе?",
+     "Сумма двух чисел 30, одно на 4 больше другого. Найдите эти числа.",
+     "Смешали 3 кг 20%-го раствора и 2 кг 50%-го. Какая концентрация получилась?"]}
+];
 
-EXAMPLES.forEach(function(ex,i){
+function runExample(ex){
+  q.value=ex;
+  run(ex);
+  out.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function chipFor(ex){
   const b=document.createElement("button");
   b.type="button"; b.className="chip"; b.textContent=ex;
-  b.style.textAlign="left";
-  b.title=ex;
-  b.addEventListener("click",function(){ q.value=ex; run(ex); out.scrollIntoView({behavior:"smooth",block:"nearest"}); });
-  if(i<4) chips.appendChild(b); else more.appendChild(b);
+  b.style.textAlign="left"; b.title=ex;
+  b.addEventListener("click", function(){ closeExamples(); runExample(ex); });
+  return b;
+}
+EX_QUICK.forEach(function(ex){ chips.appendChild(chipFor(ex)); });
+const exOpen=document.createElement("button");
+exOpen.type="button"; exOpen.className="chip ghost"; exOpen.id="exOpen";
+exOpen.textContent="Примеры ▾";
+exOpen.setAttribute("aria-expanded","false");
+chips.appendChild(exOpen);
+
+/* шит с примерами по темам */
+const exSheetEl=document.createElement("div");
+exSheetEl.className="exsheet"; exSheetEl.id="exSheet"; exSheetEl.hidden=true;
+exSheetEl.innerHTML=
+  '<div class="exsheet-card" role="dialog" aria-label="Примеры по темам">'+
+    '<div class="exsheet-head">'+
+      '<b>С чего начать</b>'+
+      '<button type="button" class="icon-btn" id="exClose" aria-label="Закрыть">✕</button>'+
+    '</div>'+ EX_GROUPS.map(function(g,gi){
+      return '<div class="exgroup">'+
+        '<div class="exgroup-t"><span aria-hidden="true">'+g.ic+'</span> '+g.t+'</div>'+
+        '<div class="exgroup-chips" data-g="'+gi+'"></div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+document.body.appendChild(exSheetEl);
+EX_GROUPS.forEach(function(g,gi){
+  const box=exSheetEl.querySelector('.exgroup-chips[data-g="'+gi+'"]');
+  g.items.forEach(function(ex){ box.appendChild(chipFor(ex)); });
 });
-toggle.addEventListener("click",function(){
-  more.hidden=!more.hidden;
-  toggle.textContent = more.hidden? "ещё примеры" : "свернуть примеры";
+function openExamples(){
+  exSheetEl.hidden=false;
+  exOpen.setAttribute("aria-expanded","true");
+  document.body.classList.add("has-exsheet");
+}
+function closeExamples(){
+  if(exSheetEl.hidden) return;
+  exSheetEl.hidden=true;
+  exOpen.setAttribute("aria-expanded","false");
+  document.body.classList.remove("has-exsheet");
+}
+exOpen.addEventListener("click", function(){
+  if(exSheetEl.hidden) openExamples(); else closeExamples();
 });
-chips.appendChild(toggle);
-chips.parentNode.insertBefore(more, chips.nextSibling);
-toggle.style.textAlign="center";
+exSheetEl.addEventListener("click", function(e){
+  if(e.target===exSheetEl || e.target.closest("#exClose")) closeExamples();
+});
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape") closeExamples();
+});
 
 /* стартовый экран */
 const START_HTML='<details class="helpcard">'+
@@ -6446,8 +6562,8 @@ const btnClear=document.getElementById("clear");
 const STARTED={v:false};       /* показывали ли уже решение */
 
 function syncClear(){
-  const idle = q.value==="" && !STARTED.v;
-  btnClear.classList.toggle("off", idle);
+  /* 4.11.0: «Стереть» — кружок внутри поля, появляется, когда есть что стирать */
+  btnClear.hidden = (q.value==="" && !STARTED.v);
 }
 function clearAll(){
   q.value="";
@@ -6532,6 +6648,11 @@ function readStreak(){
 }
 function writeStreak(n){ lsSet("streak", todayKey()+":"+n); }
 function renderStreak(n,bump){
+  if(!streakEl){
+    /* 4.11.0: счётчик «за сегодня» убран из интерфейса — оставлена серия дней в HUD.
+       Функция живёт ради совместимости: пишет статистику, но ничего не рисует. */
+    return;
+  }
   if(!n){ streakEl.textContent=""; streakEl.classList.remove("hot"); return; }
   streakEl.innerHTML='<b>✦ '+n+"</b> решено";
   streakEl.classList.toggle("hot", n>=5);
@@ -7721,12 +7842,15 @@ function tWrongOptions(correct, qText, genKey){
   return out.slice(0,3);
 }
 function tShuffle(a){
-  const r=a.slice();
-  for(let i=r.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    const t=r[i]; r[i]=r[j]; r[j]=t;
+  /* 4.11.3: порядок вариантов зависит от их же текста — на двух устройствах
+     с одним кодом работы лист выглядит одинаково */
+  function h(x){
+    const t=String(x), q=String(typeof x==="object"? (x.q||x.a||JSON.stringify(x)) : x)+"|"+t;
+    let v=2166136261;
+    for(let i=0;i<q.length;i++){ v^=q.charCodeAt(i); v=Math.imul(v,16777619); }
+    return (v>>>0);
   }
-  return r;
+  return a.slice().sort(function(x,y){ return h(x)-h(y); });
 }
 
 function tBuild(key, count, diff){
@@ -8180,7 +8304,11 @@ const CLASS_TOPICS=[
   {k:"units",   name:"Единицы"},
   {k:"system",  name:"Системы"},
   {k:"motion",  name:"Движение"},
-  {k:"work",    name:"Работа"}
+  {k:"work",    name:"Работа"},
+  /* 4.11.2: функция появилась в 4.10, но в конструктор вариантов её не завели */
+  {k:"fl_kb",   name:"Функции"},
+  {k:"fl_two",  name:"Прямая по точкам"},
+  {k:"fl_text", name:"Функция в задаче"}
 ];
 
 /* Профиль класса: какие темы уместны и какой сложности задания.
@@ -8191,9 +8319,9 @@ const GRADE_PROFILE={
   0: {name:"любой",  diff:2, topics:["lin","lin2","quad","frac","percent","area","units","system","motion","work"]},
   5: {name:"5 класс", diff:1, topics:["units","frac","percent","area"]},
   6: {name:"6 класс", diff:1, topics:["units","frac","percent","area","lin"]},
-  7: {name:"7 класс", diff:2, topics:["lin","lin2","units","frac","percent","motion"]},
-  8: {name:"8 класс", diff:2, topics:["lin","lin2","quad","frac","system","area"]},
-  9: {name:"9 класс", diff:2, topics:["quad","system","frac","percent","motion","work"]},
+  7: {name:"7 класс", diff:2, topics:["lin","lin2","units","frac","percent","motion","fl_kb"]},
+  8: {name:"8 класс", diff:2, topics:["lin","lin2","quad","frac","system","area","fl_kb","fl_two"]},
+  9: {name:"9 класс", diff:2, topics:["quad","system","frac","percent","motion","work","fl_kb","fl_two","fl_text"]},
   10:{name:"10 класс", diff:3, topics:["quad","system","percent","motion","work","area"]},
   11:{name:"11 класс", diff:3, topics:["quad","system","percent","motion","work","frac"]}
 };
@@ -8304,7 +8432,7 @@ function clRenderPanel(){
             return '<option'+(n===CLASS_STATE.per?" selected":"")+'>'+n+'</option>';}).join("")+'</select></div>'+
         '<div class="clfield" style="flex:1;min-width:200px"><label for="cltitle">заголовок листа</label>'+
           '<input type="text" id="cltitle" value="'+escAttr(CLASS_STATE.title)+'" maxlength="60"></div>'+
-        '<div class="clfield"><label for="clcode">код варианта</label>'+
+        '<div class="clfield"><label for="clcode">код работы</label>'+
           '<input type="text" id="clcode" value="'+escAttr(CLASS_STATE.code||"")+'" '+
             'placeholder="новая" maxlength="12" autocomplete="off" spellcheck="false"></div>'+
       '</div>'+
@@ -8322,17 +8450,11 @@ function clRenderPanel(){
           : '<button type="button" class="clchip locked" id="clans" style="align-self:center" '+
             'title="Ключ доступен учителю">🔒 Ключ ответов</button>')+
         '</div>'+
-      '<p class="clhint">Сначала выберите класс: темы и сложность подставятся под программу '+
-      '(5–6 — величины, дроби, проценты; 7 — уравнения; 8 — квадратные и системы). '+
-      'Темы можно поправить руками — класс останется в силе и задаст сложность чисел. '+
-      'Код варианта — паспорт работы: с ним задания собираются заново один в один, '+
-      'даже на другом устройстве и в другом классе. Оставьте поле пустым для новой работы '+
-      'или впишите код прошлой, чтобы повторить её. Задания разные во всех вариантах: ни одно '+
-      'не повторится ни внутри варианта, ни между вариантами. Ответы считает тот же движок, '+
-      'что в решателе, — в ключе ошибок не будет. '+
-      'При печати каждый вариант на своём листе, после них — ключ для учителя. '+
-      '«Скачать PDF» собирает такой же файл сразу, без диалога печати: его можно отправить '+
-      'в чат класса или распечатать с телефона.</p>'+
+      '<p class="clhint">Класс задаёт темы и сложность чисел — темы можно поправить руками. '+
+      'Код работы — паспорт: в нём зашиты класс, темы и размер работы, поэтому ученик с этим '+
+      'кодом получит ровно ваши задания. Оставьте поле пустым для новой работы. '+
+      'Задания не повторяются ни внутри варианта, ни между вариантами, ответы считает тот же '+
+      'движок, что в решателе.</p>'+
     '</div>'+
     '<div class="sheets" id="clsheets"></div>'+
     '<div id="clhist"></div>';
@@ -8432,7 +8554,10 @@ function clHistRender(){
 window.__clPdf={
   state:function(){ return CLASS_STATE; },
   build:function(){ if(!CLASS_STATE.built) clBuild(); return CLASS_STATE.built; },
-  opts:function(){ return {lines:!!CLASS_STATE.lines, answers:!!(CLASS_STATE.answers && isTeacher())}; }
+  opts:function(){ return {lines:!!CLASS_STATE.lines, answers:!!(CLASS_STATE.answers && isTeacher())}; },
+  makeCode:function(base,grade,per,vars,topics){ return clMakeWorkCode(base,grade,per,vars,topics); },
+  parseCode:function(str){ return clParseWorkCode(str); },
+  topics:function(){ return CLASS_TOPICS.map(function(t){ return {k:t.k, name:t.name}; }); }
 };
 
 /* один вариант: per заданий, темы идут по кругу, чтобы в каждом варианте было поровну */
@@ -8474,8 +8599,8 @@ function clHistChipsHtml(){
     '<span style="font-size:11.5px;color:var(--ink-dim);font-weight:600">недавние работы</span>'+
     h.map(function(r,i){
       return '<button type="button" class="clchip" data-hist="'+i+'" '+
-        'title="Собрать эту работу заново">'+
-        escAttr(r.code)+' · '+(r.grade? r.grade+' кл.' : 'любой')+' · '+escAttr(String(r.date||"''"))+'</button>';
+        'title="Собрать эту работу заново: '+escAttr(r.code)+'">'+
+        escAttr(String(r.code||"").split("-")[0])+' · '+(r.grade? r.grade+' кл.' : 'любой')+' · '+escAttr(String(r.date||"''"))+'</button>';
     }).join("")+'</div>';
 }
 
@@ -8486,13 +8611,78 @@ function clNewCode(){
   for(let i=0;i<4;i++) c+=A[Math.floor(r()*A.length)];
   return c;
 }
+/* ---------------- 4.11.3: код работы переносит ВСЁ условие ----------------
+   Раньше «код» был только зерном ГПСЧ: те же задания получались лишь при
+   совпадении класса, тем и числа заданий. Теперь код самодостаточен:
+   K57X-852-1PQK = база, класс, заданий, вариантов, маска тем, контрольный знак.
+   Ученик вводит код целиком — и получает работу учителя один в один. */
+const CL_CODE_ALPHA="0123456789ABCDEFGHJKMNPQRSTVWXYZ"; /* base32 без I,L,O,U */
+function clCodeDigits(n,len){
+  let out="";
+  for(let i=len-1;i>=0;i--){ out+=CL_CODE_ALPHA[Math.floor(n/Math.pow(32,i))%32]; }
+  return out;
+}
+function clCodeNum(ch){ const i=CL_CODE_ALPHA.indexOf(ch); return i<0? 0 : i; }
+function clTopicsMask(topics){
+  let m=0;
+  CLASS_TOPICS.forEach(function(t,i){ if((topics||[]).indexOf(t.k)>=0) m|=(1<<i); });
+  return m;
+}
+function clMaskTopics(mask){
+  return CLASS_TOPICS.filter(function(t,i){ return mask & (1<<i); }).map(function(t){ return t.k; });
+}
+function clCodeCheck(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; }
+  return CL_CODE_ALPHA[h%32];
+}
+/* собрать код: база + класс + заданий + вариантов + маска тем + контрольный знак */
+function clMakeWorkCode(base, grade, per, vars, topics){
+  const g=Math.min(11, Math.max(0, grade|0));
+  const p=Math.min(10, Math.max(3, per|0));
+  const v=Math.min(6, Math.max(1, vars|0));
+  const mask=clTopicsMask(topics);
+  const head=String(base)+"-"+CL_CODE_ALPHA[g]+CL_CODE_ALPHA[p]+CL_CODE_ALPHA[v]+"-"+clCodeDigits(mask,3);
+  return head+clCodeCheck(head);
+}
+/* разобрать код; null — если это старый «просто код» */
+function clParseWorkCode(raw){
+  const s=String(raw||"").toUpperCase().replace(/[^0-9A-Z-]/g,"");
+  const m=/^([0-9A-Z]{2,6})-([0-9A-Z])([0-9A-Z])([0-9A-Z])-([0-9A-Z]{3})([0-9A-Z])$/.exec(s);
+  if(!m) return null;
+  const head=m[1]+"-"+m[2]+m[3]+m[4]+"-"+m[5];
+  if(clCodeCheck(head)!==m[6]) return null;
+  const grade=clCodeNum(m[2]), per=clCodeNum(m[3]), vars=clCodeNum(m[4]);
+  let mask=0;
+  for(let i=0;i<m[5].length;i++) mask=mask*32+clCodeNum(m[5][i]);
+  const topics=clMaskTopics(mask);
+  return {base:m[1], grade:grade, per:per, vars:vars, topics:topics};
+}
 function clBuild(){
   /* B7: задания строит ГПСЧ с зерном, поэтому работу можно повторить по коду */
-  const codeEl=document.getElementById("clcode");
+  let codeEl=document.getElementById("clcode");
   /* код из «недавних работ» важнее того, что осталось в поле от прошлой сборки */
-  let code=(CLASS_STATE.pendingCode || (codeEl && codeEl.value) || "").trim()
-    .toUpperCase().replace(/[^A-Z0-9]/g,"");
+  let rawCode=(CLASS_STATE.pendingCode || (codeEl && codeEl.value) || "").trim();
   CLASS_STATE.pendingCode="";
+  /* полный код работы приносит с собой класс, темы и размер: у ученика
+     настройки могут быть другими, а работа должна получиться та же */
+  const parsed=clParseWorkCode(rawCode);
+  if(parsed){
+    CLASS_STATE.grade=parsed.grade;
+    CLASS_STATE.topics=parsed.topics.slice();
+    CLASS_STATE.per=parsed.per;
+    CLASS_STATE.vars=parsed.vars;
+    rawCode=parsed.base;
+    /* настройки пришли из кода — показываем это в чипах, иначе на экране
+       остались бы прежние класс и темы, а собралась бы другая работа */
+    clRenderPanel();
+    codeEl=document.getElementById("clcode");
+  }
+  /* порядок тем — всегда как в общем списке: генераторы берут случайность из одного
+     потока, и от перестановки тем задания съезжали бы даже при одном коде */
+  CLASS_STATE.topics=CLASS_TOPICS.filter(function(t){ return (CLASS_STATE.topics||[]).indexOf(t.k)>=0; })
+                                     .map(function(t){ return t.k; });
+  let code=rawCode.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
   if(!code) code=clNewCode();
   const grade=CLASS_STATE.grade||0;
   const prof=GRADE_PROFILE[grade]||GRADE_PROFILE[0];
@@ -8500,8 +8690,9 @@ function clBuild(){
   /* класс входит в зерно: один и тот же код в 7 и в 9 классе даёт разные работы,
      но в одном и том же классе — ровно ту же самую */
   seedRandom(((codeToSeed(code) ^ (grade*7919))>>>0)||1);
-  CLASS_STATE.code=code;
-  if(codeEl) codeEl.value=code;
+  const workCode=clMakeWorkCode(code, grade, CLASS_STATE.per, CLASS_STATE.vars, CLASS_STATE.topics);
+  CLASS_STATE.code=workCode;
+  if(codeEl) codeEl.value=workCode;
 
   const used=[];
   const variants=[];
@@ -8532,8 +8723,8 @@ function clBuild(){
     }
   });
   CLASS_STATE.built={variants:variants, title:CLASS_STATE.title, date:todayKey(),
-                     code:code, grade:grade, diff:diff};
-  clHistPush({code:code, grade:grade, date:todayKey(), vars:CLASS_STATE.vars,
+                     code:workCode, grade:grade, diff:diff};
+  clHistPush({code:workCode, grade:grade, date:todayKey(), vars:CLASS_STATE.vars,
               per:CLASS_STATE.per, title:CLASS_STATE.title});
   clHistRender();
   /* дальше снова живое зерно, чтобы следующая работа не была копией этой */
@@ -9646,7 +9837,7 @@ const V4UI=(function(){
     if(lsGet("exam","0")==="1") examSet(true);
 
     /* любые пилюли в шапке открывают вкладку «Дэш» — там всё целиком */
-    ["pillLvl","dayPill","questsBtn","achvBtn","dashBtn"].forEach(function(id){
+    ["hudOpen","pillLvl","dayPill","questsBtn","achvBtn","dashBtn"].forEach(function(id){
       const el=$(id);
       if(el) el.addEventListener("click", function(){ setMode("dash"); });
     });
@@ -10362,6 +10553,7 @@ window.__store=STORE;
 window.__stepsHtml=stepsHtml;
 window.APP_VERSION=APP_VERSION;
 window.__seedRandom=seedRandom;
+window.__rand=rand; /* 4.11.3: модуль линейной функции живёт вне IIFE — берёт seeded ГПСЧ отсюда */
 window.__codeToSeed=codeToSeed;
 window.__v4={V4:V4, V4UI:V4UI};
 window.__dbg={getTest:function(){return TEST;},tBuild:tBuild,TEST_TOPICS:TEST_TOPICS,tWrongOptions:tWrongOptions,solvePoly:parsePoly,polyHtmlN:polyHtml,intCoefs:intCoefs,findRatRoot:findRatRoot,highDeg:highDegreeSolution,sysParse:lin2Parse,solveSys:solveSystemString,mGeometry:mGeometry,gTri:gTriangle,gSim:gSimilar,gRoles:gRole,gNums:gNums,gAllNums:gAllNums,exactSqrt:exactSqrt,mWater:mWater,findUnitMentions:findUnitMentions,findSpeedMentions:findSpeedMentions,UNIT_CATS:UNIT_CATS,
@@ -10738,10 +10930,13 @@ function opsHtml(logs, kinds){
 }
 
 /* ---------- 1. Отрицательные числа ---------- */
+/* 4.11.3: генераторы тем должны брать seeded ГПСЧ, иначе код работы не воспроизводит
+   задания: Math.random() идёт мимо зерна. Модуль живёт вне IIFE — берём поток через window.__rand. */
+function RNDX(){ return (typeof window!=="undefined" && typeof window.__rand==="function")? window.__rand() : Math.random(); }
 function makeNeg(){
-  const kind=Math.floor(Math.random()*4);
-  const a=-(1+Math.floor(Math.random()*20));
-  const b=1+Math.floor(Math.random()*20);
+  const kind=Math.floor(RNDX()*4);
+  const a=-(1+Math.floor(RNDX()*20));
+  const b=1+Math.floor(RNDX()*20);
   if(kind===0) return fmt(a)+" + "+fmt(b);
   if(kind===1) return fmt(b)+" "+MINUS+" ("+fmt(a)+")";
   if(kind===2) return fmt(a)+" "+MINUS+" "+fmt(b);
@@ -10770,8 +10965,8 @@ function solveNeg(s){
 
 /* ---------- 2. НОД и НОК ---------- */
 function makeGcd(){
-  const a=2+Math.floor(Math.random()*11)*2, b=3+Math.floor(Math.random()*11)*3;
-  return Math.random()<.5
+  const a=2+Math.floor(RNDX()*11)*2, b=3+Math.floor(RNDX()*11)*3;
+  return RNDX()<.5
     ? "НОД("+a+", "+b+")"
     : "НОК("+a+", "+b+")";
 }
@@ -10808,12 +11003,12 @@ function solveGcdNok(s){
 
 /* ---------- 3. Пропорции и масштаб ---------- */
 function makeProp(){
-  if(Math.random()<.5){
-    const a=2+Math.floor(Math.random()*8), b=2+Math.floor(Math.random()*9), k=2+Math.floor(Math.random()*5);
+  if(RNDX()<.5){
+    const a=2+Math.floor(RNDX()*8), b=2+Math.floor(RNDX()*9), k=2+Math.floor(RNDX()*5);
     return "Решите пропорцию: "+a+" : "+b+" = x : "+(b*k);
   }
-  const sc=[100,200,500,1000,5000,10000,50000,100000,200000][Math.floor(Math.random()*9)];
-  const cm=1+Math.floor(Math.random()*9);
+  const sc=[100,200,500,1000,5000,10000,50000,100000,200000][Math.floor(RNDX()*9)];
+  const cm=1+Math.floor(RNDX()*9);
   return "Масштаб карты 1 : "+sc+". Отрезок на карте "+cm+" см. Сколько это на местности в километрах?";
 }
 function solveProp(s){
@@ -10852,8 +11047,8 @@ function solveProp(s){
 
 /* ---------- 4. Модуль ---------- */
 function makeAbs(){
-  const a=-(1+Math.floor(Math.random()*19)), b=1+Math.floor(Math.random()*12);
-  const kind=Math.floor(Math.random()*3);
+  const a=-(1+Math.floor(RNDX()*19)), b=1+Math.floor(RNDX()*12);
+  const kind=Math.floor(RNDX()*3);
   if(kind===0) return "|"+fmt(a)+"| + |"+b+"|";
   if(kind===1) return "|"+fmt(a)+"| · "+b;
   return "|"+fmt(a)+"| "+MINUS+" |"+fmt(b)+"|";
@@ -10893,20 +11088,20 @@ function supToInt(t){
   return parseInt(out,10);
 }
 function makePow(){
-  const kind=Math.floor(Math.random()*4);
+  const kind=Math.floor(RNDX()*4);
   if(kind===0){
-    const a=2+Math.floor(Math.random()*3), m=2+Math.floor(Math.random()*3), n=2+Math.floor(Math.random()*3);
+    const a=2+Math.floor(RNDX()*3), m=2+Math.floor(RNDX()*3), n=2+Math.floor(RNDX()*3);
     return a+"^"+m+" · "+a+"^"+n;
   }
   if(kind===1){
-    const a=2+Math.floor(Math.random()*4), b=2+Math.floor(Math.random()*4);
+    const a=2+Math.floor(RNDX()*4), b=2+Math.floor(RNDX()*4);
     return a+"^2 "+MINUS+" "+b+"^3";
   }
   if(kind===2){
-    const r=2+Math.floor(Math.random()*11);
-    return "√"+(r*r)+" + "+(1+Math.floor(Math.random()*20));
+    const r=2+Math.floor(RNDX()*11);
+    return "√"+(r*r)+" + "+(1+Math.floor(RNDX()*20));
   }
-  const k=2+Math.floor(Math.random()*5);
+  const k=2+Math.floor(RNDX()*5);
   return "("+k+"^2)^2";
 }
 function solvePow(s){
@@ -10951,8 +11146,8 @@ function solvePow(s){
 
 /* ---------- 6. Формулы сокращённого умножения ---------- */
 function makeFsu(){
-  const a=2+Math.floor(Math.random()*8);
-  const kind=Math.floor(Math.random()*3);
+  const a=2+Math.floor(RNDX()*8);
+  const kind=Math.floor(RNDX()*3);
   if(kind===0) return "(x + "+a+")^2 = x^2 + px + "+a*a+". Найдите p.";
   if(kind===1) return "x^2 "+MINUS+" "+a*a+" = (x "+MINUS+" p)(x + p). Найдите p.";
   return "(x + "+a+")(x "+MINUS+" "+a+") = x^2 "+MINUS+" c. Найдите c.";
@@ -11000,12 +11195,12 @@ function lineText(k,b){
   return s;
 }
 function makeLine(){
-  const k=(Math.random()<.2? -1:1)*(1+Math.floor(Math.random()*5));
+  const k=(RNDX()<.2? -1:1)*(1+Math.floor(RNDX()*5));
   /* b не равно нулю: «+ 0» в задании выглядит как ошибка составителя */
-  let b=Math.floor(Math.random()*19)-9;
+  let b=Math.floor(RNDX()*19)-9;
   if(b===0) b=3;
-  const x=Math.floor(Math.random()*9)-4;
-  if(Math.random()<.5){
+  const x=Math.floor(RNDX()*9)-4;
+  if(RNDX()<.5){
     return "Функция задана формулой "+lineText(k,b)+". Найдите y при x = "+fmt(x)+".";
   }
   const y=k*x+b;
@@ -11049,12 +11244,12 @@ function solveLine(s){
 
 /* ---------- 8. Прогрессии ---------- */
 function makeProg(){
-  const kind=Math.floor(Math.random()*3);
-  const a1=1+Math.floor(Math.random()*9), d=1+Math.floor(Math.random()*5);
-  const n=5+Math.floor(Math.random()*11);
+  const kind=Math.floor(RNDX()*3);
+  const a1=1+Math.floor(RNDX()*9), d=1+Math.floor(RNDX()*5);
+  const n=5+Math.floor(RNDX()*11);
   if(kind===0) return "Арифметическая прогрессия: a₁ = "+a1+", d = "+d+". Найдите a"+sub(n)+".";
   if(kind===1) return "Арифметическая прогрессия: a₁ = "+a1+", d = "+d+". Найдите сумму первых "+n+" членов.";
-  const q=2+Math.floor(Math.random()*2), b1=1+Math.floor(Math.random()*4), m=4+Math.floor(Math.random()*3);
+  const q=2+Math.floor(RNDX()*2), b1=1+Math.floor(RNDX()*4), m=4+Math.floor(RNDX()*3);
   return "Геометрическая прогрессия: b₁ = "+b1+", q = "+q+". Найдите b"+sub(m)+".";
 }
 function sub(n){
@@ -11118,9 +11313,9 @@ function solveProg(s0){
 
 /* ---------- 9. Вероятность ---------- */
 function makeProb(){
-  const kind=Math.floor(Math.random()*4);
+  const kind=Math.floor(RNDX()*4);
   if(kind===0 || kind===1){
-    const r=2+Math.floor(Math.random()*8), b=1+Math.floor(Math.random()*8);
+    const r=2+Math.floor(RNDX()*8), b=1+Math.floor(RNDX()*8);
     const wantR=(kind===0);
     return "В коробке "+r+" "+plural(r,["красный шар","красных шара","красных шаров"])+
       " и "+b+" "+plural(b,["синий шар","синих шара","синих шаров"])+
@@ -11128,8 +11323,8 @@ function makeProb(){
       (wantR? "красным" : "синим")+".";
   }
   if(kind===2) return "Игральный кубик бросают один раз. Найдите вероятность того, что выпадет число больше "+
-    (1+Math.floor(Math.random()*4))+".";
-  const ev=["чётное число","нечётное число","число меньше 3","число меньше 5"][Math.floor(Math.random()*4)];
+    (1+Math.floor(RNDX()*4))+".";
+  const ev=["чётное число","нечётное число","число меньше 3","число меньше 5"][Math.floor(RNDX()*4)];
   return "Игральный кубик бросают один раз. Найдите вероятность того, что выпадет "+ev+".";
 }
 function solveProb(s){
@@ -11173,20 +11368,20 @@ function solveProb(s){
 
 /* ---------- 10. Округление и прикидка ---------- */
 function makeRound(){
-  const kind=Math.floor(Math.random()*4);
+  const kind=Math.floor(RNDX()*4);
   if(kind===0){
-    const i=1+Math.floor(Math.random()*20), f=String(100+Math.floor(Math.random()*899));
+    const i=1+Math.floor(RNDX()*20), f=String(100+Math.floor(RNDX()*899));
     return "Округлите "+i+","+f+" до сотых.";
   }
   if(kind===1){
-    const n=100+Math.floor(Math.random()*9000);
+    const n=100+Math.floor(RNDX()*9000);
     return "Округлите "+n+" до десятков.";
   }
   if(kind===2){
-    const n=1000+Math.floor(Math.random()*9000);
+    const n=1000+Math.floor(RNDX()*9000);
     return "Округлите "+n+" до сотен.";
   }
-  const a=40+Math.floor(Math.random()*10), b=20+Math.floor(Math.random()*10);
+  const a=40+Math.floor(RNDX()*10), b=20+Math.floor(RNDX()*10);
   return "Найдите приближённое произведение, округлив каждый множитель до десятков: "+a+" · "+b+".";
 }
 /* половина — всегда вверх, как учат в школе; считаем по цифрам, без плавающей точки */
@@ -11821,7 +12016,7 @@ function solvePlot(ln){
 
 /* ---------------- текстовая задача про зависимость ---------------- */
 const UNIT_WORDS="(км|километр[а-яё]*|час[а-яё]*|минут[а-яё]*|сутк[а-яё]*|штук[а-яё]*|занят[а-яё]*|кг|килограмм[а-яё]*|день|дн[а-яё]*|месяц[а-яё]*|мес[а-яё]*|недел[а-яё]*|год[а-яё]*|литр[а-яё]*|страниц[а-яё]*|детал[а-яё]*|пачк[а-яё]*)";
-const FIX_KW="(?:посадк|абонент|вызов|выезд|фикс|постоянн|начальн|аренд|подписк|доставк|залог|обслуживан|подключен|установк|взнос|стартов|комисси|вступ)[а-яё]*";
+const FIX_KW="(?:посадк|абонем|абонент|вызов|выезд|фикс|постоянн|начальн|аренд|подписк|доставк|залог|обслуживан|подключен|установк|взнос|стартов|комисси|вступ)[а-яё]*";
 function normText(t){
   return String(t).replace(/[−–—]/g,"-").replace(/ё/g,"е").replace(/\s+/g," ").trim();
 }
@@ -11844,6 +12039,9 @@ function solveTextTask(src){
   const ma=low.match(new RegExp(FIX_KW+"[^\\d]{0,25}?(\\d+(?:[.,]\\d+)?)"));
   if(mb) b=parseFloat(mb[1].replace(",","."));
   else if(ma) b=parseFloat(ma[1].replace(",","."));
+  /* «абонемент 300 рублей в месяц» — это не постоянная часть, а та же ставка:
+     иначе одно и то же число складывалось само с собой (300 + 300·6) */
+  if(b && Math.abs(b-k)<1e-9) b=0;
 
   /* сколько единиц спрашивают — последнее «число + единица» в тексте */
   const qtyRe=new RegExp("(\\d+(?:[.,]\\d+)?)\\s*(?:руб[а-яё]*|₽|р\\.)?\\s*"+UNIT_WORDS,"g");
@@ -12117,8 +12315,11 @@ function sameAnswer(user, ans){
 }
 
 /* ---------------- генераторы задач ---------------- */
-function ri(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
-function pickOne(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+/* 4.11.3: генераторы обязаны брать seeded rand(), иначе код работы не воспроизводит
+   задания с функциями: Math.random() идёт мимо зерна ГПСЧ */
+function lfRnd(){ return (typeof window!=="undefined" && typeof window.__rand==="function")? window.__rand() : Math.random(); }
+function ri(a,b){ return a+Math.floor(lfRnd()*(b-a+1)); }
+function pickOne(arr){ return arr[Math.floor(lfRnd()*arr.length)]; }
 const KSETS={
   1:[1,2,3,4,5,-1,-2,-3],
   2:[1,2,3,4,5,-1,-2,-3,-4,0.5,-0.5,1.5,-1.5,2.5,0.25],
@@ -12135,7 +12336,7 @@ function makeFlKb(diff){
   }
   if(ask==="k") return "Дана функция "+formula(k,b)+". Найдите коэффициент k.";
   if(ask==="b") return "Дана функция "+formula(k,b)+". Найдите свободный член b.";
-  if(d===3 && Math.random()<0.5){
+  if(d===3 && lfRnd()<0.5){
     /* формула в «развёрнутом» виде: k и b надо сначала привести */
     const kk=pickOne([1,2,3,-1,-2,0.5]);
     const bb=ri(-6,6)||2;
@@ -12153,7 +12354,7 @@ function makeFlPoint(diff){
   if(b===0) b=3;
   const ln={k:k,b:b};
   const x=ri(-5,5);
-  const on=Math.random()<0.5;
+  const on=lfRnd()<0.5;
   const off=pickOne(d===1? [1,-1] : d===2? [1,-1,2,-2] : [1,-1,2,-2,3,-3]);
   const y=on? lineAt(ln,x) : lineAt(ln,x)+off;
   const name=pickOne(["A","B","C","M","K"]);
@@ -12173,7 +12374,7 @@ function makeFlTwo(diff){
 }
 function makeFlInter(diff){
   const d=Math.min(3, Math.max(1, diff||2));
-  if(d===3 && Math.random()<0.5){
+  if(d===3 && lfRnd()<0.5){
     /* точку пересечения задаём заранее: тогда ответ — аккуратные целые */
     const k1=pickOne([1,2,3,-1,-2]);
     let k2=pickOne([1,2,-1,-2,3,4]);
@@ -12186,7 +12387,7 @@ function makeFlInter(diff){
   const k=pickOne(d===1? [1,2,-1,-2] : d===2? [1,2,3,-1,-2,-3] : [2,3,4,-2,-3,-4,5]);
   let x0=ri(-4,4)||2;
   const b=-k*x0;
-  if(Math.random()<0.5) return "Найдите точку пересечения графика функции "+formula(k,b)+" с осью Oy.";
+  if(lfRnd()<0.5) return "Найдите точку пересечения графика функции "+formula(k,b)+" с осью Oy.";
   return "Найдите точку пересечения графика функции "+formula(k,b)+" с осью Ox.";
 }
 function ruPlural(n, f){
@@ -13674,7 +13875,7 @@ window.__LEARN={
   }
   function fileName(B){
     var g=B.grade? B.grade+"klass" : "rabochaya";
-    return "reshatel-"+g+"-"+(B.code||"work")+".pdf";
+    return "reshatel-"+g+"-"+String(B.code||"work").split("-")[0]+".pdf";
   }
   window.__clDownloadPdf=function(){
     var api=window.__clPdf;
@@ -13711,6 +13912,31 @@ window.__LEARN={
   });
 })();
 
+</script>
+<script>
+/* ===== 4.11.0: поповер «настройки и история» в строке поиска ===== */
+(function(){
+  var btn=document.getElementById("toolMenu"), pop=document.getElementById("toolMenuPop");
+  if(!btn||!pop) return;
+  function close(){ pop.hidden=true; btn.setAttribute("aria-expanded","false"); }
+  function open(){ pop.hidden=false; btn.setAttribute("aria-expanded","true"); }
+  btn.addEventListener("click", function(e){
+    e.stopPropagation();
+    if(pop.hidden) open(); else close();
+  });
+  document.addEventListener("click", function(e){
+    if(pop.hidden) return;
+    if(e.target.closest("#toolMenuPop")||e.target.closest("#toolMenu")) return;
+    close();
+  });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") close(); });
+  /* настройки — редкое действие: закрываем меню после переключения тумблера,
+     но история остаётся открытой, чтобы человек видел список */
+  pop.addEventListener("click", function(e){
+    if(e.target.closest("#histbtn")) return;
+    if(e.target.closest(".fx-toggle")) setTimeout(close, 150);
+  });
+})();
 </script>
 <script>
 /* ===== B4: нижняя панель разделов (телефон) ===== */
