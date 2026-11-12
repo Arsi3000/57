@@ -2024,7 +2024,7 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v5.0.1</span>
+      <span class="ver" id="verBadge">v5.0.2</span>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
         <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
       </button>
@@ -2347,7 +2347,7 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.0.1";
+const APP_VERSION="5.0.2";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -6447,27 +6447,65 @@ const GEN_TYPES={
     const pmax = d<=1? 10 : 30;
     const price=randInt(2,pmax)*100;
     const p = d<=1? randInt(10,50) : d>=3? randInt(5,75) : randInt(5,40);
-    return "Товар стоил "+price+" рублей, скидка "+p+"%. Сколько он стал стоить?";
+    /* 5.0.1: два вида задачи вместо одного — скидка и подорожание */
+    if(rand()<.5)
+      return "Товар стоил "+price+" рублей, скидка "+p+"%. Сколько он стал стоить?";
+    return "Товар стоил "+price+" рублей, подорожал на "+p+"%. Сколько он стал стоить?";
   }},
   motion:{title:"Задачи на движение", make:function(d){
     d=d||2;
     const vr = d<=1? [2,6] : d>=3? [4,18] : [2,12];
     const tr = d<=1? [1,4] : d>=3? [1,8]  : [2,7];
     const v=randInt(vr[0],vr[1])*5, tt=randInt(tr[0],tr[1]);
-    return "Велосипедист ехал "+tt+" "+pluralRu(tt,["час","часа","часов"])+
-      ", со скоростью "+v+" км/ч. Какой путь он проехал?";
+    /* 5.0.1: одна и та же фраза про велосипедиста шла в лист по шесть раз подряд */
+    const who=[["Велосипедист","ехал","проехал"],["Автобус","ехал","проехал"],
+               ["Грузовик","ехал","проехал"],["Мотоциклист","ехал","проехал"],
+               ["Поезд","шёл","прошёл"],["Лыжник","шёл","прошёл"],["Пешеход","шёл","прошёл"],
+               ["Катер","плыл","проплыл"]][randInt(0,7)];
+    return who[0]+" "+who[1]+" "+tt+" "+pluralRu(tt,["час","часа","часов"])+
+      " со скоростью "+v+" км/ч. Какой путь он "+who[2]+"?";
   }},
   area:{title:"Площади и периметры", make:function(d){
     d=d||2;
     const sr = d<=1? [2,8] : d>=3? [4,20] : [2,12];
     const ar = d<=1? [3,9] : d>=3? [6,25] : [3,15];
     const dr2= d<=1? [1,4] : d>=3? [2,9]  : [1,7];
-    if(rand()<.5){
+    /* 5.0.1: фигур стало больше — иначе в листе из восьми задач одни квадраты */
+    const kind=randInt(0,9);
+    if(kind===0){
       const a=randInt(sr[0],sr[1]);
       return "Сторона квадрата "+a+" см. Найдите площадь.";
     }
-    const a=randInt(ar[0],ar[1]), dd=randInt(dr2[0],dr2[1]);
-    return "Одна сторона прямоугольника "+a+" см, другая на "+dd+" см больше. Найдите площадь.";
+    if(kind===1){
+      const a=randInt(sr[0],sr[1]);
+      return "Площадь квадрата "+(a*a)+" см². Найдите периметр.";
+    }
+    if(kind===2 || kind===3){
+      const a=randInt(ar[0],ar[1]), b=randInt(ar[0],ar[1]);
+      return "Стороны прямоугольника "+a+" см и "+b+" см. Найдите "+(kind===2? "площадь." : "периметр.");
+    }
+    if(kind===4){
+      const a=randInt(ar[0],ar[1]), dd=randInt(dr2[0],dr2[1]);
+      return "Одна сторона прямоугольника "+a+" см, другая на "+dd+" см больше. Найдите площадь.";
+    }
+    if(kind===5){
+      const a=randInt(ar[0],ar[1]), dd=randInt(dr2[0],dr2[1]);
+      return "Одна сторона прямоугольника "+a+" см, другая на "+dd+" см меньше. Найдите площадь.";
+    }
+    if(kind===6){
+      const a=randInt(4,10), h=randInt(3,12);
+      return "Основание треугольника "+a+" см, высота "+h+" см. Найдите площадь.";
+    }
+    if(kind===7){
+      const a=randInt(3,9), b=randInt(4,12);
+      return "Катеты прямоугольного треугольника "+a+" см и "+b+" см. Найдите гипотенузу.";
+    }
+    if(kind===8){
+      const r=randInt(2,7);
+      return "Радиус круга "+r+" см. Найдите площадь.";
+    }
+    const e=randInt(2,6);
+    return "Куб с ребром "+e+" см. Найдите объём.";
   }},
   work:{title:"Совместная работа", make:function(d){
     d=d||2;
@@ -6476,8 +6514,16 @@ const GEN_TYPES={
     /* 5.0.1: при равных временах раньше возвращалась одна и та же фраза — в листах
        появлялись двойники. Теперь просто другое число. */
     const yy=(x===y)? (y%(wr[1])+1 || wr[0]) : y;
-    return "Первый рабочий делает работу за "+x+" "+pluralRu(x,["час","часа","часов"])+
-      ", второй — за "+yy+" "+pluralRu(yy,["час","часа","часов"])+". За сколько часов они сделают её вместе?";
+    const hx=x+" "+pluralRu(x,["час","часа","часов"]), hy=yy+" "+pluralRu(yy,["час","часа","часов"]);
+    /* 5.0.1: четыре сюжета вместо одного — «Первый рабочий…» подряд выглядел копией */
+    const kind=randInt(0,3);
+    if(kind===0)
+      return "Первый рабочий делает работу за "+hx+", второй — за "+hy+". За сколько часов они сделают её вместе?";
+    if(kind===1)
+      return "Первый рабочий красит стену за "+hx+", второй — за "+hy+". За сколько часов они покрасят стену вместе?";
+    if(kind===2)
+      return "Первая бригада делает работу за "+hx+", вторая — за "+hy+". За сколько часов они сделают её вместе?";
+    return "Мастер делает заказ за "+hx+", а ученик — за "+hy+". За сколько часов они сделают заказ вместе?";
   }},
   system:{title:"Системы уравнений", make:function(d){
     d=d||2;
@@ -8130,9 +8176,9 @@ const TEST_LEN=5;
   const CATS=[
     {from:"км", to:"метры",    v:function(){ return randInt(1,20); }},
     {from:"кг", to:"граммы",   v:function(){ return randInt(1,10); }},
-    {from:"часов", to:"минуты",v:function(){ return randInt(2,6); }},
+    {from:function(v){ return v+" "+pluralRu(v,["час","часа","часов"]); }, to:"минуты",v:function(){ return randInt(2,6); }},
     {from:"м", to:"сантиметры",v:function(){ return randInt(1,20); }},
-    {from:"тонн", to:"килограммы", v:function(){ return randInt(2,9); }},
+    {from:function(v){ return v+" "+pluralRu(v,["тонна","тонны","тонн"]); }, to:"килограммы", v:function(){ return randInt(2,9); }},
     {from:"км/ч", to:"м/с",    v:function(){ return randInt(1,15)*6; }}
   ];
   GEN_TYPES.units={title:"Перевод единиц", make:function(d){
@@ -8141,7 +8187,8 @@ const TEST_LEN=5;
     const pool = d<=1? CATS.slice(0,4) : CATS;
     const c=pick(pool);
     const v=c.v()*(d>=3? 2 : 1);
-    return v+" "+c.from+" в "+c.to;
+    const frm=(typeof c.from==="function")? c.from(v) : v+" "+c.from;
+    return frm+" в "+c.to;
   }};
 })();
 
@@ -9428,6 +9475,25 @@ window.__clPdf={
 };
 
 /* один вариант: per заданий, темы идут по кругу, чтобы в каждом варианте было поровну */
+/* 5.0.1: скелет задания — текст с числами, заменёнными на #.
+   В листах попадались пары вроде «6x + 12 = 48» и «6x + 12 = 66»: разные, но на вид одно и то же. */
+function clSkeleton(q){
+  return String(q||"").replace(/−/g,"-").replace(/\d+([.,]\d+)?/g,"#").replace(/\s+/g," ").trim();
+}
+/* подпись: каркас плюс первый коэффициент. «6x + 12 = 48» и «6x + 12 = 66» —
+   разные задания, но на листе выглядят близнецами, а вот «3x + 19 = 13» уже нет. */
+/* сколько раз такой каркас уже стоит в листе */
+function clSkelCount(list, sk){
+  let n=0;
+  for(let i=0;i<list.length;i++){ if(clSkeleton(list[i].q)===sk) n++; }
+  return n;
+}
+function clSignature(q){
+  const t=String(q||"").replace(/−/g,"-");
+  const m=/\d+([.,]\d+)?/.exec(t);
+  return clSkeleton(q)+"|"+(m? m[0] : "");
+}
+
 function clMakeVariant(used, per, offset, diff){
   const topics=CLASS_STATE.topics.slice();
   const out=[];
@@ -9438,6 +9504,12 @@ function clMakeVariant(used, per, offset, diff){
     if(!made.length) continue;
     const q=made[0].q;
     if(used.indexOf(q)>=0) continue;
+    /* близнецы по каркасу и первому числу — не больше одного раза в работе */
+    const sk=clSignature(q);
+    if(used.some(function(x){ return clSignature(x)===sk; })) continue;
+    /* и сам каркас — не больше двух раз в одном листе: иначе лист из восьми задач
+       выглядит как «19 км в метры, 8 км в метры, 18 км в метры…» */
+    if(clSkelCount(out, clSkeleton(q))>=2) continue;
     let ans=null;
     try{ ans=tAnswerText(solve(q).answer); }catch(e){ continue; }
     if(!ans) continue;
@@ -9659,12 +9731,30 @@ function clBuild(){
         if(!made.length) continue;
         const q=made[0].q;
         if(used.indexOf(q)>=0) continue;
+        const sk=clSignature(q);
+        if(used.some(function(x){ return clSignature(x)===sk; })) continue;
+        if(clSkelCount(items, clSkeleton(q))>=2) continue;
         let ans=null;
         try{ ans=tAnswerText(solve(q).answer); }catch(e){ continue; }
         if(!ans) continue;
         used.push(q);
         items.push({q:q, a:ans, topic:key});
       }
+    }
+    /* 5.0.1: если ограничения на близнецов не дали добрать до нужного числа,
+       добираем без них — лучше повторить каркас, чем выдать 10 заданий вместо 12 */
+    let g2=0;
+    while(items.length<CLASS_STATE.per && g2++<200){
+      const key=CLASS_STATE.topics[items.length%CLASS_STATE.topics.length];
+      const made=genSheet(key,1,diff);
+      if(!made.length) continue;
+      const q=made[0].q;
+      if(used.indexOf(q)>=0) continue;
+      let ans=null;
+      try{ ans=tAnswerText(solve(q).answer); }catch(e){ continue; }
+      if(!ans) continue;
+      used.push(q);
+      items.push({q:q, a:ans, topic:key});
     }
     variants.push(items);
   }
