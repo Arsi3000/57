@@ -1733,6 +1733,96 @@ body.printing>*:not(.printreport){display:none!important} body.printing{overflow
   .cvrates-row{gap:8px}
   .cvrates-row input{width:68px}
 }
+/* 4.12.0: у ученика после сборки — компактная строка вместо поля ввода */
+.clcoderow{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  padding:12px 14px;border-radius:14px;background:rgba(120,140,255,.10);border:1px solid rgba(120,140,255,.22)}
+.clcodechip{font:700 18px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;color:#4a45c9}
+.clcodemeta{font-size:13.5px;opacity:.72}
+body.light .clcoderow{background:#eef0ff;border-color:#d7dbff}
+body.light .clcodechip{color:#4a45c9}
+/* 4.12.0: на печать — только листы, без экрана решения и кодов */
+@media print{
+  #clrun, #clmodeSw, #clvcodes{display:none !important}
+  #clsheets{display:block !important}
+}
+/* 4.12.0: два способа у ученика + решение внутри приложения */
+.clmodesw{display:flex;gap:8px;margin:0 0 16px;padding:5px;border-radius:14px;
+  background:rgba(160,175,220,.1);border:1px solid rgba(160,175,220,.16)}
+.clmodebtn{flex:1 1 0;border:0;background:none;color:var(--ink2,#9aa3bd);font:600 15px/1 system-ui,sans-serif;
+  padding:12px 10px;border-radius:10px;cursor:pointer}
+.clmodebtn.on{background:linear-gradient(135deg,#6c5ce7,#8f7bff);color:#fff;box-shadow:0 6px 18px rgba(108,92,231,.35)}
+body.light .clmodebtn{color:#5a6480}
+body.light .clmodebtn.on{color:#fff}
+
+.svcard{padding:22px 20px 18px}
+.svhead{margin:0 0 6px;font-size:21px;font-weight:700}
+.svsub{margin:0 0 18px;font-size:14.5px;line-height:1.5;color:var(--ink2,#9aa3bd)}
+.sv-varrow{gap:8px}
+.sv-varbtn{flex:1 1 0}
+.sv-task{padding:16px 0;border-top:1px solid rgba(160,175,220,.16)}
+.sv-task:first-of-type{border-top:0}
+.sv-q{display:flex;gap:10px;align-items:baseline;font-size:16.5px;line-height:1.45;margin:0 0 10px}
+.sv-n{flex:0 0 26px;height:26px;border-radius:8px;background:rgba(108,92,231,.2);color:#cfc7ff;
+  font:600 13px/26px system-ui;text-align:center}
+.sv-row{display:flex;gap:8px;flex-wrap:wrap}
+.sv-in{flex:1 1 200px;min-width:0;font:16px system-ui;padding:12px 14px;border-radius:12px;
+  border:1.5px solid rgba(160,175,220,.32);background:rgba(255,255,255,.04);color:inherit}
+.sv-in:focus{outline:none;border-color:#6c5ce7;box-shadow:0 0 0 3px rgba(108,92,231,.22)}
+.sv-in.ok{border-color:#25c48b;background:rgba(37,196,139,.1)}
+.sv-in.bad{border-color:#e2564a}
+.sv-go{flex:0 0 auto}
+.sv-fb{margin:10px 0 0;font-size:14.5px;padding:10px 12px;border-radius:10px}
+.sv-fb[hidden]{display:none}
+.sv-ok{background:rgba(37,196,139,.14);border:1px solid rgba(37,196,139,.4);color:#a8f0d5}
+.sv-bad{background:rgba(226,86,74,.12);border:1px solid rgba(226,86,74,.35);color:#ffd2cc}
+.sv-empty{background:rgba(160,175,220,.12);border:1px solid rgba(160,175,220,.3);color:var(--ink2,#9aa3bd)}
+.sv-steps[hidden]{display:none}
+.sv-steps-in{margin:12px 0 0;padding:14px;border-radius:12px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(160,175,220,.16);font-size:15px}
+.sv-steps-in .step{margin:0 0 10px}
+.sv-ans{margin:10px 0 0;font-size:15px}
+.sv-footer{margin-top:18px;padding-top:16px;border-top:1px solid rgba(160,175,220,.16)}
+.sv-sum{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.sv-sum-main{font-size:19px}
+.sv-sum-main b{font-size:26px;color:#fff}
+.sv-sum-grade{padding:8px 16px;border-radius:12px;font-weight:700;font-size:17px}
+.sv-sum-grade.g5{background:rgba(37,196,139,.2);color:#7ff0c4}
+.sv-sum-grade.g4{background:rgba(108,92,231,.24);color:#cfc7ff}
+.sv-sum-grade.g3{background:rgba(255,176,32,.18);color:#ffd58a}
+.sv-sum-grade.g2{background:rgba(226,86,74,.2);color:#ffb3aa}
+.sv-sum-hint{flex:1 1 100%;font-size:14px;color:var(--ink2,#9aa3bd)}
+body.light .svsub,body.light .sv-sum-hint{color:#5a6480}
+body.light .sv-in{background:#fff;border-color:#c9cfe4}
+body.light .sv-n{background:#ecebff;color:#4b3fd0}
+body.light .sv-sum-main b{color:#1a2233}
+body.light .sv-ok{color:#0f7a58}
+body.light .sv-bad{color:#8a2a20}
+body.light .sv-steps-in{background:#f6f7fc;border-color:#dde2f0}
+body.light .sv-sum-grade.g5{color:#0f7a58}
+body.light .sv-sum-grade.g4{color:#4b3fd0}
+body.light .sv-sum-grade.g3{color:#8a5a00}
+body.light .sv-sum-grade.g2{color:#8a2a20}
+@media (max-width:520px){
+  .svcard{padding:18px 14px 14px}
+  .sv-q{font-size:16px}
+  .sv-go{width:100%}
+  .sv-sum-main{font-size:17px}
+}
+
+/* коды вариантов для учителя */
+.vccard{margin-top:14px;padding:18px 20px}
+.vctitle{margin:0 0 6px;font-size:15px;font-weight:700}
+.vcnote{margin:0 0 12px;font-size:13.5px;line-height:1.5;color:var(--ink2,#9aa3bd)}
+.vcnote code{font-family:var(--mono,monospace);background:rgba(255,255,255,.07);padding:1px 6px;border-radius:6px}
+.vc-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 0;
+  border-top:1px solid rgba(160,175,220,.14)}
+.vc-row:first-of-type{border-top:0}
+.vc-var{flex:0 0 96px;font-size:14px;color:var(--ink2,#9aa3bd)}
+.vc-code{font:600 16px/1.2 var(--mono,monospace);letter-spacing:1px;padding:6px 10px;border-radius:8px;
+  background:rgba(108,92,231,.18);border:1px solid rgba(108,92,231,.3);color:#dcd6ff}
+body.light .vc-code{background:#ecebff;border-color:#cfc9ff;color:#3b2fa8}
+body.light .vc-var,body.light .vcnote{color:#5a6480}
+
 /* 4.11.5: экран ученика — только код, никаких классов и тем */
 .clstudent{padding:26px 24px 20px}
 .clstudent-h{margin:0 0 10px;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.3px}
@@ -1855,7 +1945,7 @@ body.light .lfwrap{background:#f7f8ff}
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v4.11.5</span>
+      <span class="ver" id="verBadge">v4.12.0</span>
     </div>
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
 
@@ -2108,7 +2198,7 @@ body.light .lfwrap{background:#f7f8ff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="4.11.5";
+const APP_VERSION="4.12.0";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -8443,23 +8533,47 @@ function clChipsHtml(){
 }
 /* 4.11.5: ученику не нужен конструктор. Один экран: вставь код — получи задания.
    Нет кода — так и просим спросить у учителя, а не показываем классы и темы. */
+/* 4.12.0: что зашито в коде — коротко, для шапки карточки ученика */
+function clWorkMeta(){
+  const B=CLASS_STATE.built||{};
+  const parts=[];
+  if(B.grade) parts.push(B.grade+" класс");
+  const n=(B.variants && B.variants[0]) ? B.variants[0].length : (B.per|0);
+  if(n) parts.push(n+" "+plural(n,"задание","задания","заданий"));
+  const v=CLASS_STATE.variant|0;
+  if(v && B.variants && B.variants.length>1) parts.push("вариант "+(["А","Б","В","Г","Д","Е"][v-1]||v));
+  return parts.join(" · ");
+}
+function plural(n,a,b,c){
+  const m=n%100, k=n%10;
+  if(m>10 && m<20) return c;
+  if(k===1) return a;
+  if(k>=2 && k<=4) return b;
+  return c;
+}
 function clRenderStudentPanel(p){
   const has=!!(CLASS_STATE.built && CLASS_STATE.built.variants && CLASS_STATE.built.variants.length);
   const code=CLASS_STATE.code||"";
   p.innerHTML=
     '<div class="clcard clstudent">'+
-      '<p class="clstudent-h">Введи код работы</p>'+
+      '<p class="clstudent-h">'+(has?'Твоя работа':'Введи код работы')+'</p>'+
+      (has? '' :
       '<p class="clstudent-p">Код даёт учитель — он написан на доске или в шапке листа. '+
-        'В коде уже зашито всё, что нужно: класс, темы и сколько заданий. Выбирать ничего не надо.</p>'+
-      '<div class="clcodebox">'+
-        '<input type="text" id="clcode" class="clcodebig" value="'+escAttr(code)+'" '+
-          'placeholder="например V43U-562-03R6" maxlength="24" autocomplete="off" spellcheck="false" '+
-          'inputmode="text" aria-label="Код работы">'+
-        '<button type="button" class="clbtn primary clgobtn" id="clbuild">Показать задания</button>'+
-      '</div>'+
-      '<p class="clerr" id="clcodeErr" hidden></p>'+
-      '<p class="clstudent-hint" id="clstudentHint">Код — 13 знаков с дефисами, как в примере. '+
-        'Если не получится, приложение скажет, что не так, — искать причину самому не придётся.</p>'+
+        'В коде уже зашито всё, что нужно: класс, темы и сколько заданий. Выбирать ничего не надо.</p>')+
+      (has
+        ? '<div class="clcoderow">'+
+            '<span class="clcodechip">'+escAttr(code)+'</span>'+
+            '<span class="clcodemeta">'+clWorkMeta()+'</span>'+
+          '</div>'
+        : '<div class="clcodebox">'+
+            '<input type="text" id="clcode" class="clcodebig" value="" '+
+              'placeholder="например V43U-562-03R2" maxlength="24" autocomplete="off" spellcheck="false" '+
+              'inputmode="text" aria-label="Код работы">'+
+            '<button type="button" class="clbtn primary clgobtn" id="clbuild">Показать задания</button>'+
+          '</div>'+
+          '<p class="clerr" id="clcodeErr" hidden></p>'+
+          '<p class="clstudent-hint" id="clstudentHint">Код — буквы и цифры группами через чёрточку, как в примере. '+
+            'В конце кода стоит номер варианта. Если что-то не так, приложение скажет, что именно.</p>')+
       (has
         ? '<div class="clacts clacts-student">'+
             '<button type="button" class="clbtn" id="clprint">Печать</button>'+
@@ -8470,7 +8584,8 @@ function clRenderStudentPanel(p){
       '<p class="clteacher-link"><button type="button" class="linkbtn" id="clasteacher">'+
         'Я учитель — собрать свою работу</button></p>'+
     '</div>'+
-    '<div class="sheets" id="clsheets"></div>';
+    '<div class="sheets" id="clsheets"></div>'+
+    '<div id="clrun"></div>';
 
   const input=p.querySelector("#clcode");
   const go=p.querySelector("#clbuild");
@@ -8508,9 +8623,137 @@ function clRenderStudentPanel(p){
   });
 }
 
+/* ---------- 4.12.0: решение внутри приложения ----------
+   Ученик решает задания прямо здесь: ответ проверяет тот же движок, что в «Решателе»,
+   за неверный — подсказка и разбор по шагам, в конце оценка по школьной шкале. */
+const CL_RUN={variant:-1, given:{}, done:{}, tries:{}, opened:{}};
+
+function clRunReset(variant){
+  CL_RUN.variant=(variant===undefined||variant===null||isNaN(variant))? -1 : (variant|0);
+  CL_RUN.given={}; CL_RUN.done={}; CL_RUN.tries={}; CL_RUN.opened={};
+}
+/* 4.12.0: проверка ответа — та же, что в тренировке (isRight живёт в модуле __LEARN) */
+function clCheck(user, ans){
+  try{
+    if(window.__LEARN && typeof window.__LEARN.isRight==="function") return !!window.__LEARN.isRight(user, ans);
+  }catch(e){}
+  return String(user||"").replace(/\s+/g,"").toLowerCase()===String(ans||"").replace(/\s+/g,"").toLowerCase();
+}
+function clGradeOf(pct){
+  if(pct>=90) return 5;
+  if(pct>=75) return 4;
+  if(pct>=50) return 3;
+  return 2;
+}
+function clSummaryHtml(items){
+  let right=0;
+  items.forEach(function(it,i){ if(CL_RUN.done[i] && CL_RUN.given[i]!=null && clCheck(CL_RUN.given[i], it.a)) right++; });
+  const pct=Math.round(right/items.length*100);
+  const g=clGradeOf(pct);
+  return '<div class="sv-sum"><div class="sv-sum-main">'+
+    '<b>'+right+'</b> из '+items.length+' · '+pct+'%</div>'+
+    '<div class="sv-sum-grade g'+g+'">оценка '+g+'</div>'+
+    '<div class="sv-sum-hint">'+ (pct>=90? "Тема закрыта — можно двигаться дальше." :
+      pct>=75? "Основа есть: разберите ошибки, и будет пятёрка." :
+      pct>=50? "Тему стоит повторить: откройте разбор неверных." :
+      "Вернитесь на шаг назад и разберите решения по шагам.")+'</div></div>';
+}
+function clRenderSolve(box, items){
+  box.innerHTML='<div class="clcard svcard">'+
+    '<p class="svhead">Решай здесь</p>'+
+    '<p class="svsub">Впиши ответ и нажми «Проверить». Ошибка не страшна: приложение подскажет и покажет разбор.</p>'+
+    items.map(function(it,i){
+      return '<div class="sv-task" data-i="'+i+'">'+
+        '<div class="sv-q"><span class="sv-n">'+(i+1)+'</span><span class="sv-text">'+esc(it.q)+'</span></div>'+
+        '<div class="sv-row">'+
+          '<input type="text" class="sv-in" data-i="'+i+'" autocomplete="off" spellcheck="false" '+
+            'placeholder="твой ответ" aria-label="Ответ на задание '+(i+1)+'">'+
+          '<button type="button" class="clbtn primary sv-go" data-go="'+i+'">Проверить</button>'+
+        '</div>'+
+        '<div class="sv-fb" data-fb="'+i+'" hidden></div>'+
+        '<div class="sv-steps" data-steps="'+i+'" hidden></div>'+
+      '</div>';
+    }).join("")+
+    '<div class="sv-footer" id="svSum" hidden></div>'+
+  '</div>';
+
+  const sum=box.querySelector("#svSum");
+  function repaint(){
+    const all=items.every(function(_,i){ return CL_RUN.done[i]; });
+    if(all){ sum.hidden=false; sum.innerHTML=clSummaryHtml(items); }
+  }
+  box.querySelectorAll(".sv-go").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      const i=parseInt(btn.getAttribute("data-go"),10);
+      const inp=box.querySelector('.sv-in[data-i="'+i+'"]');
+      const fb=box.querySelector('[data-fb="'+i+'"]');
+      const stepsBox=box.querySelector('[data-steps="'+i+'"]');
+      const val=(inp.value||"").trim();
+      if(!val){ fb.hidden=false; fb.className="sv-fb sv-empty"; fb.innerHTML="Впиши ответ — хотя бы попытку."; inp.focus(); return; }
+      const ok=clCheck(val, items[i].a);
+      CL_RUN.tries[i]=(CL_RUN.tries[i]||0)+1;
+      CL_RUN.given[i]=val; CL_RUN.done[i]=true;
+      if(ok){
+        fb.hidden=false; fb.className="sv-fb sv-ok"; fb.innerHTML="Верно ✓";
+        inp.classList.add("ok"); inp.classList.remove("bad");
+      }else{
+        const t=CL_RUN.tries[i];
+        fb.hidden=false; fb.className="sv-fb sv-bad";
+        fb.innerHTML=(t<2? "Пока нет — попробуй ещё раз." : "Пока нет. Открой разбор ниже: там весь ход решения.")+
+          ' <button type="button" class="linkbtn sv-open" data-open="'+i+'">'+
+          (CL_RUN.opened[i]? "скрыть разбор" : "показать решение")+'</button>';
+        inp.classList.add("bad"); inp.classList.remove("ok");
+        const ob=fb.querySelector("[data-open]");
+        if(ob) ob.addEventListener("click", function(){ toggleSteps(i); });
+      }
+      repaint();
+    });
+  });
+  box.querySelectorAll(".sv-in").forEach(function(inp){
+    inp.addEventListener("keydown", function(e){
+      if(e.key!=="Enter") return;
+      e.preventDefault();
+      const i=parseInt(inp.getAttribute("data-i"),10);
+      box.querySelector('.sv-go[data-go="'+i+'"]').click();
+    });
+    inp.addEventListener("input", function(){ inp.classList.remove("bad"); });
+  });
+  function toggleSteps(i){
+    const sb=box.querySelector('[data-steps="'+i+'"]');
+    if(!sb) return;
+    if(!sb.hidden){ sb.hidden=true; CL_RUN.opened[i]=false; return; }
+    if(!sb.innerHTML){
+      let html="";
+      try{
+        const r=window.__solve? window.__solve(items[i].q) : null;
+        html=r && r.steps? window.__stepsHtml(r.steps) : "";
+      }catch(e){ html=""; }
+      sb.innerHTML='<div class="sv-steps-in">'+(html|| '<p>Разбор для этого задания не построился — спросите учителя.</p>')+
+        '<p class="sv-ans">Ответ: <b>'+esc(items[i].a)+'</b></p></div>';
+    }
+    sb.hidden=false; CL_RUN.opened[i]=true;
+    const ob=box.querySelector('.sv-open[data-open="'+i+'"]');
+    if(ob) ob.textContent="скрыть разбор";
+  }
+  // восстановление уже данных ответов (после перерисовки)
+  items.forEach(function(it,i){
+    if(CL_RUN.done[i]){
+      const inp=box.querySelector('.sv-in[data-i="'+i+'"]');
+      if(inp && CL_RUN.given[i]!=null) inp.value=CL_RUN.given[i];
+      const ok=clCheck(CL_RUN.given[i]||"", it.a);
+      const fb=box.querySelector('[data-fb="'+i+'"]');
+      if(fb && ok){ fb.hidden=false; fb.className="sv-fb sv-ok"; fb.innerHTML="Верно ✓"; if(inp) inp.classList.add("ok"); }
+    }
+  });
+  repaint();
+}
+
 function clStudentAfterBuild(){
   const card=document.querySelector("#classPanel .clstudent");
-  if(!card || card.querySelector(".clacts-student")) return;
+  if(!card) return;
+  clStudentCompact(card);
+  clStudentMount();
+  if(card.querySelector(".clacts-student")) { clStudentMountActions(); return; }
   const box=document.createElement("div");
   box.className="clacts clacts-student";
   box.innerHTML='<button type="button" class="clbtn" id="clprint">Печать</button>'+
@@ -8518,15 +8761,100 @@ function clStudentAfterBuild(){
     '<button type="button" class="clbtn ghost2" id="clagain">Другой код</button>';
   const link=card.querySelector(".clteacher-link");
   card.insertBefore(box, link||null);
-  box.querySelector("#clprint").addEventListener("click", function(){ window.print(); });
-  box.querySelector("#clpdf").addEventListener("click", function(){
-    if(window.__clDownloadPdf) window.__clDownloadPdf();
-  });
-  box.querySelector("#clagain").addEventListener("click", function(){
-    CLASS_STATE.built=null; CLASS_STATE.code="";
+  clStudentMountActions();
+}
+
+/* 4.12.0: у ученика два способа — решать здесь или на бумаге */
+/* 4.12.0: после сборки у ученика вместо поля ввода — строка с кодом и составом работы,
+   чтобы до заданий не приходилось прокручивать пол-экрана */
+function clStudentCompact(card){
+  if(!card || card.querySelector(".clcoderow")) return;
+  const h=card.querySelector(".clstudent-h"), p=card.querySelector(".clstudent-p");
+  const box=card.querySelector(".clcodebox"), hint=card.querySelector("#clstudentHint");
+  const err=card.querySelector("#clcodeErr");
+  if(h) h.textContent="Твоя работа";
+  if(p) p.remove();
+  if(hint) hint.remove();
+  if(err) err.remove();
+  if(box){
+    const row=document.createElement("div");
+    row.className="clcoderow";
+    row.innerHTML='<span class="clcodechip">'+escAttr(CLASS_STATE.code||"")+'</span>'+
+      '<span class="clcodemeta">'+clWorkMeta()+'</span>';
+    box.parentNode.replaceChild(row, box);
+  }
+}
+function clStudentMountActions(){
+  const card=document.querySelector("#classPanel .clstudent");
+  if(!card) return;
+  const pr=card.querySelector("#clprint"), pd=card.querySelector("#clpdf"), ag=card.querySelector("#clagain");
+  if(pr && !pr.__b){ pr.__b=true; pr.addEventListener("click", function(){ window.print(); }); }
+  if(pd && !pd.__b){ pd.__b=true; pd.addEventListener("click", function(){ if(window.__clDownloadPdf) window.__clDownloadPdf(); }); }
+  if(ag && !ag.__b){ ag.__b=true; ag.addEventListener("click", function(){
+    CLASS_STATE.built=null; CLASS_STATE.code=""; CLASS_STATE.variant=0;
+    const el=document.getElementById("clrun"); if(el) el.innerHTML="";
     clRenderPanel();
     const i=document.getElementById("clcode"); if(i){ i.value=""; i.focus(); }
+  }); }
+}
+
+function clStudentMount(){
+  const B=CLASS_STATE.built;
+  const run=document.getElementById("clrun");
+  const sheets=document.getElementById("clsheets");
+  const card=document.querySelector("#classPanel .clstudent");
+  if(!B || !run || !card) return;
+
+  const mode=CLASS_STATE.viewMode||"solve";
+  /* переключатель способа */
+  let sw=document.getElementById("clmodeSw");
+  if(!sw){
+    sw=document.createElement("div");
+    sw.id="clmodeSw"; sw.className="clmodesw";
+    /* переключатель ставим прямо перед блоком решения: он вне карточки кода */
+    run.parentNode.insertBefore(sw, run);
+  }
+  sw.innerHTML='<button type="button" class="clmodebtn'+(mode==="solve"?" on":"")+'" data-vm="solve">'+
+      'Решать здесь</button>'+
+    '<button type="button" class="clmodebtn'+(mode==="paper"?" on":"")+'" data-vm="paper">'+
+      'На бумаге</button>';
+  sw.querySelectorAll("[data-vm]").forEach(function(b){
+    b.addEventListener("click", function(){
+      CLASS_STATE.viewMode=b.getAttribute("data-vm");
+      clStudentMount();
+    });
   });
+
+  if(mode==="paper"){
+    run.innerHTML="";
+    if(sheets) sheets.style.display="";
+    return;
+  }
+  if(sheets) sheets.style.display="none";
+
+  const n=B.variants.length;
+  let vi=(B.showVariant>0)? B.showVariant-1 : CL_RUN.variant;
+  if(typeof vi!=="number" || isNaN(vi)) vi=-1;
+  if(vi<0 || vi>=n){
+    if(n===1){ vi=0; }
+    else{
+      /* вариант в коде не указан — спрашиваем, какой решает */
+      run.innerHTML='<div class="clcard svcard"><p class="svhead">Какой ты вариант?</p>'+
+        '<p class="svsub">Учитель раздал варианты. Выбери свой — задания откроются только твои.</p>'+
+        '<div class="clrow sv-varrow">'+B.variants.map(function(_,v){
+          return '<button type="button" class="clbtn sv-varbtn" data-v="'+v+'">Вариант '+clSheetNumber(v)+'</button>';
+        }).join("")+'</div></div>';
+      run.querySelectorAll("[data-v]").forEach(function(b){
+        b.addEventListener("click", function(){
+          CL_RUN.variant=parseInt(b.getAttribute("data-v"),10);
+          clStudentMount();
+        });
+      });
+      return;
+    }
+  }
+  CL_RUN.variant=vi;
+  clRenderSolve(run, B.variants[vi]);
 }
 
 function clRenderPanel(){
@@ -8561,7 +8889,7 @@ function clRenderPanel(){
         '<div class="clfield"><label for="clcode">код работы</label>'+
           '<input type="text" id="clcode" value="'+escAttr(CLASS_STATE.code||"")+'" '+
             'placeholder="новая" maxlength="24" autocomplete="off" spellcheck="false" '+
-            'inputmode="text" title="Полный код работы, например V43U-562-03R6 — 13 знаков с дефисами"></div>'+
+            'inputmode="text" title="Полный код работы, например V43U-562-03R2"></div>'+
           '<p class="clerr" id="clcodeErr" hidden></p>'+
       '</div>'+
       '<div class="clacts">'+
@@ -8585,6 +8913,7 @@ function clRenderPanel(){
       'движок, что в решателе.</p>'+
     '</div>'+
     '<div class="sheets" id="clsheets"></div>'+
+    '<div id="clvcodes"></div>'+
     '<div id="clhist"></div>';
 
   p.querySelectorAll("[data-grade]").forEach(function(b){
@@ -8686,9 +9015,10 @@ window.__clPdf={
   state:function(){ return CLASS_STATE; },
   build:function(){ if(!CLASS_STATE.built) clBuild(); return CLASS_STATE.built; },
   opts:function(){ return {lines:!!CLASS_STATE.lines, answers:!!(CLASS_STATE.answers && isTeacher())}; },
-  makeCode:function(base,grade,per,vars,topics){ return clMakeWorkCode(base,grade,per,vars,topics); },
+  makeCode:function(base,grade,per,vars,topics,variant){ return clMakeWorkCode(base,grade,per,vars,topics,variant||0); },
   parseCode:function(str){ return clParseWorkCode(str); },
-  topics:function(){ return CLASS_TOPICS.map(function(t){ return {k:t.k, name:t.name}; }); }
+  topics:function(){ return CLASS_TOPICS.map(function(t){ return {k:t.k, name:t.name}; }); },
+  variantCode:function(code,v){ return clVariantCode(code,v); }
 };
 
 /* один вариант: per заданий, темы идут по кругу, чтобы в каждом варианте было поровну */
@@ -8767,18 +9097,38 @@ function clCodeCheck(str){
   for(let i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))>>>0; }
   return CL_CODE_ALPHA[h%32];
 }
-/* собрать код: база + класс + заданий + вариантов + маска тем + контрольный знак */
-function clMakeWorkCode(base, grade, per, vars, topics){
+/* собрать код: база + класс + заданий + вариантов + маска тем + вариант + контрольный знак
+   4.12.0: variant — номер варианта ученика (1…6), 0 значит «вся работа целиком».
+   Старый код без варианта (13 знаков) по-прежнему понимается. */
+function clMakeWorkCode(base, grade, per, vars, topics, variant){
   const g=Math.min(11, Math.max(0, grade|0));
   const p=Math.min(10, Math.max(3, per|0));
   const v=Math.min(6, Math.max(1, vars|0));
   const mask=clTopicsMask(topics);
-  const head=String(base)+"-"+CL_CODE_ALPHA[g]+CL_CODE_ALPHA[p]+CL_CODE_ALPHA[v]+"-"+clCodeDigits(mask,3);
+  const varCh=CL_CODE_ALPHA[Math.min(7, Math.max(0, variant|0))];
+  const head=String(base)+"-"+CL_CODE_ALPHA[g]+CL_CODE_ALPHA[p]+CL_CODE_ALPHA[v]+"-"+clCodeDigits(mask,3)+varCh;
   return head+clCodeCheck(head);
+}
+/* код одного варианта из кода всей работы */
+function clVariantCode(fullCode, variant){
+  const pr=clParseWorkCode(fullCode);
+  if(!pr) return fullCode;
+  return clMakeWorkCode(pr.base, pr.grade, pr.per, pr.vars, pr.topics, variant);
 }
 /* разобрать код; null — если это старый «просто код» */
 function clParseWorkCode(raw){
   const s=String(raw||"").toUpperCase().replace(/[^0-9A-Z-]/g,"");
+  /* 4.12.0: база-КЗВ-МММvК (14 знаков, третий блок 5 знаков — с номером варианта) */
+  const m2=/^([0-9A-Z]{2,6})-([0-9A-Z])([0-9A-Z])([0-9A-Z])-([0-9A-Z]{3})([0-9A-Z])([0-9A-Z])$/.exec(s);
+  if(m2){
+    const head=m2[1]+"-"+m2[2]+m2[3]+m2[4]+"-"+m2[5]+m2[6];
+    if(clCodeCheck(head)!==m2[7]) return null;
+    let mask=0;
+    for(let i=0;i<3;i++) mask=mask*32+clCodeNum(m2[5][i]);
+    return {base:m2[1], grade:clCodeNum(m2[2]), per:clCodeNum(m2[3]), vars:clCodeNum(m2[4]),
+            topics:clMaskTopics(mask), variant:clCodeNum(m2[6]), v2:true};
+  }
+  /* старый формат: база-КЗВ-МММК (13 знаков) — вариант не указан, показываем всю работу */
   const m=/^([0-9A-Z]{2,6})-([0-9A-Z])([0-9A-Z])([0-9A-Z])-([0-9A-Z]{3})([0-9A-Z])$/.exec(s);
   if(!m) return null;
   const head=m[1]+"-"+m[2]+m[3]+m[4]+"-"+m[5];
@@ -8787,7 +9137,7 @@ function clParseWorkCode(raw){
   let mask=0;
   for(let i=0;i<m[5].length;i++) mask=mask*32+clCodeNum(m[5][i]);
   const topics=clMaskTopics(mask);
-  return {base:m[1], grade:grade, per:per, vars:vars, topics:topics};
+  return {base:m[1], grade:grade, per:per, vars:vars, topics:topics, variant:0, v2:false};
 }
 /* 4.11.5: сообщение о непринятом коде — рядом с полем, а не всплывашкой */
 function clCodeError(raw){
@@ -8795,7 +9145,7 @@ function clCodeError(raw){
   const msg=document.getElementById("clcodeErr");
   if(msg){
     msg.innerHTML="Код <b>"+esc(String(raw||""))+"</b> не распознан — похоже, в нём опечатка. "+
-      "Сверьтесь с шапкой листа: там код напечатан целиком, 13 знаков с дефисами, например "+
+      "Сверьтесь с шапкой листа: там код напечатан целиком, например "+
       "<span class=kk>K57X-862-00C1</span>. Прежняя работа осталась как была.";
     msg.hidden=false;
   }
@@ -8830,10 +9180,12 @@ function clBuild(){
     return null;
   }
   if(parsed){
+    CL_RUN.variant=(parsed.variant||0) ? parsed.variant-1 : -1;
     CLASS_STATE.grade=parsed.grade;
     CLASS_STATE.topics=parsed.topics.slice();
     CLASS_STATE.per=parsed.per;
     CLASS_STATE.vars=parsed.vars;
+    CLASS_STATE.variant=parsed.variant||0;   /* 0 — вся работа, иначе только этот вариант */
     rawCode=parsed.base;
     /* настройки пришли из кода — показываем это в чипах, иначе на экране
        остались бы прежние класс и темы, а собралась бы другая работа */
@@ -8852,7 +9204,8 @@ function clBuild(){
   /* класс входит в зерно: один и тот же код в 7 и в 9 классе даёт разные работы,
      но в одном и том же классе — ровно ту же самую */
   seedRandom(((codeToSeed(code) ^ (grade*7919))>>>0)||1);
-  const workCode=clMakeWorkCode(code, grade, CLASS_STATE.per, CLASS_STATE.vars, CLASS_STATE.topics);
+  const wantVariant=CLASS_STATE.variant||0;
+  const workCode=clMakeWorkCode(code, grade, CLASS_STATE.per, CLASS_STATE.vars, CLASS_STATE.topics, wantVariant);
   CLASS_STATE.code=workCode;
   if(codeEl) codeEl.value=workCode;
 
@@ -8884,8 +9237,11 @@ function clBuild(){
       const t=items[i]; items[i]=items[j]; items[j]=t;
     }
   });
+  /* все варианты считаем всегда: от этого зависит поток ГПСЧ,
+     иначе второй вариант ученика не совпал бы с вариантом учителя */
   CLASS_STATE.built={variants:variants, title:CLASS_STATE.title, date:todayKey(),
-                     code:workCode, grade:grade, diff:diff};
+                     code:workCode, grade:grade, diff:diff,
+                     showVariant:wantVariant, base:code};
   clHistPush({code:workCode, grade:grade, date:todayKey(), vars:CLASS_STATE.vars,
               per:CLASS_STATE.per, title:CLASS_STATE.title});
   clHistRender();
@@ -8908,19 +9264,23 @@ function clDrawSheets(){
   if(!box || !CLASS_STATE.built) return;
   const B=CLASS_STATE.built;
   const gnm=(B.grade? clGradeName(B.grade) : "");
+  /* 4.12.0: если в коде указан вариант — показываем только его */
+  const only=(B.showVariant>0)? B.showVariant-1 : -1;
   let html="";
   B.variants.forEach(function(items,v){
+    if(only>=0 && v!==only) return;
+    const vCode=clVariantCode(B.code||"", v+1);
     html+='<div class="sheetpage">'+
       '<h3>'+esc(B.title||"Самостоятельная работа")+(gnm? ' · '+esc(gnm):'')+'</h3>'+
       '<div class="sh-sub"><span>Вариант '+clSheetNumber(v)+
-        (B.code? ' · код '+escAttr(B.code):'')+'</span>'+
+        (B.code? ' · код '+escAttr(vCode):'')+'</span>'+
         '<span>Фамилия, имя: ______________________  Класс: '+
         (B.grade? escAttr(String(B.grade))+' ____' : '______')+'</span></div>'+
       '<ol>'+items.map(function(it){
         return '<li>'+esc(it.q)+(CLASS_STATE.lines? ' <span class="line"></span>' : '')+'</li>';
       }).join("")+'</ol>'+
       '<div class="sheetfoot"><span>'+esc(gnm||"")+
-        (B.code? (gnm? " · ":"")+'код '+esc(B.code):'')+'</span>'+
+        (B.code? (gnm? " · ":"")+'код '+esc(vCode):'')+'</span>'+
         '<span>'+esc(B.date||"")+'</span></div>'+
     '</div>';
   });
@@ -8934,7 +9294,8 @@ function clDrawSheets(){
           B.variants[0].length+' '+pluralRu(B.variants[0].length,["балл","балла","баллов"])+
           ' (по 1 за задание)</span></div>'+
       B.variants.map(function(items,v){
-        return '<p style="margin:14px 0 6px;font-weight:700;font-size:13px">Вариант '+clSheetNumber(v)+'</p>'+
+        return '<p style="margin:14px 0 6px;font-weight:700;font-size:13px">Вариант '+clSheetNumber(v)+
+          ' · код '+escAttr(clVariantCode(B.code||"", v+1))+'</p>'+
           '<ol>'+items.map(function(it){
             return '<li>'+esc(it.a)+'</li>';
           }).join("")+'</ol>';
@@ -8942,6 +9303,35 @@ function clDrawSheets(){
     '</div>';
   }
   box.innerHTML=html;
+  clDrawVariantCodes();
+}
+
+/* 4.12.0: учитель раздаёт варианты — по коду на каждый.
+   Один и тот же номер варианта на всех листах даёт ту же работу. */
+function clDrawVariantCodes(){
+  const box=document.getElementById("clvcodes");
+  if(!box) return;
+  const B=CLASS_STATE.built;
+  if(!B || !isTeacher() || B.variants.length<2 || B.showVariant>0){ box.innerHTML=""; return; }
+  const rows=B.variants.map(function(items,v){
+    const code=clVariantCode(B.code||"", v+1);
+    return '<div class="vc-row"><span class="vc-var">Вариант '+clSheetNumber(v)+'</span>'+
+      '<code class="vc-code">'+escAttr(code)+'</code>'+
+      '<button type="button" class="linkbtn vc-copy" data-copy="'+escAttr(code)+'">скопировать</button></div>';
+  }).join("");
+  box.innerHTML='<div class="clcard vccard">'+
+    '<p class="vctitle">Коды вариантов — раздайте по одному</p>'+
+    '<p class="vcnote">В коде каждого варианта зашит его номер: ученик вставит код — и увидит '+
+      'только свой вариант, остальные ему не покажутся. Всю работу целиком открывает '+
+      'код без номера: <code>'+escAttr(B.code)+'</code>.</p>'+rows+'</div>';
+  box.querySelectorAll("[data-copy]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const t=b.getAttribute("data-copy");
+      const done=function(){ const old=b.textContent; b.textContent="скопировано"; setTimeout(function(){ b.textContent=old; },1400); };
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done, function(){});
+      else done();
+    });
+  });
 }
 
 /* ============================================================
@@ -12959,8 +13349,11 @@ function isRight(user, ans){
     const v=parseFloat(fr2[1])/parseFloat(fr2[2]);
     if(Math.abs(v-un[0])<1e-6) return true;
   }
-  /* главное число ответа названо (для «площадь = 25 см²», «5 км = 5000 м»):
-     главным считаем последнее число — оно и есть результат */
+  /* 4.12.0: если верных чисел несколько (два корня, «x = 3, y = 1»), нужны ВСЕ —
+     иначе «1» засчитывалось вместо «x₁ = 5, x₂ = 1». Отличаем по числу знаков «=»:
+     в «10 м = 1000 см» равенство одно, и 1000 — уже полный ответ;
+     в «x₁ = 5, x₂ = 1» равенств два, значит величин две. */
+  if(String(ans).split("=").length-1>1 && un.length<an.length) return false;
   return un.length<=an.length && un.every(function(x){ return near(x,an); }) && near(an[an.length-1],un);
 }
 
