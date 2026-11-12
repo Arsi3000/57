@@ -84,7 +84,7 @@
     background:linear-gradient(140deg,#7c6cff,#35d0ff);
     box-shadow:0 10px 28px -10px rgba(124,108,255,.9),inset 0 1px 0 rgba(255,255,255,.45)}
   header h1{font-size:28px;line-height:1.1;margin:0;letter-spacing:-.025em;font-weight:750}
-  header .sub{padding-left:0;margin-top:9px}
+  header .sub{padding-left:0;margin-top:10px}
   header h1 em{font-style:normal;background:linear-gradient(100deg,#a99cff,#63dcff);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .sub{margin:0;color:var(--ink-dim);font-size:14px;line-height:1.45}
@@ -127,9 +127,15 @@
   .hud-compound:hover{color:var(--ink);border-color:rgba(124,108,255,.45);background:rgba(124,108,255,.12)}
   .hud-compound:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   .hud-compound b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
-  .hud-seg{display:inline-flex;align-items:center;gap:5px}
+  .hud-seg{display:inline-flex;align-items:center;gap:5px;min-width:0}
+  /* внутри широкой капсулы группы делят ширину поровну, а между ними — волосяные штрихи */
+  .brand .hud-lv,.brand .hud-seg{flex:1 1 0;justify-content:center}
   .hud-seg .ic{width:13px;height:13px;stroke-width:2;opacity:.85}
-  .hud-dot{opacity:.3;font-weight:400}
+  .hud-dot{flex:none;width:1px;height:20px;background:var(--line);opacity:.9;font-size:0;overflow:hidden;
+    color:transparent;border-radius:1px}
+  body.light .hud-dot{background:rgba(20,25,45,.14)}
+  body[data-theme="neon"] .hud-dot{background:rgba(0,255,229,.3)}
+  body[data-theme="retro"] .hud-dot{background:#4a4f7a}
   .hud-lv{display:inline-flex;align-items:center;gap:6px}
   .hud-lv .lvnum{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;
     border-radius:var(--r-sm);font-size:12px;font-weight:800;color:#fff;flex:none;
@@ -137,6 +143,10 @@
   .hud-xp{width:34px;height:3px;border-radius:var(--r-sm);background:rgba(255,255,255,.16);overflow:hidden;flex:none}
   .hud-xp i{display:block;height:100%;width:0;border-radius:var(--r-sm);
     background:linear-gradient(90deg,#7c6cff,#35d0ff);transition:width .4s}
+  /* подписи сегментов: на телефоне их нет — там тесно, остаются иконки и числа */
+  .hud-txt{font-size:12px;font-weight:600;color:var(--ink-dim);letter-spacing:.01em;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  @media (max-width:900px){ .hud-txt{display:none} }
   .hud-fire{display:inline-flex;align-items:center;line-height:1}
   .hud-fire.off{filter:grayscale(1);opacity:.45}
   body.light .hud-compound{background:#f7f8fd;border-color:rgba(20,25,45,.12);color:#4a5265}
@@ -1972,22 +1982,29 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
 /* ============================================================
    5.1.0: шапка без названия словами — лого-кнопка + капсула уровня
    ============================================================ */
+/* Шапка — три равных по высоте элемента: логотип | капсула | шестерёнка.
+   Капсула занимает всю ширину между ними, поэтому края всегда совпадают с полем. */
 header .brand{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin-bottom:8px}
-header .brand .mark{border:0;padding:0;cursor:pointer;font:28px/1 Georgia,serif;color:#fff;
+header .brand .mark{border:0;padding:0;cursor:pointer;
+  width:46px;height:46px;font:26px/1 Georgia,serif;
+  color:#fff!important;-webkit-text-fill-color:#fff!important;
+  border-radius:14px;
   -webkit-tap-highlight-color:transparent;transition:transform .14s,box-shadow .18s,filter .15s}
 header .brand .mark:hover{filter:brightness(1.06);box-shadow:0 14px 30px -10px rgba(124,108,255,.95),inset 0 1px 0 rgba(255,255,255,.45)}
 header .brand .mark:active{transform:scale(.95)}
 header .brand .mark:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
-header .brand .hud-compound{flex:0 1 auto;min-width:0;overflow:hidden}
-header .brand .setbtn{flex:none;margin-left:auto}
-/* на широком экране капсула и шестерёнка — один блок справа: слева лого, справа состояние */
+/* белый знак суммы на градиенте: в светлой теме он тоже белый — так задумано */
+body.light header .brand .mark{color:#fff!important;-webkit-text-fill-color:#fff!important;background:linear-gradient(140deg,#7c6cff,#35d0ff)}
+header .brand .hud-compound{flex:1 1 auto;min-width:0;justify-content:space-between;
+  height:46px;padding:0 16px;border-radius:14px;gap:4px}
+header .brand .setbtn{flex:none;margin-left:0;width:46px;height:46px;border-radius:14px}
+header .brand .setbtn .ic{width:20px;height:20px}
 @media (min-width:781px){
-  header .brand .hud-compound{margin-left:auto}
-  header .brand .setbtn{margin-left:10px}
+  header .brand .hud-compound{margin-left:0}
+  header .brand .setbtn{margin-left:0}
 }
 .hudbar{margin-top:0}
 body.exam-mode .hudbar{margin-top:12px}
-body.light header .brand .mark{color:#4338ca}
 
 /* логотип и заголовок на печати: название словами возвращаем только для листа */
 .wnhero{display:flex;align-items:center;gap:14px;margin:2px 0 16px}
@@ -2054,7 +2071,9 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
 }
 @media (max-width:400px){
   header .brand{gap:8px}
-  header .brand .mark{width:40px;height:40px;font-size:21px}
+  header .brand .mark{width:44px;height:44px;font-size:24px;border-radius:13px}
+  header .brand .hud-compound{height:44px;padding:0 12px;border-radius:13px}
+  header .brand .setbtn{width:44px;height:44px;border-radius:13px}
   .hud-achv{display:none}
   .round,.mic{width:38px;height:38px}
   .searchbar .solve{width:42px!important;height:42px}
@@ -2138,19 +2157,20 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
         <span class="hud-lv" aria-hidden="true">
           <span class="lvnum" id="lvlNum">1</span>
           <span class="hud-xp"><i id="xpBar"></i></span>
+          <span class="hud-txt">уровень</span>
         </span>
-        <span class="hud-dot" aria-hidden="true">·</span>
+        <span class="hud-dot" aria-hidden="true"></span>
         <span class="hud-seg" title="Дней подряд">
           <span class="hud-fire off" id="fireIco" aria-hidden="true"><svg class="ic"><use href="#i-fire"/></svg></span>
-          <b id="dayStreak">0</b>
+          <b id="dayStreak">0</b><span class="hud-txt">серия</span>
         </span>
-        <span class="hud-dot" aria-hidden="true">·</span>
+        <span class="hud-dot" aria-hidden="true"></span>
         <span class="hud-seg" title="Квесты на сегодня">
-          <svg class="ic" aria-hidden="true"><use href="#i-quest"/></svg><b id="questNum">0/3</b>
+          <svg class="ic" aria-hidden="true"><use href="#i-quest"/></svg><b id="questNum">0/3</b><span class="hud-txt">квесты</span>
         </span>
-        <span class="hud-dot hud-achv" aria-hidden="true">·</span>
+        <span class="hud-dot hud-achv" aria-hidden="true"></span>
         <span class="hud-seg hud-achv" title="Достижения">
-          <svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg><b id="achvNum">0/8</b>
+          <svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg><b id="achvNum">0/8</b><span class="hud-txt">награды</span>
         </span>
       </button>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
@@ -2439,7 +2459,7 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
       <div class="wnhero">
         <div class="wnmark" aria-hidden="true">∑</div>
         <div>
-          <div class="wnname">Решатель <span class="ver" id="wnVer">v5.1.0</span></div>
+          <div class="wnname">Решатель <span class="ver" id="wnVer">v5.1.1</span></div>
           <div class="wnmeta">Уравнения, задачи и перевод единиц — по шагам.<br>
             Работает без интернета, без аккаунтов. Данные — только на этом устройстве.</div>
         </div>
@@ -2491,7 +2511,7 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.1.0";
+const APP_VERSION="5.1.1";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -11620,7 +11640,7 @@ const V4UI=(function(){
   if(!q) return;
   function ph(){
     const narrow=window.innerWidth<=400;
-    q.placeholder=narrow? "Уравнение или задача" : "Вставьте уравнение или текст задачи";
+    q.placeholder=narrow? "Задача или пример" : "Вставьте уравнение или текст задачи";
   }
   ph();
   window.addEventListener("resize", ph);
@@ -15176,7 +15196,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
+  const CHANGES=[{"v":"5.1.1","d":"12.11","b":["Знак суммы в логотипе снова белый — во всех темах.","Капсула уровня растянута от логотипа до настроек, сегменты делят ширину поровну.","На широком экране у сегментов есть подписи: уровень, серия, квесты, награды."]},{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
   const scr=document.getElementById("whatsNew");
   if(!scr) return;
   const list=document.getElementById("wnList");
