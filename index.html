@@ -9014,7 +9014,8 @@ function clHistRender(){
 window.__clPdf={
   state:function(){ return CLASS_STATE; },
   build:function(){ if(!CLASS_STATE.built) clBuild(); return CLASS_STATE.built; },
-  opts:function(){ return {lines:!!CLASS_STATE.lines, answers:!!(CLASS_STATE.answers && isTeacher())}; },
+  opts:function(){ return {lines:!!CLASS_STATE.lines, answers:!!(CLASS_STATE.answers && isTeacher()),
+    variant:(CLASS_STATE.built && CLASS_STATE.built.showVariant)||0}; },
   makeCode:function(base,grade,per,vars,topics,variant){ return clMakeWorkCode(base,grade,per,vars,topics,variant||0); },
   parseCode:function(str){ return clParseWorkCode(str); },
   topics:function(){ return CLASS_TOPICS.map(function(t){ return {k:t.k, name:t.name}; }); },
@@ -14302,15 +14303,32 @@ window.__LEARN={
     var F1=addFont(doc,"R"), F2=addFont(doc,"B");
     var L=new Layout(doc, {R:F1,B:F2});
     var variants=B.variants||[];
+    /* 4.12.0: у ученика в коде указан вариант — в PDF попадает только он.
+       Иначе ученик получал файл со всеми вариантами и одним кодом на всех. */
+    var vShift=0;
+    if(opt.variant>0 && variants[opt.variant-1]){
+      vShift=opt.variant-1;
+      variants=[variants[vShift]];
+    }
+    var codeOf=function(v){
+      var c=(B.code||"");
+      if(!c) return "";
+      /* clVariantCode живёт в другой области видимости — берём через мост */
+      var vc=(window.__clPdf && window.__clPdf.variantCode);
+      if(vc) return vc(c, v+vShift+1);
+      return c;
+    };
     var gnm=(B.grade? B.grade+" класс" : "");
     var title=(B.title||"Самостоятельная работа")+(gnm? " · "+gnm : "");
 
+    var varByPage=[];
     variants.forEach(function(items, v){
       if(v>0) L.newPage();
+      var startPage=L.pages.length-1;
       L.text(title, {size:14.5, bold:true});
       L.y-=13;
       /* строка: вариант слева, класс справа */
-      L.text("Вариант "+["А","Б","В","Г","Д","Е"][v]+(B.code? " · код "+B.code : ""),
+      L.text("Вариант "+["А","Б","В","Г","Д","Е"][v+vShift]+(B.code? " · код "+codeOf(v) : ""),
              {size:9.5, gray:0.35});
       var right="Класс: "+(B.grade? B.grade+" ____" : "______");
       var fw=widthOf(FONTS.R,9.5,right);
@@ -14354,10 +14372,13 @@ window.__LEARN={
           L.y-=9;
         }
       });
+      for(var sp=startPage; sp<L.pages.length; sp++) varByPage[sp]=v+vShift+1;
     });
 
     if(opt.answers){
       L.newPage();
+      /* 0 в varByPage — страница ключа: в подвале код всей работы, а не варианта */
+      varByPage[L.pages.length-1]=0;
       L.text("Ответы — для учителя", {size:14.5, bold:true});
       L.y-=13;
       var sub=(B.title||"Самостоятельная работа")+(gnm? " · "+gnm : "")+" · "+(B.date||"")+
@@ -14370,7 +14391,8 @@ window.__LEARN={
       L.y-=18;
       variants.forEach(function(items, v){
         L.ensure(30);
-        L.text("Вариант "+["А","Б","В","Г","Д","Е"][v], {size:11.5, bold:true});
+        L.text("Вариант "+["А","Б","В","Г","Д","Е"][v+vShift]+
+               (B.code? " · код "+codeOf(v) : ""), {size:11.5, bold:true});
         L.y-=15;
         (items||[]).forEach(function(it,i){
           L.paragraph((i+1)+". "+it.a, {size:10.5, hang:16});
@@ -14383,7 +14405,13 @@ window.__LEARN={
     var total=L.pages.length;
     L.pages.forEach(function(p, i){
       var x={ops:[], y:0};
-      var left=(gnm? gnm+" · ":"")+(B.code? "код "+B.code : "");
+      var vnum=varByPage[i];
+      var codeFt="";
+      if(B.code){
+        if(vnum===0) codeFt=B.code;
+        else codeFt=codeOf((vnum||(vShift+1))-1-vShift);
+      }
+      var left=(gnm? gnm+" · ":"")+(codeFt? "код "+codeFt : "");
       var ft="";
       function put(str, x0, gray){
         var f=FONTS.R, size=8;
