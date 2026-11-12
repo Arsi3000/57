@@ -1722,6 +1722,7 @@ body.printing>*:not(.printreport){display:none!important} body.printing{overflow
 .cvrates[hidden]{display:none}
 .cvrates-h{font-size:12px;color:var(--ink-dim);margin-bottom:8px}
 .cvrates-h span{color:var(--ink-soft)}
+.cvrates-row[hidden]{display:none}
 .cvrates-row{display:flex;flex-wrap:wrap;gap:12px}
 .cvrates-row label{display:inline-flex;align-items:center;gap:6px;font-size:14px;color:var(--ink-soft)}
 .cvrates-row input{width:80px;min-height:38px;padding:0 10px;font-family:inherit;font-size:14px;
@@ -1791,6 +1792,10 @@ body.light .clmodebtn.on{color:#fff}
 .sv-sum-grade.g3{background:rgba(255,176,32,.18);color:#ffd58a}
 .sv-sum-grade.g2{background:rgba(226,86,74,.2);color:#ffb3aa}
 .sv-sum-hint{flex:1 1 100%;font-size:14px;color:var(--ink2,#9aa3bd)}
+.sv-sum-act{flex:1 1 100%;margin-top:4px}
+.sv-sum-ok{font-size:14px;color:#7ff0c4;margin:0}
+body.light .sv-sum-ok{color:#0e9f6e}
+.sv-steps-in{padding:4px 0 0}
 body.light .svsub,body.light .sv-sum-hint{color:#5a6480}
 body.light .sv-in{background:#fff;border-color:#c9cfe4}
 body.light .sv-n{background:#ecebff;color:#4b3fd0}
@@ -1876,6 +1881,94 @@ body.light .clerr{background:#fff1ef;border-color:#f3b4ad;color:#8a2a20}
 .lftable th,.lftable td{padding:4px 14px;border:1px solid var(--line);font-size:14px;text-align:center}
 .lftable th{font-size:12px;color:var(--ink-dim);font-weight:700}
 body.light .lfwrap{background:#f7f8ff}
+
+/* ===== 5.0.0: навигация в три раздела ===== */
+#modeSwitch{display:none !important}
+.setbtn{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;border-radius:12px;border:1px solid var(--line);
+  background:rgba(255,255,255,.04);color:var(--ink-dim);cursor:pointer}
+.setbtn .ic{width:19px;height:19px}
+.setbtn:hover{color:var(--ink);background:rgba(255,255,255,.09)}
+body.light .setbtn{background:#fff;border-color:#dfe3f2;color:#5a6480}
+body.light .setbtn:hover{color:#1f2450;background:#eef0fa}
+
+.topnav{display:inline-flex;gap:6px;padding:6px;margin:22px 0 14px;border-radius:16px;
+  background:rgba(255,255,255,.045);border:1px solid var(--line);max-width:100%}
+.tabbtn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:0;border-radius:12px;
+  background:none;color:var(--ink-dim);font:600 14.5px/1 inherit;cursor:pointer;white-space:nowrap;
+  transition:background .16s,color .16s}
+.tabbtn .ic{width:18px;height:18px;stroke-width:1.8}
+.tabbtn:hover{color:var(--ink)}
+.tabbtn.on{background:linear-gradient(135deg,#6c5ce7,#8f7bff);color:#fff;
+  box-shadow:0 10px 22px -12px rgba(108,92,231,.95)}
+.tabbtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+body.light .topnav{background:#eef0fa;border-color:#dfe3f2}
+body.light .tabbtn{color:#5a6480}
+body.light .tabbtn.on{color:#fff}
+body[data-theme="retro"] .topnav{background:#1b1e3a;border:2px solid #4a4f7a}
+
+.subnav{display:flex;width:fit-content;gap:4px;margin:0 0 16px;padding:4px;border-radius:12px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line);max-width:100%;overflow-x:auto;
+  scrollbar-width:none}
+.subnav[hidden]{display:none}
+.subnav::-webkit-scrollbar{display:none}
+.subbtn{padding:8px 16px;border:0;border-radius:9px;background:none;color:var(--ink-dim);
+  font:600 13.5px/1 inherit;cursor:pointer;white-space:nowrap}
+.subbtn.on{background:rgba(108,92,231,.22);color:#d7d2ff}
+body.light .subnav{background:#f2f3fb;border-color:#e3e6f3}
+body.light .subbtn{color:#5a6480}
+body.light .subbtn.on{background:#e3e0ff;color:#4338ca}
+
+.learnswitch{display:flex;width:fit-content;gap:4px;margin:0 0 14px;padding:4px;border-radius:11px;
+  background:rgba(0,211,167,.10);border:1px solid rgba(0,211,167,.25)}
+.learnswitch[hidden]{display:none}
+.lsw{padding:7px 14px;border:0;border-radius:8px;background:none;color:var(--ink-dim);
+  font:600 13px/1 inherit;cursor:pointer;white-space:nowrap}
+.lsw.on{background:rgba(0,211,167,.22);color:#7ff0c4}
+body.light .learnswitch{background:#e8f8f3;border-color:#bfe9dc}
+body.light .lsw{color:#5a6480}
+body.light .lsw.on{background:#c9f0e3;color:#0e7f63}
+
+@media screen and (max-width:760px){
+  .topnav{display:none !important}
+  .subnav{display:flex;width:100%;justify-content:space-between;margin:4px 0 12px}
+  .subnav .subbtn{flex:1 1 0;text-align:center;padding:9px 6px;min-height:40px}
+  .learnswitch{width:100%;margin:0 0 12px}
+  .learnswitch .lsw{flex:1 1 0;text-align:center;min-height:38px}
+}
+
+/* кнопки внутри настроек: нейтральные, с явным «включено» */
+.setbtn2{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:11px;
+  border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--ink);
+  font:600 13.5px/1 inherit;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s,color .15s}
+.setbtn2:hover{background:rgba(255,255,255,.09)}
+.setbtn2.on{background:rgba(108,92,231,.28);border-color:rgba(108,92,231,.62);color:#fff}
+.setbtn2.on:before{content:"✓ ";font-weight:700}
+body.light .setbtn2{background:#fff;border-color:#dfe3f2;color:#20263c}
+body.light .setbtn2:hover{background:#f2f3fb}
+body.light .setbtn2.on{background:#e3e0ff;border-color:#a99ff0;color:#3b32b8}
+body[data-theme="retro"] .setbtn2{border:2px solid #4a4f7a;background:#1b1e3a;color:#ffe9a8}
+@media screen and (max-width:760px){
+  .setbody{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
+/* экран настроек */
+.setscreen{position:fixed;inset:0;z-index:980;overflow:auto;background:var(--bg);
+  padding:0 0 calc(28px + env(safe-area-inset-bottom,0px))}
+.setscreen[hidden]{display:none}
+body.set-on .bottomnav,body.set-on .cheatbtn,body.set-on .mascot{display:none !important}
+body.light .setscreen{background:#f4f5fb}
+.sethead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;
+  padding:14px 18px;background:inherit;border-bottom:1px solid var(--line)}
+.sethead h3{margin:0;font-size:17px}
+.sethead .x{margin-left:auto;border:1px solid var(--line);background:none;color:var(--ink);
+  border-radius:10px;padding:7px 12px;font:600 13px/1 inherit;cursor:pointer}
+.setbody{max-width:720px;margin:0 auto;padding:18px}
+.setcard{border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin:0 0 14px;
+  background:rgba(255,255,255,.025)}
+.setcard h4{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim)}
+.setcard .row{display:flex;gap:8px;flex-wrap:wrap}
+.setcard p.note{margin:8px 0 0;font-size:12.5px;color:var(--ink-dim)}
+body.light .setcard{background:#fff;border-color:#e3e6f3}
 </style>
 </head>
 <body>
@@ -1917,35 +2010,24 @@ body.light .lfwrap{background:#f7f8ff}
      четыре раздела под большим палец + «Ещё» для конвертера и класса. -->
 <nav class="bottomnav" id="bottomnav" aria-label="Разделы приложения">
   <button type="button" class="bnav on" data-goto="solve" aria-current="page">
-    <svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg><span>Решатель</span>
+    <svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg><span>Решить</span>
   </button>
-  <button type="button" class="bnav" data-goto="train">
-    <svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><span>Тренировка</span>
+  <button type="button" class="bnav" data-goto="learn">
+    <svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><span>Учиться</span>
   </button>
-  <button type="button" class="bnav" data-goto="tests">
-    <svg class="ic" aria-hidden="true"><use href="#i-tests"/></svg><span>Тесты</span>
-  </button>
-  <button type="button" class="bnav" data-goto="dash">
-    <svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg><span>Дэш</span>
-  </button>
-  <button type="button" class="bnav" id="bnavMore" aria-expanded="false">
-    <svg class="ic" aria-hidden="true"><use href="#i-more"/></svg><span>Ещё</span>
+  <button type="button" class="bnav" data-goto="convert">
+    <svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg><span>Конвертер</span>
   </button>
 </nav>
-<div class="bnsheet" id="bnsheet" hidden>
-  <button type="button" class="btn btn--ghost btn--md" data-goto="convert">
-    <svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg> Конвертер
-  </button>
-  <button type="button" class="btn btn--ghost btn--md" data-goto="class">
-    <svg class="ic" aria-hidden="true"><use href="#i-cap"/></svg> Класс
-  </button>
-</div>
 <div class="app">
   <header>
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v4.12.0</span>
+      <span class="ver" id="verBadge">v5.0.0</span>
+      <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
+        <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
+      </button>
     </div>
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
 
@@ -1987,25 +2069,29 @@ body.light .lfwrap{background:#f7f8ff}
     <span id="backNote">разбор задачи из тренировки</span>
   </div>
 
-  <div class="modesw" id="modesw" role="tablist" aria-label="Режим работы">
-    <button type="button" class="modebtn on" data-mode="solve" role="tab" aria-selected="true">
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg></span> Решатель
+  <!-- 5.0.0: три раздела вместо шести вкладок. Две равные зоны (решить / учиться)
+       плюс конвертер; настройки и прогресс — служебные, они в шапке. -->
+  <nav class="topnav" id="modesw" role="tablist" aria-label="Разделы приложения">
+    <button type="button" class="tabbtn on" data-group="solve" role="tab" aria-selected="true">
+      <svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg><span>Решить</span>
     </button>
-    <button type="button" class="modebtn" data-mode="train" role="tab" aria-selected="false" hidden>
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg></span> Тренировка
+    <button type="button" class="tabbtn" data-group="learn" role="tab" aria-selected="false">
+      <svg class="ic" aria-hidden="true"><use href="#i-target"/></svg><span>Учиться</span>
     </button>
-    <button type="button" class="modebtn" data-mode="convert" role="tab" aria-selected="false">
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg></span> Конвертер
+    <button type="button" class="tabbtn" data-group="convert" role="tab" aria-selected="false">
+      <svg class="ic" aria-hidden="true"><use href="#i-swap"/></svg><span>Конвертер</span>
     </button>
-    <button type="button" class="modebtn" data-mode="tests" role="tab" aria-selected="false">
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-tests"/></svg></span> Тесты
-    </button>
-    <button type="button" class="modebtn" data-mode="class" role="tab" aria-selected="false">
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-cap"/></svg></span> Класс
-    </button>
-    <button type="button" class="modebtn" data-mode="dash" role="tab" aria-selected="false">
-      <span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-chart"/></svg></span> Дэш
-    </button>
+  </nav>
+
+  <!-- подтабы «Учиться»: тренировка (свободно / на время), класс, прогресс -->
+  <div class="subnav" id="subnav" role="tablist" aria-label="Разделы учёбы" hidden>
+    <button type="button" class="subbtn on" data-mode="train" role="tab" aria-selected="true">Тренировка</button>
+    <button type="button" class="subbtn" data-mode="class" role="tab" aria-selected="false">Класс</button>
+    <button type="button" class="subbtn" data-mode="dash" role="tab" aria-selected="false">Прогресс</button>
+  </div>
+  <div class="learnswitch" id="learnSwitch" hidden role="group" aria-label="Как тренируемся">
+    <button type="button" class="lsw on" data-lm="train">Свободно</button>
+    <button type="button" class="lsw" data-lm="tests">На время</button>
   </div>
 
   <section class="convpanel" id="convpanel" hidden>
@@ -2021,17 +2107,25 @@ body.light .lfwrap{background:#f7f8ff}
       <button type="button" class="catpill" data-cat="speed">Скорость</button>
       <button type="button" class="catpill" data-cat="time">Время</button>
       <button type="button" class="catpill" data-cat="angle">Углы</button>
+      <button type="button" class="catpill" data-cat="data">Данные</button>
+      <button type="button" class="catpill" data-cat="freq">Частота</button>
       <button type="button" class="catpill" data-cat="currency">Валюта</button>
+      <button type="button" class="catpill" data-cat="crypto">Криптовалюта</button>
     </div>
 
     <!-- 4.9.1: курс валют вводится руками и запоминается; сеть не используется -->
     <div class="cvrates" id="cvrates" hidden>
-      <div class="cvrates-h">Курсы ввода вручную — приложение не выходит в сеть
+      <div class="cvrates-h"><span id="cvratesH">Курсы ввода вручную — приложение не выходит в сеть</span>
         <span id="cvfxdate"></span></div>
-      <div class="cvrates-row">
+      <div class="cvrates-row" id="fxrow">
         <label>1 $ = <input type="text" inputmode="decimal" id="fxUSD" aria-label="Курс доллара в рублях"> ₽</label>
         <label>1 € = <input type="text" inputmode="decimal" id="fxEUR" aria-label="Курс евро в рублях"> ₽</label>
         <label>1 ¥ = <input type="text" inputmode="decimal" id="fxCNY" aria-label="Курс юаня в рублях"> ₽</label>
+      </div>
+      <div class="cvrates-row" id="cryptorow" hidden>
+        <label>1 BTC = <input type="text" inputmode="decimal" id="crBTC" aria-label="Курс биткоина в рублях"> ₽</label>
+        <label>1 ETH = <input type="text" inputmode="decimal" id="crETH" aria-label="Курс эфира в рублях"> ₽</label>
+        <label>1 USDT = <input type="text" inputmode="decimal" id="crUSDT" aria-label="Курс тейтера в рублях"> ₽</label>
       </div>
     </div>
 
@@ -2077,24 +2171,18 @@ body.light .lfwrap{background:#f7f8ff}
       <span aria-hidden="true">✕</span>
     </button>
     <button type="button" class="mic" id="mic" title="Сказать задачу голосом" aria-label="Голосовой ввод"><svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg></button>
-    <button type="button" class="icon-btn" id="toolMenu" title="Настройки и история" aria-label="Настройки и история" aria-expanded="false" aria-controls="toolMenuPop">
-      <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
+    <button type="button" class="icon-btn" id="toolMenu" title="История решений" aria-label="История решений" aria-expanded="false" aria-controls="toolMenuPop">
+      <svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>
     </button>
     <button class="btn btn--primary btn--md solve" type="submit">Решить <span class="arr">→</span></button>
 
     <!-- 4.11.0: три редкие настройки и история свёрнуты в одну кнопку -->
     <div class="tool-menu" id="toolMenuPop" hidden>
-      <button type="button" class="fx-toggle" id="checkbtn" title="Сначала только ответ, разбор — по кнопке">
-        <span class="b" aria-hidden="true"></span><span>Сначала только ответ</span>
-      </button>
-      <button type="button" class="fx-toggle" id="fxtoggle" title="Бегущая обводка вокруг готового ответа">
-        <span class="b" aria-hidden="true"></span><span>Подсветка ответа</span>
-      </button>
-      <button type="button" class="fx-toggle" id="kbbtn" title="Экранная клавиатура: x, ², дроби">
-        <span class="b" aria-hidden="true"></span><span>Экранная клавиатура</span>
-      </button>
       <button type="button" class="tool-menu-row" id="histbtn" title="Что решали сегодня">
         <svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg><span>История решений</span>
+      </button>
+      <button type="button" class="tool-menu-row" id="toolSetRow" title="Тема, ввод, экзамен, роль учителя">
+        <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg><span>Настройки</span>
       </button>
     </div>
   </form>
@@ -2168,6 +2256,67 @@ body.light .lfwrap{background:#f7f8ff}
     <div class="cheat-list" id="cheatList"></div>
   </aside>
 
+  <!-- 5.0.0: настройки — отдельный экран, а не поповер в строке поиска -->
+  <section class="setscreen" id="setScreen" hidden aria-label="Настройки">
+    <div class="sethead">
+      <h3>Настройки</h3>
+      <button type="button" class="x" id="setClose">Готово</button>
+    </div>
+    <div class="setbody">
+      <div class="setcard">
+        <h4>Оформление</h4>
+        <div class="row" id="setThemes">
+          <button type="button" class="setbtn2" data-stheme="light">☀ Светлая</button>
+          <button type="button" class="setbtn2" data-stheme="dark">🌙 Тёмная</button>
+          <button type="button" class="setbtn2" data-stheme="neon">✷ Неон</button>
+          <button type="button" class="setbtn2" data-stheme="retro">▚ Ретро</button>
+        </div>
+        <p class="note">Светлая лучше для печати и для слабого экрана на солнце.</p>
+      </div>
+
+      <div class="setcard">
+        <h4>Чтение и ввод</h4>
+        <div class="row">
+          <button type="button" class="fx-toggle" id="checkbtn" title="Сначала только ответ, разбор — по кнопке">
+            <span class="b" aria-hidden="true"></span><span>Сначала только ответ</span>
+          </button>
+          <button type="button" class="fx-toggle" id="fxtoggle" title="Бегущая обводка вокруг готового ответа">
+            <span class="b" aria-hidden="true"></span><span>Подсветка ответа</span>
+          </button>
+          <button type="button" class="fx-toggle" id="kbbtn" title="Экранная клавиатура: x, ², дроби">
+            <span class="b" aria-hidden="true"></span><span>Экранная клавиатура</span>
+          </button>
+        </div>
+        <p class="note">«Сначала только ответ» — шаги появляются по кнопке: удобно, когда хочется решить самому.</p>
+      </div>
+
+      <div class="setcard">
+        <h4>Режим работы</h4>
+        <div class="row">
+          <button type="button" class="setbtn2" id="setExam">Экзамен</button>
+        </div>
+        <p class="note" id="setExamNote">В экзамене прячутся подсказки, шпаргалка, история и клавиатура — остаётся чистый лист и таймер на 15 минут.</p>
+      </div>
+
+      <div class="setcard">
+        <h4>Для учителя</h4>
+        <div class="row">
+          <button type="button" class="setbtn2" id="setTeacher">Войти как учитель</button>
+        </div>
+        <p class="note" id="setTeacherNote"></p>
+      </div>
+
+      <div class="setcard">
+        <h4>О приложении</h4>
+        <p class="note" style="margin:0 0 10px" id="setAbout"></p>
+        <div class="row">
+          <button type="button" class="setbtn2" id="setSelf">Проверить приложение</button>
+          <a class="setbtn2" href="https://arsi3000.github.io/57/README.html" target="_blank" rel="noopener">Документация</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- модалка достижений и квестов -->
   <div class="achv-modal" id="panelModal" hidden>
     <div class="achv-card" style="max-width:460px;text-align:left">
@@ -2198,7 +2347,7 @@ body.light .lfwrap{background:#f7f8ff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="4.12.0";
+const APP_VERSION="5.0.0";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -3669,7 +3818,16 @@ const UNIT_CATS=[
     {key:"сажень", full:true, f:"2.1336", g:"f", stems:["сажен"], names:["сажень","сажени","саженей"],
       note:"сажень — 3 аршина, то есть 2,1336 м"},
     {key:"верста", full:true, f:"1066.8", g:"f", stems:["верст"], names:["верста","версты","вёрст"],
-      note:"верста — 500 саженей, 1,0668 км"}
+      note:"верста — 500 саженей, 1,0668 км"},
+    /* 5.0.0: «наглядные» единицы — чтобы 5 км стали 47 футбольными полями */
+    {key:"роллс-ройс", full:true, f:"5.8", g:"m", stems:["роллс","роллс-ройс"],
+      names:["Роллс-Ройс","Роллс-Ройса","Роллс-Ройсов"], note:"Phantom длиной 5,8 м — почти как два «Москвича»"},
+    {key:"футбольное поле", full:true, f:"105", g:"f", stems:["футбольн","поле"],
+      names:["футбольное поле","футбольных поля","футбольных полей"], note:"поле по стандарту УЕФА — 105 м в длину"},
+    {key:"синий кит", full:true, f:"30", g:"m", stems:["синий кит","кит"],
+      names:["синий кит","синих кита","синих китов"], note:"самое крупное животное — до 30 м"},
+    {key:"эйфелева башня", full:true, f:"330", g:"f", stems:["эйфелев","башн"],
+      names:["Эйфелева башня","Эйфелевы башни","Эйфелевых башен"], note:"330 м вместе с антенной"}
   ]},
   {id:"mass", base:"г", title:"Масса", acc:"массу", icon:"⚖️", units:[
     {key:"т",  f:"1000000",  g:"f", stems:["тонн","тонна","т"],       names:["тонна","тонны","тонн"]},
@@ -3761,6 +3919,29 @@ const UNIT_CATS=[
     {key:"оборот", fa:360,                  g:"m", stems:["оборот"], names:["оборот","оборота","оборотов"], note:"один оборот — 360°, это 2π радиан"}
   ]},
   /* валюты: курс вводит человек, сеть не используется. f подставляется из хранилища */
+  /* 5.0.0: данные, частота и криптовалюта — про них спрашивают чаще, чем про бары */
+  {id:"data", base:"Б", title:"Данные", acc:"объём данных", icon:"💾", units:[
+    {key:"бит", f:"0.125", g:"m", stems:["бит"], names:["бит","бита","бит"],
+      note:"бит — один двоичный разряд: 0 или 1"},
+    {key:"Б",  f:"1",        g:"m", stems:["байт","б"],   names:["байт","байта","байт"],
+      note:"в байте 8 бит"},
+    {key:"КБ", f:"1024",     g:"m", stems:["килобайт","кб"], names:["килобайт","килобайта","килобайт"]},
+    {key:"МБ", f:"1048576",  g:"m", stems:["мегабайт","мб"], names:["мегабайт","мегабайта","мегабайт"]},
+    {key:"ГБ", f:"1073741824", g:"m", stems:["гигабайт","гб"], names:["гигабайт","гигабайта","гигабайт"]},
+    {key:"ТБ", f:"1099511627776", g:"m", stems:["терабайт","тб"], names:["терабайт","терабайта","терабайт"]}
+  ]},
+  {id:"freq", base:"Гц", title:"Частота", acc:"частоту", icon:"〰", units:[
+    {key:"Гц",  f:"1",     g:"m", stems:["герц","гц"], names:["герц","герца","герц"]},
+    {key:"кГц", f:"1000",  g:"m", stems:["килогерц","кгц"], names:["килогерц","килогерца","килогерц"]},
+    {key:"МГц", f:"1000000", g:"m", stems:["мегагерц","мгц"], names:["мегагерц","мегагерца","мегагерц"]},
+    {key:"ГГц", f:"1000000000", g:"m", stems:["гигагерц","ггц"], names:["гигагерц","гигагерца","гигагерц"]}
+  ]},
+  {id:"crypto", base:"₽", title:"Криптовалюта", acc:"стоимость", icon:"₿", units:[
+    {key:"₽",    f:"1", g:"m", stems:["рубл","₽","руб"], names:["рубль","рубля","рублей"]},
+    {key:"BTC",  f:"0", g:"m", stems:["биткоин","btc","биткоин"], names:["биткоин","биткоина","биткоинов"]},
+    {key:"ETH",  f:"0", g:"m", stems:["эфир","эфириум","eth"],  names:["эфир","эфира","эфиров"]},
+    {key:"USDT", f:"0", g:"m", stems:["юсдт","usdt","тейтер"],  names:["тейтер","тейтера","тейтеров"]}
+  ]},
   {id:"currency", base:"₽", title:"Валюта", acc:"сумму", icon:"₽", units:[
     {key:"₽",  f:"1",   g:"m", stems:["рубл","₽","руб"], names:["рубль","рубля","рублей"]},
     {key:"$",  f:"0",   g:"m", stems:["доллар","$","usd"], names:["доллар","доллара","долларов"]},
@@ -3924,6 +4105,25 @@ function fxRates(){
   if(!r || typeof r!=="object" || !r.USD) r={USD:FX_DEFAULT.USD, EUR:FX_DEFAULT.EUR, CNY:FX_DEFAULT.CNY, date:todayKey()};
   return r;
 }
+/* 5.0.0: курсы криптовалют — тоже руками, в рублях за монету */
+const CRYPTO_DEFAULT={BTC:8500000, ETH:290000, USDT:92};
+function cryptoRates(){
+  let r=null;
+  try{ r=STORE.get("v4.crypto"); }catch(e){}
+  if(!r || typeof r!=="object" || !r.BTC) r={BTC:CRYPTO_DEFAULT.BTC, ETH:CRYPTO_DEFAULT.ETH, USDT:CRYPTO_DEFAULT.USDT, date:todayKey()};
+  return r;
+}
+function cryptoApply(){
+  const cat=catById("crypto");
+  if(!cat) return;
+  const r=cryptoRates();
+  cat.units.forEach(function(u){
+    if(u.key==="BTC") u.f=String(r.BTC||0);
+    if(u.key==="ETH") u.f=String(r.ETH||0);
+    if(u.key==="USDT") u.f=String(r.USDT||0);
+  });
+  cat.fxDate=r.date||"";
+}
 function fxSave(obj){
   try{ STORE.set("v4.fx", obj); }catch(e){}
   applyFx();
@@ -3949,11 +4149,16 @@ function applyFx(){
 
 /* как назвать единицу в живом тексте: «5 вёрст» вместо «5 верста» */
 function unitDisp(u,n){
-  if(u && u.full && u.names) return plural(n, u.names);
+  if(u && u.full && u.names) return pickPlural(n, u.names);
   return u? u.key : "";
 }
 
-function plural(n,forms){
+/* 4.12.1: имя уникальное — рядом в файле есть plural(n,a,b,c) для «балл/балла/баллов»,
+   и он перекрывал этот; отсюда в подсказке было «1000 undefined» */
+function pickPlural(n,forms){
+  if(!forms) return "";
+  /* 4.12.1: «0,001 килограмма», а не «0,001 килограммов» */
+  if(Math.abs(n)<1) return forms[1]||forms[0]||"";
   const a=Math.abs(n)%100, b=a%10;
   if(a>10 && a<20) return forms[2];
   if(b===1) return forms[0];
@@ -3966,8 +4171,10 @@ function plural(n,forms){
 function fmtSmart(f){
   const s=fmtFracNice(f);
   if(s.indexOf("/")<0) return s;
-  if(f.d<=1000 && Math.abs(f.n)<=1000) return s;
-  return "≈ "+n2s(f.val(),6);
+  /* 5.0.0: дробь вроде «1000/21 футбольных поля» человеку ничего не говорит —
+     оставляем только «школьные» знаменатели, остальное даём десятичным */
+  if(f.d<=10 && Math.abs(f.n)<=1000) return s;
+  return "≈ "+n2s(f.val(),3);
 }
 
 /* красивый вывод точного значения */
@@ -4086,6 +4293,10 @@ function solveConvert(srcIn){
   const result=fromBase(cat,dstM.unit,inBase);
 
   const srcName=srcM.unit.key, dstName=dstM.unit.key;
+  /* 5.0.0: у «наглядных» единиц (футбольное поле, Роллс-Ройс) имя ставим в нужный падеж,
+     иначе выходит «47 футбольное поле». Для символов (км, ₽, BTC) оставляем как есть. */
+  const srcHuman=srcM.unit.full? pickPlural(value.val(), srcM.unit.names) : srcName;
+  const dstHuman=dstM.unit.full? pickPlural(result.val(), dstM.unit.names) : dstName;
   const valStr=fmtFracNice(value);
   const resStr=fmtSmart(result);
 
@@ -4095,34 +4306,37 @@ function solveConvert(srcIn){
   const steps=[];
   steps.push({
     h:"Что переводим",
-    b: eq(valStr+"&nbsp;"+srcName+"&nbsp;→&nbsp;"+dstName, true)+
+    b: eq(valStr+"&nbsp;"+srcHuman+"&nbsp;→&nbsp;"+dstHuman, true)+
        "<p>Обе единицы измеряют <b>"+cat.acc+"</b>, значит перевести можно: нужно узнать, "+
-       "сколько "+dstName+" содержится в "+valStr+" "+srcName+".</p>"
+       "сколько "+dstHuman+" содержится в "+valStr+" "+srcHuman+".</p>"
   });
 
   const gSrc=srcM.unit.g==="f"? "Одна":"Один";
-  const dstPlural=plural(ratio.val(), dstM.unit.names);
+  const dstPlural=pickPlural(ratio.val(), dstM.unit.names);
+  /* сколько целевых единиц в одной исходной — с падежом: «9,524 футбольных поля» */
+  const ratioDisp=dstM.unit.full? dstPlural : dstName;
   steps.push({
     h:"Вспоминаем соотношение",
-    b: eq("1&nbsp;"+srcName+" = "+ratioStr+"&nbsp;"+dstName)+
+    b: eq("1&nbsp;"+srcName+" = "+ratioStr+"&nbsp;"+ratioDisp)+
        "<p>"+gSrc+" "+srcM.unit.names[0]+" — это "+ratioStr+" "+dstPlural+
        ". Дальше остаётся умножить на это число.</p>"
   });
 
   steps.push({
     h:"Умножаем",
-    b: eq(valStr+"&nbsp;"+srcName+"&nbsp;=&nbsp;"+valStr+" · "+ratioStr+"&nbsp;"+dstName+"&nbsp;=&nbsp;"+
-         fmtFracNice(result)+"&nbsp;"+dstName, true)+
+    b: eq(valStr+"&nbsp;"+srcHuman+"&nbsp;=&nbsp;"+valStr+" · "+ratioStr+"&nbsp;"+ratioDisp+"&nbsp;=&nbsp;"+
+         /* 5.0.0: 1000/21 футбольных поля — не ответ; дробь с большим знаменателем даём десятичной */
+         (dstM.unit.full? fmtSmart(result) : fmtFracNice(result))+"&nbsp;"+dstHuman, true)+
        "<p>При переводе в <b>более мелкую</b> единицу число становится больше, в <b>более крупную</b> — меньше. "+
-       "Здесь "+valStr+" "+srcName+" — это "+resStr+" "+dstName+".</p>"
+       "Здесь "+valStr+" "+srcHuman+" — это "+resStr+" "+dstHuman+".</p>"
   });
 
   /* проверка обратным переводом */
   const back=fromBase(cat,srcM.unit,toBase(cat,dstM.unit,result));
   steps.push({
     h:"Проверяем обратным переводом",
-    b: eq(resStr+"&nbsp;"+dstName+"&nbsp;=&nbsp;"+resStr+" : "+ratioStr+"&nbsp;"+srcName+"&nbsp;=&nbsp;"+
-         fmtFracNice(back)+"&nbsp;"+srcName)+
+    b: eq(resStr+"&nbsp;"+dstHuman+"&nbsp;=&nbsp;"+resStr+" : "+ratioStr+"&nbsp;"+srcHuman+"&nbsp;=&nbsp;"+
+         (srcM.unit.full? fmtSmart(back) : fmtFracNice(back))+"&nbsp;"+srcHuman)+
        "<p>Вернулись к исходному числу — значит перевод выполнен верно.</p>"
   });
 
@@ -4130,7 +4344,7 @@ function solveConvert(srcIn){
   if(result.d!==1){
     const approx=n2s(result.val(),4);
     if(approx!==resStr.replace("−","-").replace(",",".")){
-      steps[2].b += "<p>Приближённо это "+approx+" "+dstName+".</p>";
+      steps[2].b += "<p>Приближённо это "+approx+" "+dstHuman+".</p>";
     }
   }
 
@@ -4149,7 +4363,7 @@ function solveConvert(srcIn){
     kind:"Перевод единиц · "+cat.title,
     steps:steps,
     answer:human,
-    answerHtml:valStr+"&nbsp;"+srcName+" = "+resStr+"&nbsp;"+dstName
+    answerHtml:valStr+"&nbsp;"+srcHuman+" = "+resStr+"&nbsp;"+dstHuman
   };
 }
 
@@ -6861,7 +7075,8 @@ const convCat=document.getElementById("convcat");
 const CONV_DEFAULT={
   length:["км","м"], mass:["кг","г"], area:["м²","см²"], volume:["л","мл"],
   temp:["°C","°F"], pressure:["атм","кПа"], energy:["ккал","кДж"], power:["кВт","л.с."],
-  speed:["км/ч","м/с"], time:["ч","мин"], angle:["°","рад"], currency:["$","₽"]
+  speed:["км/ч","м/с"], time:["ч","мин"], angle:["°","рад"], currency:["$","₽"],
+  data:["ГБ","МБ"], freq:["МГц","ГГц"], crypto:["BTC","₽"]
 };
 const CONV_EXAMPLES={
   length:["5 км в метры","150 см в метры","2 м в мм","5 вёрст в км","3 дюйма в см"],
@@ -6875,7 +7090,10 @@ const CONV_EXAMPLES={
   speed:["5 км/ч в м/с","36 км/ч в м/с","10 м/с в км/ч"],
   time:["1,5 часа в минуты","90 минут в часы","2 суток в часы"],
   angle:["180° в рад","90° в град","1 рад в градусах","полоборота в градусах"],
-  currency:["100 $ в ₽","50 € в ₽","1000 ₽ в $"]
+  currency:["100 $ в ₽","50 € в ₽","1000 ₽ в $"],
+  data:["1 ГБ в МБ","500 МБ в КБ","2 ТБ в ГБ"],
+  freq:["2,4 ГГц в МГц","100 МГц в кГц"],
+  crypto:["0,01 BTC в ₽","1 ETH в ₽","100 USDT в ₽"]
 };
 
 let convCatId = lsGet("convcat","length");
@@ -6921,10 +7139,18 @@ function syncConvCat(){
     b.classList.toggle("on", b.getAttribute("data-cat")===convCatId);
   });
 }
-/* блок курсов нужен только на категории «Валюта» */
+/* блок курсов: валюты и криптовалюта — каждый со своим рядом */
 function syncFxBox(){
   const box=document.getElementById("cvrates");
-  if(box) box.hidden = convCatId!=="currency";
+  const isCur=convCatId==="currency", isCr=convCatId==="crypto";
+  if(box) box.hidden = !(isCur||isCr);
+  const r1=document.getElementById("fxrow"), r2=document.getElementById("cryptorow");
+  if(r1) r1.hidden=!isCur;
+  if(r2) r2.hidden=!isCr;
+  const h=document.getElementById("cvratesH");
+  if(h) h.textContent = isCr
+    ? "Курсы криптовалют вводятся вручную — приложение не выходит в сеть"
+    : "Курсы ввода вручную — приложение не выходит в сеть";
 }
 
 function resetUnits(){
@@ -7086,6 +7312,30 @@ function renderConvSteps(text){
   });
   window.__fxFill=fill;
   fill();
+
+  /* 5.0.0: криптовалюты — тот же ручной механизм */
+  const crInp={ BTC:document.getElementById("crBTC"), ETH:document.getElementById("crETH"), USDT:document.getElementById("crUSDT") };
+  function fillCrypto(){
+    const r=cryptoRates();
+    crInp.BTC.value=String(r.BTC).replace(".",",");
+    crInp.ETH.value=String(r.ETH).replace(".",",");
+    crInp.USDT.value=String(r.USDT).replace(".",",");
+  }
+  function readCrypto(){
+    const r=cryptoRates();
+    let changed=false;
+    Object.keys(crInp).forEach(function(k){
+      const v=parseFloat(String(crInp[k].value).replace(",","."));
+      if(isFinite(v) && v>0 && v!==r[k]){ r[k]=v; changed=true; }
+    });
+    if(changed){ r.date=todayKey(); try{ STORE.set("v4.crypto", r); }catch(e){} cryptoApply(); updateConv(); }
+  }
+  Object.keys(crInp).forEach(function(k){
+    if(!crInp[k]) return;
+    crInp[k].addEventListener("change", readCrypto);
+    crInp[k].addEventListener("blur", readCrypto);
+  });
+  fillCrypto();
 })();
 
 /* переключение категории */
@@ -7134,7 +7384,9 @@ const SUB_DASH="Ваш прогресс: уровень, серия дней, к
    Одно приложение, два профиля: меняется состав вкладок, а не код.
    При входе всегда открывается «Решатель». */
 let MODE="solve";
-const TABS_SCOPE={solve:["solve","convert"], learn:["train","tests","class","dash"]};
+/* 5.0.0: три раздела верхнего уровня. Внутри «Учиться» — свои подтабы. */
+const NAV_GROUP={solve:"solve", train:"learn", tests:"learn", class:"learn", dash:"learn", convert:"convert"};
+const NAV_LAST={learn:"train"};
 /* роль «учитель»: включена в этой сессии и только после кода */
 function isTeacher(){
   try{ if(sessionStorage.getItem("v4.teacherOn")==="1") return true; }catch(e){}
@@ -7142,34 +7394,126 @@ function isTeacher(){
 }
 window.isTeacher=isTeacher;
 function modeGroupOf(mode){
-  return (mode==="train"||mode==="tests"||mode==="class"||mode==="dash")? "learn" : "solve";
+  return NAV_GROUP[mode]||"solve";
 }
-function renderTabs(group){
-  const scope=TABS_SCOPE[group]||TABS_SCOPE.solve;
-  modesw.querySelectorAll(".modebtn").forEach(function(b){
-    const m=b.getAttribute("data-mode");
-    b.hidden = scope.indexOf(m)<0;
+function renderTabs(group, mode){
+  const top=document.getElementById("modesw");
+  if(top) top.querySelectorAll("[data-group]").forEach(function(b){
+    const on=b.getAttribute("data-group")===group;
+    b.classList.toggle("on",on);
+    b.setAttribute("aria-selected", on? "true":"false");
   });
-  const sw=document.getElementById("modeSwitch");
-  if(sw){
-    sw.innerHTML = group==="learn"
-      ? '<span class="mi">ƒ</span><span class="mswtxt">Решатель</span>'
-      : '<span class="mi" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-target"/></svg></span><span class="mswtxt">Тренировка</span>';
-    sw.title = group==="learn"? "Вернуться в решатель" : "Перейти в тренировку";
-    sw.setAttribute("aria-label", sw.title);
+  const sub=document.getElementById("subnav");
+  if(sub){
+    sub.hidden = group!=="learn";
+    const act=(mode==="tests")? "train" : mode;
+    sub.querySelectorAll("[data-mode]").forEach(function(b){
+      const on=b.getAttribute("data-mode")===act;
+      b.classList.toggle("on",on);
+      b.setAttribute("aria-selected", on? "true":"false");
+    });
+  }
+  const lsw=document.getElementById("learnSwitch");
+  if(lsw){
+    lsw.hidden = !(mode==="train"||mode==="tests");
+    lsw.querySelectorAll("[data-lm]").forEach(function(b){
+      const on=b.getAttribute("data-lm")===(mode==="tests"? "tests":"train");
+      b.classList.toggle("on",on);
+      b.setAttribute("aria-pressed", on? "true":"false");
+    });
   }
   document.body.classList.toggle("mode-learn", group==="learn");
 }
-function setModeGroup(mode){
-  const g=modeGroupOf(mode);
-  MODE=g;
-  renderTabs(g);
-  const scope=TABS_SCOPE[g];
-  setMode(scope.indexOf(mode)>=0? mode : (g==="learn"? "train":"solve"));
+/* переход в раздел верхнего уровня */
+function setModeGroup(group){
+  if(group==="learn") setMode(NAV_LAST.learn||"train");
+  else if(group==="convert") setMode("convert");
+  else setMode("solve");
 }
-
-/* нижней панели (4.9.0) нужен вход в раздел снаружи IIFE */
 window.setModeGroup=setModeGroup;
+
+/* ===== 5.0.0: экран настроек =====
+   Раньше настройки были размазаны: тема — в поповере строки поиска, «мои данные»
+   и роль учителя — в «Дэше». Теперь это одно место. */
+function settingsSync(){
+  const el=document.getElementById("setScreen");
+  if(!el) return;
+  if(typeof V4!=="undefined" && V4.themeNow){
+    const cur=V4.themeNow();
+    el.querySelectorAll("[data-stheme]").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-stheme")===cur);
+    });
+  }
+  const ex=document.getElementById("setExam");
+  const exOn=document.body.classList.contains("exam-mode");
+  if(ex){ ex.classList.toggle("on", exOn); ex.textContent=exOn? "Выйти из экзамена" : "Включить экзамен"; }
+  const tn=document.getElementById("setTeacherNote");
+  const tb=document.getElementById("setTeacher");
+  if(tn) tn.textContent = isTeacher()
+    ? "Роль включена: в «Классе» доступны конструктор вариантов, листы и ключ ответов. Действует до закрытия приложения."
+    : "Роль выключена: ключ к вариантам скрыт. Код учителя задаётся один раз на этом устройстве.";
+  if(tb) tb.textContent = isTeacher()? "Выйти из роли учителя" : "Войти как учитель";
+  const ab=document.getElementById("setAbout");
+  if(ab) ab.textContent="Пошаговый решатель "+((window.APP_VERSION)||"")+
+    " · одно приложение без интернета, без аккаунтов и без сервера. Данные хранятся только на этом устройстве.";
+}
+function openSettings(){
+  const el=document.getElementById("setScreen");
+  if(!el) return;
+  closeOverlays();
+  settingsSync();
+  el.hidden=false;
+  document.body.classList.add("set-on");
+  document.body.style.overflow="hidden";
+  const btn=document.getElementById("setClose");
+  if(btn) btn.focus();
+  const tg=document.getElementById("toolMenuPop");
+  if(tg) tg.hidden=true;
+}
+function closeSettings(){
+  const el=document.getElementById("setScreen");
+  if(!el) return;
+  el.hidden=true;
+  document.body.classList.remove("set-on");
+  document.body.style.overflow="";
+}
+window.__openSettings=openSettings;
+
+(function(){
+  const scr=document.getElementById("setScreen");
+  if(!scr) return;
+  const open=document.getElementById("setOpen");
+  if(open) open.addEventListener("click", openSettings);
+  const cl=document.getElementById("setClose");
+  if(cl) cl.addEventListener("click", closeSettings);
+  scr.addEventListener("click", function(e){
+    const th=e.target.closest("[data-stheme]");
+    if(th){ if(typeof V4!=="undefined") V4.applyTheme(th.getAttribute("data-stheme")); settingsSync(); return; }
+    if(e.target.closest("#checkbtn,#fxtoggle,#kbbtn")){ setTimeout(settingsSync, 0); return; }
+    if(e.target.closest("#setExam")){
+      if(typeof V4UI!=="undefined" && V4UI.examSet) V4UI.examSet(!document.body.classList.contains("exam-mode"));
+      settingsSync(); return;
+    }
+    if(e.target.closest("#setTeacher")){
+      if(isTeacher()){ if(window.__teacher) window.__teacher.logout(); settingsSync(); return; }
+      if(window.__teacher) window.__teacher.ask(function(){ settingsSync(); clRenderPanelSafe(); });
+      return;
+    }
+    if(e.target.closest("#setSelf")){
+      let b=document.getElementById("dbSelf");
+      if(!b && typeof V4UI!=="undefined" && V4UI.renderDash){ V4UI.renderDash(); b=document.getElementById("dbSelf"); }
+      if(b) b.click();
+      return;
+    }
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape" && !scr.hidden) closeSettings();
+  });
+})();
+function clRenderPanelSafe(){
+  const cp=document.getElementById("classPanel");
+  if(cp && !cp.hidden && typeof clRenderPanel==="function") clRenderPanel();
+}
 
 /* при смене раздела закрываем всё, что «висит» поверх: историю, шпаргалку,
    лист класса. Иначе они перекрывают новый экран (было: история закрывала тренировку) */
@@ -7211,16 +7555,15 @@ function closeOverlays(){
 
 function setMode(mode){
   closeOverlays();
+  MODE=mode;
+  const group=modeGroupOf(mode);
+  if(group==="learn" && mode!=="tests") NAV_LAST.learn=mode;
   convMode = mode==="convert";
   const testsMode = mode==="tests";
   const classMode = mode==="class";
   const dashMode = mode==="dash";
   const trainMode = mode==="train";
-  modesw.querySelectorAll(".modebtn").forEach(function(b){
-    const on=b.getAttribute("data-mode")===mode;
-    b.classList.toggle("on",on);
-    b.setAttribute("aria-selected", on? "true":"false");
-  });
+  renderTabs(group, mode);
   convPanel.hidden = !convMode;
   const tp=document.getElementById("testPanel");
   if(tp) tp.hidden=!testsMode;
@@ -7265,19 +7608,21 @@ function setMode(mode){
   lsSet("mode", mode);
   if(window.__syncBottomNav) window.__syncBottomNav(mode);
 }
-modesw.addEventListener("click", function(e){
-  const b=e.target.closest(".modebtn");
-  if(!b || b.hidden) return;
-  setModeGroup(b.getAttribute("data-mode"));
-});
 document.addEventListener("click", function(e){
-  const sw=e.target.closest && e.target.closest("#modeSwitch");
-  if(!sw) return;
-  setModeGroup(MODE==="learn"? "solve" : "train");
+  if(!e.target.closest) return;
+  const g=e.target.closest("#modesw [data-group]");
+  if(g){ setModeGroup(g.getAttribute("data-group")); return; }
+  const m=e.target.closest("#subnav [data-mode]");
+  if(m){ setMode(m.getAttribute("data-mode")); return; }
+  const l=e.target.closest("#learnSwitch [data-lm]");
+  if(l){ setMode(l.getAttribute("data-lm")); return; }
+  const sw=e.target.closest("#modeSwitch");
+  if(sw){ setModeGroup(modeGroupOf(MODE)==="learn"? "solve":"train"); }
 });
 
 /* стартовая инициализация конвертера */
 applyFx();                       /* курсы валют из хранилища → в единицы */
+cryptoApply();                   /* и курсы криптовалют */
 syncConvCat(); resetUnits(); renderExamples(); syncFxBox();
 /* при входе всегда открывается «Решатель»: MODE не восстанавливаем из памяти */
 setModeGroup("solve");
@@ -8621,6 +8966,14 @@ function clRenderStudentPanel(p){
   if(tl) tl.addEventListener("click", function(){
     if(window.__teacher) window.__teacher.ask(function(){ clRenderPanel(); });
   });
+  /* 4.12.1: вернулись в раздел при уже собранной работе — сразу показываем задания,
+     а не пустую карточку с кодом (было: «Твоя работа» и пустота под ней) */
+  if(has){
+    clStudentCompact(p.querySelector(".clstudent"));
+    clDrawSheets();
+    clStudentMount();
+    clStudentMountActions();
+  }
 }
 
 /* ---------- 4.12.0: решение внутри приложения ----------
@@ -8647,16 +9000,27 @@ function clGradeOf(pct){
 }
 function clSummaryHtml(items){
   let right=0;
-  items.forEach(function(it,i){ if(CL_RUN.done[i] && CL_RUN.given[i]!=null && clCheck(CL_RUN.given[i], it.a)) right++; });
+  const wrong=[];
+  items.forEach(function(it,i){
+    if(CL_RUN.done[i] && CL_RUN.given[i]!=null && clCheck(CL_RUN.given[i], it.a)) right++;
+    else if(CL_RUN.done[i]) wrong.push(i);
+  });
   const pct=Math.round(right/items.length*100);
   const g=clGradeOf(pct);
+  const hint=(pct>=90? "Тема закрыта — можно двигаться дальше." :
+      pct>=75? "Основа есть: разберите ошибки, и будет пятёрка." :
+      pct>=50? "Тему стоит повторить — разберите, где свернули не туда." :
+      "Вернитесь на шаг назад и разберите решения по шагам.");
+  /* 4.12.1: совет «откройте разбор» был без кнопки — теперь разбор открывается отсюда */
+  const btn=wrong.length
+    ? '<button type="button" class="clbtn sv-openall" data-wrong="'+wrong.join(",")+'">'+
+        'Разобрать неверные · '+wrong.length+'</button>'
+    : '<p class="sv-sum-ok">Все задания верные — разбирать нечего.</p>';
   return '<div class="sv-sum"><div class="sv-sum-main">'+
     '<b>'+right+'</b> из '+items.length+' · '+pct+'%</div>'+
     '<div class="sv-sum-grade g'+g+'">оценка '+g+'</div>'+
-    '<div class="sv-sum-hint">'+ (pct>=90? "Тема закрыта — можно двигаться дальше." :
-      pct>=75? "Основа есть: разберите ошибки, и будет пятёрка." :
-      pct>=50? "Тему стоит повторить: откройте разбор неверных." :
-      "Вернитесь на шаг назад и разберите решения по шагам.")+'</div></div>';
+    '<div class="sv-sum-hint">'+hint+'</div>'+
+    '<div class="sv-sum-act">'+btn+'</div></div>';
 }
 function clRenderSolve(box, items){
   box.innerHTML='<div class="clcard svcard">'+
@@ -8680,7 +9044,21 @@ function clRenderSolve(box, items){
   const sum=box.querySelector("#svSum");
   function repaint(){
     const all=items.every(function(_,i){ return CL_RUN.done[i]; });
-    if(all){ sum.hidden=false; sum.innerHTML=clSummaryHtml(items); }
+    if(!all) return;
+    sum.hidden=false; sum.innerHTML=clSummaryHtml(items);
+    const all_btn=sum.querySelector(".sv-openall");
+    if(all_btn) all_btn.addEventListener("click", function(){
+      const idx=String(all_btn.getAttribute("data-wrong")||"").split(",").filter(function(x){return x!=="";});
+      const first=parseInt(idx[0],10);
+      idx.forEach(function(k){
+        const i=parseInt(k,10);
+        if(!CL_RUN.opened[i]) toggleSteps(i);
+      });
+      const target=box.querySelector('[data-steps="'+first+'"]');
+      if(target) target.scrollIntoView({block:"center", behavior:"smooth"});
+      all_btn.textContent="Разбор открыт выше ↑";
+      all_btn.disabled=true;
+    });
   }
   box.querySelectorAll(".sv-go").forEach(function(btn){
     btn.addEventListener("click", function(){
@@ -10172,18 +10550,10 @@ const V4UI=(function(){
           '<div class="dashnote" style="margin-top:10px">За все три — 30 XP. Обновляются каждый день.</div>'+
         '</div>'+
         '<div class="dashcard">'+
-          '<h4>оформление</h4>'+
-          '<div class="themebar" role="group" aria-label="Тема оформления">'+
-            '<button type="button" class="themebtn" data-theme="light" title="Светлая"><span aria-hidden="true">☀</span><i>Светлая</i></button>'+
-            '<button type="button" class="themebtn" data-theme="dark" title="Тёмная"><span aria-hidden="true">🌙</span><i>Тёмная</i></button>'+
-            '<button type="button" class="themebtn" data-theme="neon" title="Неон"><span aria-hidden="true">✷</span><i>Неон</i></button>'+
-            '<button type="button" class="themebtn" data-theme="retro" title="Ретро"><span aria-hidden="true">▚</span><i>Ретро</i></button>'+
-          '</div>'+
-          '<h4 style="margin-top:18px">режим</h4>'+
-          '<button type="button" class="pill" id="examBtn" title="Без подсказок, с таймером">'+
-            '<span class="b" aria-hidden="true"></span><span>Экзамен</span></button>'+
-          '<div class="dashnote" style="margin-top:8px">В экзамене прячутся подсказки, шпаргалка, '+
-            'история и клавиатура — остаётся только чистый лист и таймер на 15 минут.</div>'+
+          '<h4>настройки</h4>'+
+          '<div class="dashnote">Оформление, экзамен, роль учителя и «о приложении» — '+
+            'в отдельном экране настроек.</div>'+
+          '<button type="button" class="trbtn ghost" id="dashSetBtn" style="margin-top:10px">Открыть настройки ⚙</button>'+
         '</div>'+
         '<div class="dashcard dash-wide">'+
           '<h4>награды</h4>'+
@@ -10201,15 +10571,6 @@ const V4UI=(function(){
           '</div>'+
           '<div class="dashnote" style="margin-top:8px">Файл с прогрессом можно перенести на другой телефон: '+
             'всё хранится на устройстве, ничего не отправляется в интернет.</div>'+
-        '</div>'+
-        '<div class="dashcard">'+
-          '<h4>для учителя</h4>'+
-          '<div class="dashnote" id="teacherState"></div>'+
-          (isTeacher()
-            ? '<button type="button" class="pill" id="teacherOut" style="margin-top:10px">Выйти из роли</button>'
-            : '<button type="button" class="pill" id="teacherBtn" style="margin-top:10px">🔒 Войти как учитель</button>')+
-          '<div class="dashnote" style="margin-top:8px">Под этой ролью печатается ключ к варианту '+
-            'и доступен отчёт. Школьнику ключ не показывается.</div>'+
         '</div>'+
       '</div>';
 
@@ -10344,6 +10705,10 @@ const V4UI=(function(){
     }
     const dbc=$("dbCode");
     if(dbc) dbc.addEventListener("click", transferOpen);
+
+    /* 5.0.0: из «Прогресса» — вход в отдельный экран настроек */
+    const dsb=document.getElementById("dashSetBtn");
+    if(dsb) dsb.addEventListener("click", function(){ if(window.__openSettings) window.__openSettings(); });
 
     const ts0=document.getElementById("teacherState");
     if(ts0) ts0.textContent = isTeacher()
@@ -14506,6 +14871,8 @@ window.__LEARN={
   if(!btn||!pop) return;
   function close(){ pop.hidden=true; btn.setAttribute("aria-expanded","false"); }
   function open(){ pop.hidden=false; btn.setAttribute("aria-expanded","true"); }
+  const setRow=document.getElementById("toolSetRow");
+  if(setRow) setRow.addEventListener("click", function(){ close(); if(window.__openSettings) window.__openSettings(); });
   btn.addEventListener("click", function(e){
     e.stopPropagation();
     if(pop.hidden) open(); else close();
@@ -14527,34 +14894,23 @@ window.__LEARN={
 <script>
 /* ===== B4: нижняя панель разделов (телефон) ===== */
 (function(){
-  var nav=document.getElementById("bottomnav"), sheet=document.getElementById("bnsheet"),
-      more=document.getElementById("bnavMore");
-  if(!nav||!sheet||!more) return;
-  function closeSheet(){ sheet.hidden=true; more.setAttribute("aria-expanded","false"); }
-  function go(mode){
-    closeSheet();
-    if(typeof setModeGroup==="function") setModeGroup(mode);
-  }
+  var nav=document.getElementById("bottomnav");
+  if(!nav) return;
+  const GROUP_OF={solve:"solve", train:"learn", tests:"learn", class:"learn", dash:"learn", convert:"convert"};
   nav.addEventListener("click",function(e){
     var b=e.target.closest(".bnav"); if(!b) return;
-    if(b===more){ var open=sheet.hidden; sheet.hidden=!open; more.setAttribute("aria-expanded", open?"true":"false"); return; }
-    var m=b.getAttribute("data-goto"); if(m) go(m);
+    var m=b.getAttribute("data-goto");
+    if(!m) return;
+    if(typeof setModeGroup==="function") setModeGroup(m);
   });
-  sheet.addEventListener("click",function(e){
-    var b=e.target.closest("[data-goto]"); if(b) go(b.getAttribute("data-goto"));
-  });
-  document.addEventListener("click",function(e){
-    if(sheet.hidden) return;
-    if(e.target.closest(".bnsheet")||e.target.closest("#bnavMore")) return;
-    closeSheet();
-  });
+  /* 5.0.0: подсвечиваем раздел верхнего уровня, а не отдельную вкладку */
   window.__syncBottomNav=function(mode){
+    var g=GROUP_OF[mode]||"solve";
     nav.querySelectorAll(".bnav[data-goto]").forEach(function(b){
-      var on=b.getAttribute("data-goto")===mode;
+      var on=b.getAttribute("data-goto")===g;
       b.classList.toggle("on",on);
       if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current");
     });
-    more.classList.toggle("on", mode==="convert"||mode==="class");
   };
 })();
 </script>
