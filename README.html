@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Пошаговый решатель — README</title>
+<meta name="description" content="Пошаговый решатель: одно приложение для школы, которое решает уравнения и задачи с разбором по шагам. Работает офлайн, без зависимостей и без сервера.">
+<meta name="theme-color" content="#070a14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236c5ce7'/%3E%3Ctext x='32' y='45' font-size='38' text-anchor='middle' fill='white' font-family='serif'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#070a14; --panel:#0e1424; --panel2:#131a2c; --ink:#e8ebf5; --dim:#9aa3bd;
+  --line:rgba(160,175,220,.16); --acc:#6c5ce7; --acc2:#00d3a7; --warn:#ffb020;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:17px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(900px 500px at 80% -10%,rgba(108,92,231,.22),transparent 70%),
+                   radial-gradient(700px 400px at 0% 0%,rgba(0,211,167,.10),transparent 70%);
+  background-repeat:no-repeat;
+}
+.wrap{max-width:1000px;margin:0 auto;padding:0 22px 90px}
+
+/* шапка */
+.top{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);
+  background:rgba(7,10,20,.86);border-bottom:1px solid var(--line)}
+.top .in{max-width:1000px;margin:0 auto;padding:12px 22px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.top .brand{font-weight:700;letter-spacing:.2px}
+.top .brand i{color:var(--acc2);font-style:normal}
+.top nav{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap}
+.top nav a{color:var(--dim);text-decoration:none;font-size:14px;padding:7px 12px;border-radius:9px;
+  border:1px solid var(--line);white-space:nowrap}
+.top nav a:hover{color:var(--ink);border-color:rgba(160,175,220,.4)}
+.top nav a.go{background:linear-gradient(135deg,var(--acc),#8f7bff);color:#fff;border-color:transparent;font-weight:600}
+
+/* обложка */
+header.hero{padding:52px 0 10px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.12;margin:0 0 14px;letter-spacing:-.5px}
+h1 em{font-style:normal;background:linear-gradient(120deg,var(--acc2),#7bd8ff 60%,#a58bff);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:19px;color:#c3c9dd;max-width:70ch;margin:0 0 22px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}
+.chip{font-size:13px;color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:5px 12px;
+  background:rgba(255,255,255,.02)}
+.chip b{color:var(--ink);font-weight:600}
+.chip.ok{color:#9ff0d6;border-color:rgba(0,211,167,.35)}
+.chip.lic{color:#cfc7ff;border-color:rgba(108,92,231,.45)}
+
+/* карточки разделов */
+.toc{margin:34px 0 10px;padding:20px 22px;border:1px solid var(--line);border-radius:16px;
+  background:linear-gradient(180deg,rgba(20,27,45,.9),rgba(14,20,36,.9))}
+.toc h3{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim);font-weight:600}
+.toc ol{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:6px 22px;counter-reset:t}
+.toc li{counter-increment:t}
+.toc a{color:#cdd4e8;text-decoration:none;font-size:15px;display:flex;gap:10px;padding:5px 0}
+.toc a:before{content:counter(t);color:var(--acc2);font-variant-numeric:tabular-nums;font-weight:600;min-width:1.4em}
+.toc a:hover{color:#fff}
+
+/* типографика */
+h2{font-size:clamp(22px,3.2vw,30px);margin:58px 0 16px;padding-top:8px;letter-spacing:-.3px;
+   border-top:1px solid var(--line)}
+h2:first-of-type{border-top:0}
+h3{font-size:19px;margin:30px 0 10px}
+h4{font-size:16px;margin:22px 0 8px;color:#cfd6ea}
+p{margin:0 0 14px;color:#d3d8e8}
+a{color:#a99bff;text-decoration:none;border-bottom:1px solid rgba(169,155,255,.3)}
+a:hover{color:#c9c0ff;border-bottom-color:#c9c0ff}
+strong{color:#fff}
+ul,ol{margin:0 0 16px;padding-left:1.25em}
+li{margin:5px 0;color:#d3d8e8}
+li::marker{color:var(--acc2)}
+hr{border:0;border-top:1px solid var(--line);margin:34px 0}
+blockquote{margin:0 0 16px;padding:12px 18px;border-left:3px solid var(--acc);
+  background:rgba(108,92,231,.1);border-radius:0 12px 12px 0;color:#cfd6ea}
+
+/* таблицы */
+table{width:100%;border-collapse:separate;border-spacing:0;margin:14px 0 22px;font-size:15px;
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;display:table}
+thead th{background:rgba(108,92,231,.16);color:#e6e3ff;text-align:left;font-weight:600;
+  padding:11px 14px;font-size:13px;letter-spacing:.3px;text-transform:uppercase}
+td{padding:11px 14px;border-top:1px solid var(--line);vertical-align:top;color:#d3d8e8}
+tbody tr:nth-child(even){background:rgba(255,255,255,.018)}
+td code,p code,li code{background:rgba(108,92,231,.2);border:1px solid rgba(108,92,231,.3);
+  padding:1px 6px;border-radius:6px;font:14px var(--mono);color:#dcd6ff;white-space:nowrap}
+
+/* код */
+pre{background:#0a1020;border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+  overflow:auto;font:14px/1.6 var(--mono);margin:14px 0 22px}
+pre code{background:none;border:0;padding:0;color:#cfe3ff;white-space:pre}
+.sourceCode{position:relative}
+pre.sourceCode::before{content:"bash";position:absolute;top:0;right:12px;font:11px var(--mono);
+  color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+
+/* картинки */
+figure, p img{max-width:100%}
+img{max-width:100%;height:auto;border-radius:14px;border:1px solid var(--line);
+  box-shadow:0 18px 40px rgba(0,0,0,.45);background:#0a1020}
+p[align="center"] img{margin:6px}
+p[align="center"]{text-align:center}
+
+/* правая колонка-подпись */
+footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:var(--dim);font-size:14px}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding:0 16px 70px}
+  .toc{padding:16px}
+  table{font-size:14px;display:block;overflow-x:auto;white-space:nowrap}
+  table td,table th{white-space:normal;min-width:110px}
+  .top .in{padding:10px 16px}
+  .top nav a{padding:6px 10px;font-size:13px}
+}
+@media print{
+  body{background:#fff;color:#111}
+  .top{display:none}
+  a{color:#1a4fd6;border:0}
+  img{box-shadow:none;border:1px solid #ccc}
+  h2{border-top:1px solid #ddd}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="in">
+    <span class="brand">∑ Пошаговый <i>решатель</i></span>
+    <nav>
+      <a class="go" href="./">Открыть приложение</a>
+      <a href="https://github.com/Arsi3000/57">Репозиторий</a>
+      <a href="#возможности">Возможности</a>
+      <a href="#скриншоты">Скриншоты</a>
+    </nav>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="chips">
+    <span class="chip lic">Лицензия <b>MIT</b></span>
+    <span class="chip">версия <b>4.11.4</b></span>
+    <span class="chip ok">офлайн <b>100 %</b></span>
+    <span class="chip">код — <b>один файл</b>, ~855 КБ</span>
+  </div>
+  <h1>Пошаговый <em>решатель</em></h1>
+  <p class="lead">Вставил уравнение, пример или условие задачи — получил ответ с пошаговым разбором,
+    проверкой и пояснением «почему так». Всё считается на самом устройстве: ни сети, ни аккаунтов,
+    ни сервера.</p>
+</header>
+
+<div class="toc">
+  <h3>Содержание</h3>
+  <ol><li><a href="#зачем-это">Зачем это</a></li><li><a href="#возможности">Возможности</a></li><li><a href="#скриншоты">Скриншоты</a></li><li><a href="#быстрый-старт">Быстрый старт</a></li><li><a href="#как-пользоваться">Как пользоваться</a></li><li><a href="#конструктор-вариантов-и-код-работы">Конструктор вариантов и код
+работы</a></li><li><a href="#для-учителя">Для учителя</a></li><li><a href="#разработчику">Разработчику</a></li><li><a href="#структура-репозитория">Структура репозитория</a></li><li><a href="#технические-детали">Технические детали</a></li><li><a href="#чего-приложение-не-делает">Чего приложение не делает</a></li><li><a href="#сборка-android-приложения">Сборка Android-приложения</a></li><li><a href="#лицензия">Лицензия</a></li></ol>
+</div>
+
+
+<p><strong>Одно приложение для школы: вставил уравнение или условие
+задачи — получил ответ с разбором по шагам.</strong> Работает офлайн,
+без зависимостей и без сервера: весь код — в одном файле
+<code>index.html</code>.</p>
+<p align="center">
+  <img src="docs/screenshots/01-main.png" width="820" alt="Главный экран «Пошагового решателя»">
+</p>
+
+<h2 id="зачем-это">Зачем это</h2>
+<p>Ученик вбивает <code>2x + 5 = 13</code> — и видит не просто «x = 4»,
+а весь путь: перенос слагаемых, деление, проверку подстановкой. Учитель
+собирает вариант на класс за минуту: листы для печати, ключ ответов, PDF
+в чат класса. Всё это лежит на устройстве и не требует интернета — ни в
+кабинете без Wi-Fi, ни в автобусе по дороге в школу.</p>
+<h2 id="возможности">Возможности</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Раздел</th>
+<th>Что делает</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Решатель</strong></td>
+<td>Уравнения, примеры с дробями, проценты, единицы, геометрия, системы,
+текстовые задачи, линейная функция с графиком. Каждый ответ — с
+пошаговым разбором, проверкой и пояснением «почему так».</td>
+</tr>
+<tr class="even">
+<td><strong>Тренировка</strong></td>
+<td>Задания по 24 темам, адаптивная сложность, подсказки трёх уровней
+(направление → правило → шаг), проверка ответа и повторение по
+интервалам 1 → 3 → 7 → 16 → 30 дней.</td>
+</tr>
+<tr class="odd">
+<td><strong>Конвертер</strong></td>
+<td>12 категорий единиц: длина, масса, площадь, объём, температура,
+давление, энергия, мощность, скорость, время, углы, валюта. С разбором,
+как получилось число.</td>
+</tr>
+<tr class="even">
+<td><strong>Тесты</strong></td>
+<td>Пять заданий по теме с проверкой сразу; лучший результат по каждой
+теме виден на карточке.</td>
+</tr>
+<tr class="odd">
+<td><strong>Класс</strong></td>
+<td>Конструктор вариантов: класс, темы, число вариантов и заданий, листы
+A4 со строками для ответа и ключ для учителя. PDF и печать — в один
+клик.</td>
+</tr>
+<tr class="even">
+<td><strong>Дэш</strong></td>
+<td>Уровень и опыт, серия дней, квесты, награды, освоение тем полосками,
+слабые места, ошибки, контрольная, проверка уровня, отчёт для
+родителя.</td>
+</tr>
+</tbody>
+</table>
+<p>Дополнительно: четыре темы оформления (светлая, тёмная, неон, ретро),
+крупный шрифт, голосовой ввод «словами → формула», озвучка разбора,
+экспорт прогресса в файл и перенос по коду, свой генератор PDF с
+кириллицей, экспорт решения картинкой, PWA-режим и
+Android-приложение.</p>
+<h2 id="скриншоты">Скриншоты</h2>
+<p><strong>Разбор по шагам</strong> — с проверкой подстановкой и
+пояснением «Почему?» на каждом шаге:</p>
+<p align="center">
+  <img src="docs/screenshots/02-solve.png" width="760" alt="Разбор уравнения по шагам">
+</p>
+
+<p><strong>График линейной функции</strong> — SVG, а не картинка:
+масштаб квадратный, точки с подписями, таблица значений:</p>
+<p align="center">
+  <img src="docs/screenshots/03-graph.png" width="430" alt="График линейной функции">
+</p>
+
+<p><strong>Тренировка, тесты и прогресс</strong> — подсказки, адаптивная
+сложность, освоение тем:</p>
+<p align="center">
+  <img src="docs/screenshots/04-train.png" width="360" alt="Тренировка">
+  <img src="docs/screenshots/05-tests.png" width="360" alt="Тесты по темам">
+  <img src="docs/screenshots/08-dash.png" width="360" alt="Дэш: уровень, серия, награды">
+</p>
+
+<p><strong>Конструктор вариантов и лист для печати</strong> — учитель
+собирает работу за минуту:</p>
+<p align="center">
+  <img src="docs/screenshots/06-class.png" width="600" alt="Конструктор вариантов">
+  <img src="docs/screenshots/07-sheet.png" width="330" alt="Лист варианта А для печати">
+</p>
+
+<p><strong>Конвертер единиц</strong> — 12 категорий, с разбором «как это
+считается»:</p>
+<p align="center">
+  <img src="docs/screenshots/09-convert.png" width="620" alt="Конвертер единиц">
+</p>
+
+<p><strong>На телефоне</strong> — тот же файл, без отдельной сборки:</p>
+<p align="center">
+  <img src="docs/screenshots/10-mobile.png" width="300" alt="Решатель на телефоне">
+</p>
+
+<h2 id="быстрый-старт">Быстрый старт</h2>
+<p>Скачать и открыть — всё работает офлайн, интернет не нужен даже для
+первого запуска.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/arsi3000/RushPWA</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> RushPWA/reshatel</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># открыть index.html в браузере — этого достаточно</span></span></code></pre></div>
+<p>Если нужен адрес <code>http://localhost</code> (для установки как
+приложения и проверки service worker):</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-m</span> http.server 8080</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># открыть http://localhost:8080</span></span></code></pre></div>
+<h2 id="как-пользоваться">Как пользоваться</h2>
+<ol type="1">
+<li>Вставьте в поле уравнение (<code>2x + 5 = 13</code>), пример
+(<code>1/2 + 1/3</code>) или условие задачи («Турист шёл 2 часа со
+скоростью 5 км/ч. Какой путь он прошёл?»).</li>
+<li>Нажмите Enter. Появится карточка с ответом и шагами; каждый шаг
+можно раскрыть и озвучить.</li>
+<li>Не поняли шаг — откройте «Почему?» рядом с ним.</li>
+<li>Хотите закрепить — раздел <strong>Тренировка</strong>: пять-десять
+заданий по теме, с подсказками.</li>
+<li><strong>Дэш</strong> показывает, что уже освоено, а что стоит
+повторить.</li>
+</ol>
+<h2 id="конструктор-вариантов-и-код-работы">Конструктор вариантов и код
+работы</h2>
+<p>Раздел <strong>Класс</strong> (нужна роль учителя) собирает
+самостоятельную или контрольную работу:</p>
+<ul>
+<li>класс (5–11 или «любой») задаёт темы и сложность чисел;</li>
+<li>13 тем на выбор, от «Линейные» до «Функция в задаче»;</li>
+<li>1, 2, 3, 4 или 6 вариантов, по 3, 4, 5, 6, 8 или 10 заданий;</li>
+<li>листы A4 со строками для ответа, шапкой и местом для фамилии;</li>
+<li>ключ ответов отдельной страницей — только в роли учителя;</li>
+<li>«Скачать PDF» и «Печать» без диалогов и без интернета.</li>
+</ul>
+<p>У каждой работы есть <strong>код</strong>, например
+<code>K57X-862-00C1</code>. В нём зашиты класс, темы, число вариантов и
+заданий, поэтому на другом устройстве работа собирается <strong>один в
+один</strong> — достаточно вставить код в поле «код работы». Ключ
+ответов ученику при этом не показывается: роль учителя на его устройстве
+выключена.</p>
+<h2 id="для-учителя">Для учителя</h2>
+<p>Пошаговая методичка на 10 разделов — как включить роль учителя,
+собрать работу, проверить, выгрузить и что делать, если что-то не
+работает: <a
+href="docs/methods-for-teacher.pdf">инструкция-учителю.pdf</a>.</p>
+<p>Коротко о шкале. За верное задание — 1 балл, за неверное или
+пропущенное — 0. Дальше проценты: <strong>90–100 % — 5, 75–89 % — 4,
+50–74 % — 3, ниже — 2</strong>. В контрольной внутри приложения баллы
+дробные: 1 — решил сам, 0,5 — понадобилась подсказка, 0 — открыл разбор
+шага, так что «списал у подсказки» не превращается в пятёрку.</p>
+<h2 id="разработчику">Разработчику</h2>
+<p>Приложение открывается как обычная страница, а в консоли браузера
+доступны отладочные точки входа:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode js"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>__selftest<span class="op">.</span><span class="fu">open</span>()          <span class="co">// прогон самопроверки: 5125 проверок движка и генераторов</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">__solve</span>(<span class="st">&quot;2x + 5 = 13&quot;</span>)     <span class="co">// один разбор, возвращает {kind, answer, steps}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">__seedRandom</span>(<span class="dv">12345</span>)        <span class="co">// зафиксировать ГПСЧ — задания станут воспроизводимыми</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>__dbg<span class="op">.</span><span class="at">GEN_KEYS</span>             <span class="co">// список всех тем-генераторов</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>__clPdf<span class="op">.</span><span class="fu">state</span>()            <span class="co">// состояние конструктора вариантов</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>__clPdf<span class="op">.</span><span class="fu">makeCode</span>(<span class="st">&quot;K57X&quot;</span><span class="op">,</span> <span class="dv">8</span><span class="op">,</span> <span class="dv">6</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> [<span class="st">&quot;quad&quot;</span><span class="op">,</span><span class="st">&quot;frac&quot;</span>])   <span class="co">// собрать код работы</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>__LF                       <span class="co">// модуль линейной функции: разбор формул, график</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>__LEARN                    <span class="co">// прогресс: попытки, освоение, ошибки, контрольные</span></span></code></pre></div>
+<p>Устройство кода, схема данных и порядок добавления новой темы — в <a
+href="https://github.com/Arsi3000/57/blob/main/ARCHITECTURE.md">ARCHITECTURE.md</a>.
+Что именно решается и по каким формулам — в <a
+href="https://github.com/Arsi3000/57/blob/main/MATH.md">MATH.md</a>.
+История версий — в <a
+href="https://github.com/Arsi3000/57/blob/main/CHANGELOG.md">CHANGELOG.md</a>.</p>
+<h2 id="структура-репозитория">Структура репозитория</h2>
+<pre><code>reshatel/
+├── index.html              ← всё приложение: разметка, стили, движок, интерфейс
+├── sw.js                   ← service worker: офлайн-кэш, версия кэша в VERSION
+├── README.md               ← этот файл
+├── ARCHITECTURE.md         ← как устроен код
+├── MATH.md                 ← темы, формулы и что приложение не умеет
+├── CHANGELOG.md            ← история версий
+├── LICENSE                 ← MIT
+└── docs/
+    ├── screenshots/        ← 10 скриншотов для README
+    └── methods-for-teacher.pdf</code></pre>
+<p>PWA-манифест вшит в <code>index.html</code> как data-URI, поэтому
+отдельного <code>manifest.json</code> нет: приложению хватает двух
+файлов.</p>
+<h2 id="технические-детали">Технические детали</h2>
+<ul>
+<li><strong>Один файл.</strong> HTML, CSS и весь JavaScript — в
+<code>index.html</code> (~850 КБ). Ни сборки, ни npm, ни CDN.</li>
+<li><strong>Без сети.</strong> Ни одного запроса наружу: шрифты, иконки
+и PDF-движок внутри. Курсы валют вводятся руками.</li>
+<li><strong>Хранение.</strong> <code>localStorage</code>, схема данных
+версии 5 с миграциями; если браузер запрещает запись (приватный режим),
+приложение продолжает работать в памяти и предупреждает об этом.</li>
+<li><strong>PDF.</strong> Свой генератор PDF с вшитым шрифтом DejaVu
+Sans — поэтому в файлах нормальная кириллица.</li>
+<li><strong>Печать.</strong> Отдельные правила
+<code>@media print</code>: листы A4, без кнопок и фона, каждый вариант
+на своей странице.</li>
+<li><strong>Доступность.</strong> Крупный шрифт, режим уменьшенной
+анимации, подписи <code>aria-*</code>, работа с клавиатуры.</li>
+<li><strong>Проверки.</strong> Встроенная самопроверка: 5125 утверждений
+о движке, генераторах и разборе ответов.</li>
+<li><strong>Платформы.</strong> Любой современный браузер (Chrome, Edge,
+Safari, Firefox), Android-приложение в WebView, установка как PWA.</li>
+</ul>
+<h2 id="чего-приложение-не-делает">Чего приложение не делает</h2>
+<p>Честный список, чтобы не было сюрпризов:</p>
+<ul>
+<li><strong>Нет сервера и аккаунтов.</strong> Прогресс живёт на
+устройстве ученика; учитель не видит результаты удалённо. Перенести
+прогресс можно файлом или кодом переноса.</li>
+<li><strong>Нет неравенств, тригонометрии, логарифмов, производных и
+интегралов.</strong> Список тем — в <a
+href="https://github.com/Arsi3000/57/blob/main/MATH.md">MATH.md</a>.</li>
+<li><strong>Иррациональные ответы не выдаются «приблизительно»</strong>:
+<code>√50</code> вернёт объяснение, что точного значения в обыкновенной
+дроби нет, а не подмену.</li>
+<li><strong>Свободный текст понимается по шаблонам.</strong>
+Формулировку «сколько процентов составляет 30 от 150» приложение не
+разберёт — нужна привычная ему («скидка 20 % на 1500»). Подробности и
+примеры — в <a
+href="https://github.com/Arsi3000/57/blob/main/MATH.md">MATH.md</a>.</li>
+<li><strong>Символьные преобразования</strong> (раскрыть скобки,
+разложить на множители) не выполняются: буквенные выражения решаются
+только как уравнения.</li>
+</ul>
+<h2 id="сборка-android-приложения">Сборка Android-приложения</h2>
+<p>APK — тонкая WebView-обёртка (<code>com.kibersolver.app</code>)
+вокруг того же <code>index.html</code>, с мостом
+<code>window.ReshatelApp.savePdf</code> для сохранения PDF на телефон.
+Порядок сборки и подписи: <a
+href="https://github.com/Arsi3000/57/blob/main/ARCHITECTURE.md#15-сборка-apk">ARCHITECTURE.md
+→ Сборка APK</a>.</p>
+<h2 id="лицензия">Лицензия</h2>
+<p>MIT — можно использовать, изменять и распространять, в том числе в
+школе и в коммерческих целях. Подробности в <a
+href="https://github.com/Arsi3000/57/blob/main/LICENSE">LICENSE</a>.</p>
+<p>Автор: <a href="https://github.com/arsi3000">arsi3000</a>.</p>
+
+
+<footer>
+  MIT · Copyright © 2026 arsi3000 · собрано из
+  <a href="https://github.com/Arsi3000/57/blob/main/README.md">README.md</a>
+</footer>
+
+</div>
+</body>
+</html>
