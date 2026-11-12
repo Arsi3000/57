@@ -4,7 +4,7 @@
 Работает офлайн, без зависимостей и без сервера: весь код — в одном файле `index.html`.
 
 [![Лицензия: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Версия](https://img.shields.io/badge/version-4.11.4-6c5ce7.svg)](CHANGELOG.md)
+[![Версия](https://img.shields.io/badge/version-4.11.5-6c5ce7.svg)](CHANGELOG.md)
 [![Офлайн](https://img.shields.io/badge/offline-100%25-00b894.svg)](#технические-детали)
 [![Один файл](https://img.shields.io/badge/код-1%20файл%2C%20~850%20КБ-lightgrey.svg)](#технические-детали)
 

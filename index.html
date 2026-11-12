@@ -1733,6 +1733,43 @@ body.printing>*:not(.printreport){display:none!important} body.printing{overflow
   .cvrates-row{gap:8px}
   .cvrates-row input{width:68px}
 }
+/* 4.11.5: экран ученика — только код, никаких классов и тем */
+.clstudent{padding:26px 24px 20px}
+.clstudent-h{margin:0 0 10px;font-size:24px;line-height:1.2;font-weight:700;letter-spacing:-.3px}
+.clstudent-p{margin:0 0 18px;font-size:15px;line-height:1.55;color:var(--ink2,#9aa3bd);max-width:60ch}
+.clcodebox{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch}
+.clcodebig{flex:1 1 260px;min-width:0;font:600 24px/1.2 var(--mono,ui-monospace,monospace);
+  letter-spacing:2px;text-align:center;padding:16px 18px;border-radius:16px;
+  border:2px solid rgba(160,175,220,.35);background:rgba(255,255,255,.04);color:inherit;
+  text-transform:uppercase}
+.clcodebig::placeholder{letter-spacing:1px;font-weight:400;font-size:17px;text-transform:none;opacity:.6}
+.clcodebig:focus{outline:none;border-color:#6c5ce7;box-shadow:0 0 0 4px rgba(108,92,231,.25)}
+.clgobtn{flex:0 0 auto;padding:16px 26px;font-size:16px;border-radius:16px}
+.clstudent-hint{margin:14px 0 0;font-size:14px;line-height:1.5;color:var(--ink2,#8d96b2)}
+.clacts-student{margin-top:16px;padding-top:0;border-top:0;gap:8px}
+.clacts-student .clbtn{flex:1 1 0;min-width:0;white-space:nowrap;font-size:14px;padding:12px 10px}
+.clteacher-link{margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(160,175,220,.16);text-align:right}
+.linkbtn{background:none;border:0;color:#a99bff;font-size:13px;cursor:pointer;padding:4px 0;text-decoration:underline}
+.linkbtn:hover{color:#c9c0ff}
+body.light .clcodebig{background:#fff;border-color:#c9cfe4;color:#1a2233}
+body.light .clstudent-p,body.light .clstudent-hint{color:#5a6480}
+body.light .linkbtn{color:#4b3fd0}
+@media (max-width:520px){
+  .clstudent{padding:20px 16px 16px}
+  .clstudent-h{font-size:21px}
+  .clcodebig{font-size:21px;letter-spacing:1.5px;padding:14px 12px}
+  .clgobtn{width:100%;padding:15px 18px}
+  .clteacher-link{text-align:center}
+}
+
+/* 4.11.5: код работы не разобрался — ошибка рядом с полем, а не молчаливая сборка другой работы */
+.clerr{margin:8px 0 0;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;
+  background:rgba(255,120,110,.12);border:1px solid rgba(255,120,110,.38);color:#ffd7d2}
+.clerr[hidden]{display:none}
+.clerr .kk{font-family:var(--mono,monospace);background:rgba(255,255,255,.08);padding:1px 6px;border-radius:6px}
+body.light .clerr{background:#fff1ef;border-color:#f3b4ad;color:#8a2a20}
+#clcode.bad{border-color:#e2564a !important;box-shadow:0 0 0 3px rgba(226,86,74,.18)}
+
 /* 4.10.0: линейная функция — график SVG и таблица значений */
 .lfwrap{margin:14px auto;padding:10px 8px 6px;border:1px solid var(--line);border-radius:var(--r);
   max-width:430px;background:var(--surface-2);box-shadow:var(--edge)}
@@ -1818,7 +1855,7 @@ body.light .lfwrap{background:#f7f8ff}
     <div class="brand">
       <div class="mark">∑</div>
       <h1>Пошаговый <em>решатель</em></h1>
-      <span class="ver" id="verBadge">v4.11.4</span>
+      <span class="ver" id="verBadge">v4.11.5</span>
     </div>
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
 
@@ -2071,7 +2108,7 @@ body.light .lfwrap{background:#f7f8ff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="4.11.4";
+const APP_VERSION="4.11.5";
 const STORE=(function(){
   const SCHEMA=5;
   const mem=Object.create(null);
@@ -8404,9 +8441,98 @@ function clChipsHtml(){
       '<span class="bx">'+(on? "✓":"")+'</span>'+t.name+'</button>';
   }).join("");
 }
+/* 4.11.5: ученику не нужен конструктор. Один экран: вставь код — получи задания.
+   Нет кода — так и просим спросить у учителя, а не показываем классы и темы. */
+function clRenderStudentPanel(p){
+  const has=!!(CLASS_STATE.built && CLASS_STATE.built.variants && CLASS_STATE.built.variants.length);
+  const code=CLASS_STATE.code||"";
+  p.innerHTML=
+    '<div class="clcard clstudent">'+
+      '<p class="clstudent-h">Введи код работы</p>'+
+      '<p class="clstudent-p">Код даёт учитель — он написан на доске или в шапке листа. '+
+        'В коде уже зашито всё, что нужно: класс, темы и сколько заданий. Выбирать ничего не надо.</p>'+
+      '<div class="clcodebox">'+
+        '<input type="text" id="clcode" class="clcodebig" value="'+escAttr(code)+'" '+
+          'placeholder="например V43U-562-03R6" maxlength="24" autocomplete="off" spellcheck="false" '+
+          'inputmode="text" aria-label="Код работы">'+
+        '<button type="button" class="clbtn primary clgobtn" id="clbuild">Показать задания</button>'+
+      '</div>'+
+      '<p class="clerr" id="clcodeErr" hidden></p>'+
+      '<p class="clstudent-hint" id="clstudentHint">Код — 13 знаков с дефисами, как в примере. '+
+        'Если не получится, приложение скажет, что не так, — искать причину самому не придётся.</p>'+
+      (has
+        ? '<div class="clacts clacts-student">'+
+            '<button type="button" class="clbtn" id="clprint">Печать</button>'+
+            '<button type="button" class="clbtn pdesc" id="clpdf" title="Скачать листы файлом PDF">⬇ PDF</button>'+
+            '<button type="button" class="clbtn ghost2" id="clagain">Другой код</button>'+
+          '</div>'
+        : '')+
+      '<p class="clteacher-link"><button type="button" class="linkbtn" id="clasteacher">'+
+        'Я учитель — собрать свою работу</button></p>'+
+    '</div>'+
+    '<div class="sheets" id="clsheets"></div>';
+
+  const input=p.querySelector("#clcode");
+  const go=p.querySelector("#clbuild");
+
+  function needCode(){
+    const box=p.querySelector("#clcodeErr");
+    box.innerHTML="Кода пока нет. Спроси его у учителя — он пишет код на доске или на листе. "+
+      "Без кода приложение не знает, какую работу задали.";
+    box.hidden=false;
+    if(input){ input.classList.add("bad"); input.focus(); }
+  }
+  function build(){
+    const v=(input && input.value || "").trim();
+    if(!v){ needCode(); return; }
+    clBuild();
+  }
+  if(go) go.addEventListener("click", build);
+  if(input){
+    input.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); build(); } });
+    input.addEventListener("input", clCodeClear);
+  }
+  const pr=p.querySelector("#clprint"); if(pr) pr.addEventListener("click", function(){ window.print(); });
+  const pd=p.querySelector("#clpdf"); if(pd) pd.addEventListener("click", function(){
+    if(window.__clDownloadPdf) window.__clDownloadPdf();
+  });
+  const ag=p.querySelector("#clagain");
+  if(ag) ag.addEventListener("click", function(){
+    CLASS_STATE.built=null; CLASS_STATE.code="";
+    clRenderPanel();
+    const i2=document.getElementById("clcode"); if(i2){ i2.value=""; i2.focus(); }
+  });
+  const tl=p.querySelector("#clasteacher");
+  if(tl) tl.addEventListener("click", function(){
+    if(window.__teacher) window.__teacher.ask(function(){ clRenderPanel(); });
+  });
+}
+
+function clStudentAfterBuild(){
+  const card=document.querySelector("#classPanel .clstudent");
+  if(!card || card.querySelector(".clacts-student")) return;
+  const box=document.createElement("div");
+  box.className="clacts clacts-student";
+  box.innerHTML='<button type="button" class="clbtn" id="clprint">Печать</button>'+
+    '<button type="button" class="clbtn pdesc" id="clpdf" title="Скачать листы файлом PDF">⬇ PDF</button>'+
+    '<button type="button" class="clbtn ghost2" id="clagain">Другой код</button>';
+  const link=card.querySelector(".clteacher-link");
+  card.insertBefore(box, link||null);
+  box.querySelector("#clprint").addEventListener("click", function(){ window.print(); });
+  box.querySelector("#clpdf").addEventListener("click", function(){
+    if(window.__clDownloadPdf) window.__clDownloadPdf();
+  });
+  box.querySelector("#clagain").addEventListener("click", function(){
+    CLASS_STATE.built=null; CLASS_STATE.code="";
+    clRenderPanel();
+    const i=document.getElementById("clcode"); if(i){ i.value=""; i.focus(); }
+  });
+}
+
 function clRenderPanel(){
   const p=document.getElementById("classPanel");
   if(!p) return;
+  if(!isTeacher()){ clRenderStudentPanel(p); return; }
   p.innerHTML=
     '<div class="clcard">'+
       '<p class="cltitle">класс — от него зависят темы и сложность</p>'+
@@ -8434,7 +8560,9 @@ function clRenderPanel(){
           '<input type="text" id="cltitle" value="'+escAttr(CLASS_STATE.title)+'" maxlength="60"></div>'+
         '<div class="clfield"><label for="clcode">код работы</label>'+
           '<input type="text" id="clcode" value="'+escAttr(CLASS_STATE.code||"")+'" '+
-            'placeholder="новая" maxlength="12" autocomplete="off" spellcheck="false"></div>'+
+            'placeholder="новая" maxlength="24" autocomplete="off" spellcheck="false" '+
+            'inputmode="text" title="Полный код работы, например V43U-562-03R6 — 13 знаков с дефисами"></div>'+
+          '<p class="clerr" id="clcodeErr" hidden></p>'+
       '</div>'+
       '<div class="clacts">'+
         '<button type="button" class="clbtn primary" id="clbuild">Собрать варианты</button>'+
@@ -8509,6 +8637,9 @@ function clRenderPanel(){
     clSaveState();
     if(CLASS_STATE.built) clDrawSheets();
   });
+  /* 4.11.5: как только человек правит код — снимаем прошлую ошибку */
+  const ce=document.getElementById("clcode");
+  if(ce && !ce.__errBound){ ce.__errBound=true; ce.addEventListener("input", clCodeClear); }
   document.getElementById("clbuild").addEventListener("click", clBuild);
   document.getElementById("clans").addEventListener("click", function(){
     if(!isTeacher()){
@@ -8658,6 +8789,29 @@ function clParseWorkCode(raw){
   const topics=clMaskTopics(mask);
   return {base:m[1], grade:grade, per:per, vars:vars, topics:topics};
 }
+/* 4.11.5: сообщение о непринятом коде — рядом с полем, а не всплывашкой */
+function clCodeError(raw){
+  const el=document.getElementById("clcode");
+  const msg=document.getElementById("clcodeErr");
+  if(msg){
+    msg.innerHTML="Код <b>"+esc(String(raw||""))+"</b> не распознан — похоже, в нём опечатка. "+
+      "Сверьтесь с шапкой листа: там код напечатан целиком, 13 знаков с дефисами, например "+
+      "<span class=kk>K57X-862-00C1</span>. Прежняя работа осталась как была.";
+    msg.hidden=false;
+  }
+  if(el){
+    el.classList.add("bad");
+    el.focus();
+    try{ el.select(); }catch(e){}
+  }
+  return null;
+}
+function clCodeClear(){
+  const msg=document.getElementById("clcodeErr");
+  if(msg) msg.hidden=true;
+  const el=document.getElementById("clcode");
+  if(el) el.classList.remove("bad");
+}
 function clBuild(){
   /* B7: задания строит ГПСЧ с зерном, поэтому работу можно повторить по коду */
   let codeEl=document.getElementById("clcode");
@@ -8667,6 +8821,14 @@ function clBuild(){
   /* полный код работы приносит с собой класс, темы и размер: у ученика
      настройки могут быть другими, а работа должна получиться та же */
   const parsed=clParseWorkCode(rawCode);
+  /* 4.11.5: раньше при опечатке в коде приложение молча собирало ДРУГУЮ работу,
+     и ученик решал не то, что задал учитель. Теперь честно отказываем. */
+  const looksFull=/[0-9A-Z]{2,8}\s*-\s*[0-9A-Z]{3}\s*-\s*[0-9A-Z]{3}[0-9A-Z]?/i.test(String(rawCode||""))
+    && String(rawCode||"").replace(/[^0-9A-Z]/gi,"").length>=10;
+  if(!parsed && looksFull){
+    clCodeError(rawCode);
+    return null;
+  }
   if(parsed){
     CLASS_STATE.grade=parsed.grade;
     CLASS_STATE.topics=parsed.topics.slice();
@@ -8730,6 +8892,9 @@ function clBuild(){
   /* дальше снова живое зерно, чтобы следующая работа не была копией этой */
   seedRandom((Date.now()^0x5bf03635)>>>0);
   clDrawSheets();
+  /* 4.11.5: у ученика кнопки «печать / PDF / другой код» появляются только после
+     успешной сборки — панель рисуется раньше, чем готов CLASS_STATE.built */
+  if(!isTeacher()) clStudentAfterBuild();
   const sh=document.getElementById("clsheets");
   if(sh) sh.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
