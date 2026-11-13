@@ -217,6 +217,8 @@
 
   /* ---------- примеры ---------- */
   .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+/* 5.2.5: в шпаргалке чипсы в одну колонку — панель узкая */
+.cheat-extra .chip{flex:1 1 100%;justify-content:flex-start}
   .chips[hidden]{display:none}
   .chip{font-family:inherit;font-size:12px;color:var(--ink-soft);background:var(--glass);
     border:1px solid var(--line);border-radius:var(--r);padding:8px 16px;cursor:pointer;
@@ -2227,57 +2229,51 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
 
 
 
-/* ============ 5.2.1: строка ввода — в зоне большого пальца ============ */
-/* Замер на 390×844: основное поле стояло на 100–158 px, то есть в самом верху,
-   а внизу была только навигация — одной рукой до него не достать. На телефоне
-   в режиме «Решить» переносим строку ввода к нижней панели: это самый частый
-   и самый нужный элемент экрана, ему и место под большим пальцем.
-   На остальных вкладках (учиться, конвертер, класс, тесты) правило не работает:
-   там поля ввода нет, и панель остаётся как была. */
-@media (max-width:640px){
-  body:not(.mode-other) .searchbar{
-    position:fixed;left:10px;right:10px;
-    bottom:calc(68px + env(safe-area-inset-bottom,0px));
-    z-index:938;margin:0;padding:8px 8px 8px 12px;
-    box-shadow:0 18px 40px -22px rgba(4,6,20,.9);
-  }
-  body:not(.mode-other) .liveprev{
-    position:fixed;left:10px;right:10px;
-    bottom:calc(136px + env(safe-area-inset-bottom,0px));
-    z-index:937;margin:0;
-  }
-  /* место под строку ввода, чтобы последняя карточка не уезжала под неё */
-  body:not(.mode-other){padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
-  /* плавающие кнопки не должны налезать на поле */
-  body:not(.mode-other) .cheatbtn{bottom:calc(142px + env(safe-area-inset-bottom,0px));left:10px}
-  body:not(.mode-other) .mascot{bottom:calc(142px + env(safe-area-inset-bottom,0px));right:10px}
-  body.onboarding .searchbar{position:static !important;box-shadow:none}
-  /* действия под ответом: четыре кнопки в две колонки — ровно, без «лестницы» */
-  @media (max-width:640px){
-    body:not(.mode-other) .cardacts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-    body:not(.mode-other) .cardacts .act{justify-content:flex-start;min-height:44px;
-      border-color:var(--line);background:var(--glass);border-radius:var(--r-sm);text-align:left}
-  }
+/* ============ 5.2.4: капсула действий внизу ============ */
+/* Поле ввода вернулось наверх, в шапку страницы — там его видно сразу.
+   А фото, микрофон, клавиатура и шпаргалка собраны в одну капсулу внизу:
+   до них дотягивается большой палец, и они не мешают читать поле. */
+.dockbar{
+  position:fixed;left:8px;right:8px;
+  bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  z-index:939;display:flex;align-items:center;gap:8px;
+  max-width:520px;margin:0 auto;
+  padding:7px 8px;border-radius:var(--r-pill);
+  background:var(--surface-2);border:1px solid var(--line);
+  box-shadow:0 14px 34px -18px rgba(4,6,20,.8);
 }
-
-/* ============ 5.2.1: «недавние» на главном ============ */
-.recent{margin:10px 0 0;padding:14px 14px 8px;border-radius:var(--r-lg);
-  border:1px solid var(--line);background:var(--surface-2);box-shadow:var(--edge)}
-.recent[hidden]{display:none}
-.recent h3{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:800}
-.rlist{display:flex;flex-direction:column;gap:2px}
-.rrow{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:6px 8px;
-  border:0;border-radius:var(--r-sm);background:none;cursor:pointer;text-align:left;
-  font:inherit;color:var(--ink);-webkit-tap-highlight-color:transparent}
-.rrow:hover{background:var(--glass)}
-.rrow .rq{flex:1 1 auto;min-width:0;font-family:"Cambria Math","STIX Two Math",Georgia,serif;
-  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rrow .ra{flex:none;font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:15px;
-  font-weight:700;color:var(--mint);max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-body.light .recent{background:#fffdf8}
-body.light .rrow .ra{color:#0e8f5c}
-body.exam-mode .recent{display:none !important}
-
+.dockb{
+  flex:1 1 0;min-width:0;height:48px;border-radius:var(--r-pill);
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--line);background:var(--glass);
+  color:var(--ink);cursor:pointer;position:static;width:auto;
+  font:inherit;padding:0;-webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;transition:.16s;
+}
+.dockb .ic{width:22px;height:22px}
+.dockb:active{transform:translateY(1px)}
+.dockb.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);border-color:transparent;color:#fff}
+body.light .dockbar{background:#fffdf8;box-shadow:0 14px 28px -18px rgba(40,40,60,.5)}
+body.light .dockb{background:#fff;color:#20212a}
+body.light .dockb.on{background:#3366ff;color:#fff}
+/* шпаргалка внутри капсулы — не плавающая кнопка */
+.dockbar .cheatbtn{
+  position:static;left:auto;bottom:auto;width:auto;height:48px;
+  box-shadow:none;justify-content:center;
+}
+/* под капсулу — место внизу страницы */
+body{padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))}
+body.exam-mode .dockbar,body.set-on .dockbar,body.mode-other .dockbar{display:none !important}
+body.mode-other{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+/* примеры и «как это работает» в шпаргалке */
+.cheat-extra{padding:14px 14px 6px;border-top:1px solid var(--line);margin-top:8px}
+/* шпаргалка открывается снизу — её низ не должен уходить под капсулу и навигацию */
+.cheat{padding-bottom:calc(132px + env(safe-area-inset-bottom,0px)) !important}
+.cheat-sub{margin:10px 0 8px;font-size:11px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-dim)}
+.cheat-extra .chips{margin-bottom:4px}
+.cheat-extra .helpcard{margin:0}
+.cheat-extra .bento{grid-template-columns:1fr}
 /* ============ 5.2.3: экранный калькулятор у поля ввода ============ */
 /* Кому проще набирать кнопками, чем печатать. Панель висит прямо над строкой
    ввода и не поднимает системную клавиатуру: у поля на время работы ставится
@@ -2287,15 +2283,13 @@ body.exam-mode .recent{display:none !important}
 @media (max-width:640px){
   body:not(.mode-other) #keyboard:not([hidden]){
     position:fixed;left:10px;right:10px;
-    bottom:calc(140px + env(safe-area-inset-bottom,0px));
+    bottom:calc(126px + env(safe-area-inset-bottom,0px));
     z-index:936;margin:0;padding:8px;
     grid-template-columns:repeat(6,1fr);gap:6px;
     border-radius:var(--r-lg);border:1px solid var(--line);
     background:var(--surface-2);box-shadow:0 18px 44px -20px rgba(4,6,20,.85);
   }
-  body:not(.mode-other).kb-on #livePrev{bottom:calc(358px + env(safe-area-inset-bottom,0px))}
-  body:not(.mode-other).kb-on{padding-bottom:calc(370px + env(safe-area-inset-bottom,0px))}
-  body:not(.mode-other).kb-on .cheatbtn,body:not(.mode-other).kb-on .mascot{bottom:calc(362px + env(safe-area-inset-bottom,0px))}
+  body:not(.mode-other).kb-on{padding-bottom:calc(360px + env(safe-area-inset-bottom,0px))}
   body.light #keyboard:not([hidden]){background:#fffdf8}
 }
 #keyboard .key{
@@ -2321,6 +2315,7 @@ body.light #kbnav.on{background:#3366ff}
      stroke=currentColor → иконка красится вместе с текстом и темой. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
+    <symbol id="i-cat" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2.5h6.5A1.5 1.5 0 0 1 20 8v9.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-12Z"/><path d="m8.6 11.4 2 2 4-4.4"/></symbol>
     <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.6"/><path d="M8.2 7.4h7.6"/><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01M8.6 14.6h.01M12 14.6h.01M15.4 14.6h.01M8.6 17.8h.01M12 17.8h.01M15.4 17.8h.01"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></symbol>
     <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M18 4H6l6 8-6 8h12"/></symbol>
@@ -2522,19 +2517,12 @@ body.light #kbnav.on{background:#3366ff}
   <!-- 5.1.0: одна капсула по лучшим практикам ассистентов: слева «фото»,
        справа голос и круглая кнопка решения; поле — по центру, без лишних значков -->
   <form class="searchbar" id="form" autocomplete="off">
-    <button type="button" class="round" id="ocr" title="Распознать задачу с фото" aria-label="Распознать задачу с фото">
-      <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg>
-    </button>
-    <button type="button" class="round" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
-      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
-    </button>
     <input id="q" type="text" spellcheck="false"
       placeholder="Задача или пример" inputmode="text" enterkeyhint="go"
       aria-label="Уравнение или условие задачи" autocomplete="off">
     <button type="button" class="icon-btn" id="clear" hidden title="Стереть поле" aria-label="Стереть">
       <span aria-hidden="true">✕</span>
     </button>
-    <button type="button" class="mic" id="mic" title="Сказать задачу голосом" aria-label="Голосовой ввод"><svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg></button>
     <button class="solve" type="submit" title="Решить" aria-label="Решить">
       <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
     </button>
@@ -2558,7 +2546,6 @@ body.light #kbnav.on{background:#3366ff}
 
   <section class="hist" id="hist" hidden></section>
 
-  <div class="chips" id="chips"></div>
   <main id="out"></main>
 
   <div class="motionbox" id="motionBox" hidden>
@@ -2608,10 +2595,24 @@ body.light #kbnav.on{background:#3366ff}
   </div>
 
   <!-- шпаргалка -->
-  <button type="button" class="cheatbtn" id="cheatBtn" aria-expanded="false" aria-controls="cheat"
-          title="Шпаргалка с формулами">
-    📐<span class="cbtxt">Шпаргалка</span>
-  </button>
+  <!-- 5.2.4: капсула действий внизу, в зоне большого пальца.
+       Слева направо: шпаргалка, фото, микрофон, клавиатура. Поле ввода
+       вернулось наверх — там его видно сразу и не надо тянуться. -->
+  <div class="dockbar" id="dockBar" role="toolbar" aria-label="Способы ввода">
+    <button type="button" class="cheatbtn dockb" id="cheatBtn" aria-expanded="false" aria-controls="cheat"
+            title="Шпаргалка с формулами" aria-label="Шпаргалка с формулами">
+      <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg>
+    </button>
+    <button type="button" class="dockb" id="ocr" title="Распознать задачу с фото" aria-label="Распознать задачу с фото">
+      <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg>
+    </button>
+    <button type="button" class="dockb" id="mic" title="Сказать задачу голосом" aria-label="Голосовой ввод">
+      <svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg>
+    </button>
+    <button type="button" class="dockb" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
+      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
+    </button>
+  </div>
   <aside class="cheat" id="cheat" aria-label="Шпаргалка с формулами">
     <div class="cheat-head">
       <h4>Шпаргалка</h4>
@@ -2619,6 +2620,14 @@ body.light #kbnav.on{background:#3366ff}
     </div>
     <div class="cheat-cats" id="cheatCats" role="tablist"></div>
     <div class="cheat-list" id="cheatList"></div>
+    <!-- 5.2.4: примеры и «как это работает» переехали с главного сюда:
+         на стартовом экране они только отвлекали от поля ввода -->
+    <div class="cheat-extra">
+      <div class="cheat-sub">Примеры</div>
+      <div class="chips" id="chips"></div>
+      <div class="cheat-sub">Что можно вставить</div>
+      <div id="cheatHelp"></div>
+    </div>
   </aside>
 
   <!-- 5.0.0: настройки — отдельный экран, а не поповер в строке поиска -->
@@ -2764,7 +2773,7 @@ body.light #kbnav.on{background:#3366ff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.2.3";
+const APP_VERSION="5.2.4";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -7597,6 +7606,8 @@ const EX_GROUPS=[
 function runExample(ex){
   q.value=ex;
   run(ex);
+  /* пример выбран — шпаргалка больше не нужна, закрываем */
+  try{ const ch=document.getElementById("cheat"); if(ch) ch.classList.remove("open"); }catch(e){}
   out.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function chipFor(ex){
@@ -7674,7 +7685,14 @@ const START_HTML='<details class="helpcard">'+
     '<p class="foot">Каждый шаг подписан: что делаем и почему. Ответ показан сразу сверху, разбор — ниже.</p>'+
   '</div>'+
 '</details>';
-function showStart(){ out.innerHTML=START_HTML; syncClear(); }
+function showStart(){
+  /* 5.2.4: «как это работает» и примеры больше не занимают главный экран —
+     они лежат в шпаргалке, а на старте остаётся только поле ввода */
+  out.innerHTML="";
+  const helpBox=document.getElementById("cheatHelp");
+  if(helpBox && !helpBox.innerHTML) helpBox.innerHTML=START_HTML;
+  syncClear();
+}
 
 /* ---------- 3б. Кнопка «Стереть» ---------- */
 const btnClear=document.getElementById("clear");
@@ -7687,7 +7705,7 @@ function syncClear(){
 function clearAll(){
   q.value="";
   STARTED.v=false;
-  out.innerHTML=START_HTML;
+  showStart();
   syncClear();
   q.focus();
 }
