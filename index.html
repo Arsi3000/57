@@ -1985,11 +1985,20 @@ body.light .setcard{background:#fff;border-color:#e3e6f3}
 /* Шапка — три равных по высоте элемента: логотип | капсула | шестерёнка.
    Капсула занимает всю ширину между ними, поэтому края всегда совпадают с полем. */
 header .brand{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin-bottom:8px}
-header .brand .mark{border:0;padding:0;cursor:pointer;
-  width:46px;height:46px;font:26px/1 Georgia,serif;
+header .brand .mark{border:0;padding:0;cursor:pointer;display:grid;place-items:center;
+  width:46px;height:46px;line-height:1;
   color:#fff!important;-webkit-text-fill-color:#fff!important;
   border-radius:14px;
   -webkit-tap-highlight-color:transparent;transition:transform .14s,box-shadow .18s,filter .15s}
+header .brand .mark .sg{width:21px;height:21px;display:block}
+/* логотип внутри окна «О приложении» — та же капсула, 40 px */
+.setmark{flex:none;display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;
+  border-radius:12px;cursor:pointer;color:#fff!important;-webkit-text-fill-color:#fff!important;
+  background:linear-gradient(140deg,#7c6cff,#35d0ff);
+  -webkit-tap-highlight-color:transparent;transition:transform .14s,filter .15s}
+.setmark .sg{width:19px;height:19px;display:block}
+.setmark:hover{filter:brightness(1.07)}
+.setmark:active{transform:scale(.95)}
 header .brand .mark:hover{filter:brightness(1.06);box-shadow:0 14px 30px -10px rgba(124,108,255,.95),inset 0 1px 0 rgba(255,255,255,.45)}
 header .brand .mark:active{transform:scale(.95)}
 header .brand .mark:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
@@ -2072,6 +2081,7 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
 @media (max-width:400px){
   header .brand{gap:8px}
   header .brand .mark{width:44px;height:44px;font-size:24px;border-radius:13px}
+  header .brand .mark .sg{width:20px;height:20px}
   header .brand .hud-compound{height:44px;padding:0 12px;border-radius:13px}
   header .brand .setbtn{width:44px;height:44px;border-radius:13px}
   .hud-achv{display:none}
@@ -2091,6 +2101,129 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
   .setbtn{display:none!important}
 }
 
+
+/* ============================================================
+   5.2.0: СВЕТЛАЯ ТЕМА «ШКОЛЬНАЯ ТЕТРАДЬ»
+   Взята из макета: бумага #f7f3e8, синий акцент #3366ff,
+   зелёный «верно» #14a46c, тёмный текст #20212a, приглушённый #6c7280,
+   радиусы 18/14, одна мягкая тень. Тёмные темы не тронуты.
+   ============================================================ */
+body.light{
+  --bg:#f7f3e8;
+  --ink:#20212a; --ink-soft:#3d4350; --ink-dim:#6c7280;
+  --line:rgba(50,70,120,.16);
+  --glass:rgba(255,255,255,.88); --glass-2:rgba(255,250,240,.96);
+  --mint:#14a46c; --vio:#3366ff; --cyan:#2f8fe0; --focus:#3366ff;
+  --surface-1:#fffdf8; --surface-2:#fffaf0; --surface-3:#f4efe2;
+  --edge:inset 0 1px 0 #fff;
+  --lift:0 14px 38px -24px rgba(40,40,60,.35);
+  --r-lg:18px;
+}
+/* При склейке старых стилей правило .grid попало внутрь .orb.a — и сетка
+   фона осталась пустым div без размеров, то есть не рисовалась ни в одной теме.
+   Возвращаем ей размеры: в светлой теме это клетка тетради. */
+.bg .grid{position:absolute;inset:0}
+/* бумага в клетку и красная линия поля — как в школьной тетради */
+body.light .bg .orb{display:none}
+body.light .bg .grid{opacity:1;
+  background-image:linear-gradient(90deg,rgba(51,102,255,.075) 1px,transparent 1px),
+                   linear-gradient(rgba(51,102,255,.085) 1px,transparent 1px);
+  background-size:28px 28px}
+body.light .bg:after{content:"";position:absolute;left:64px;top:0;bottom:0;width:2px;
+  background:rgba(224,79,95,.20)}
+@media (max-width:520px){ body.light .bg:after{left:26px} }
+
+body.light .card{background:#fff;border-color:rgba(50,70,120,.16);
+  box-shadow:0 14px 38px -32px rgba(40,40,60,.5)}
+body.light .searchbar{background:#fff;border-color:rgba(50,70,120,.18);
+  box-shadow:0 1px 0 #fff inset,0 18px 34px -30px rgba(40,40,60,.5)}
+body.light .searchbar:focus-within{border-color:rgba(51,102,255,.55);background:#fff;
+  box-shadow:0 0 0 4px rgba(51,102,255,.12)}
+body.light .solve{background:linear-gradient(135deg,#3366ff,#4d7cff 58%,#2f6df0);
+  box-shadow:0 10px 24px -14px rgba(51,102,255,.9),inset 0 1px 0 rgba(255,255,255,.3)}
+body.light .round,body.light .mic{color:#39405c}
+body.light .round:hover,body.light .mic:hover{background:rgba(51,102,255,.08);color:#1f3f9f}
+body.light .chip{background:#fff;border-color:rgba(50,70,120,.16);color:#3d4350}
+body.light .chip:hover{border-color:rgba(51,102,255,.45);color:#1f3f9f;background:#f4f7ff}
+body.light .kind{color:#2b4fd8}
+body.light .kind .dot{background:#3366ff;box-shadow:none}
+body.light .result{background:#fffdf6;border-color:rgba(20,164,108,.30);box-shadow:none}
+body.light .rlabel{color:#0f8a5c}
+body.light .rval{color:#16233a}
+body.light .copy{color:#0f7a52;background:rgba(20,164,108,.08);border-color:rgba(20,164,108,.35)}
+body.light .copy:hover{background:rgba(20,164,108,.16)}
+body.light .snum{background:rgba(51,102,255,.10);border-color:rgba(51,102,255,.32);
+  color:#2b4fd8;box-shadow:none}
+body.light .steps>li:not(:last-child):after{
+  background:linear-gradient(180deg,rgba(51,102,255,.32),rgba(51,102,255,.05))}
+body.light .sh{color:#1b2233}
+body.light .sb{color:#3d4350}
+body.light .sb b{color:#111827}
+body.light .eq{background:#fff;border-color:rgba(50,70,120,.14);
+  border-left-color:rgba(51,102,255,.5);color:#16233a}
+body.light .eq.big{background:#f4f7ff;border-color:rgba(51,102,255,.28)}
+body.light .eq .v{color:#1d4ed8}
+body.light .act{color:#5b6473}
+body.light .act:hover{color:#1f3f9f;border-color:rgba(51,102,255,.35);background:rgba(51,102,255,.07)}
+body.light .act.primary{background:#3366ff;color:#fff}
+body.light .why{color:#2b4fd8;background:rgba(51,102,255,.07);border-color:rgba(51,102,255,.3)}
+body.light .whybox{background:#f6f8ff;border-color:rgba(51,102,255,.16);color:#3d4350}
+body.light .steps-title{color:#6c7280}
+body.light .steps-title:after{background:rgba(50,70,120,.14)}
+body.light .seal{color:#0f7a52;background:rgba(20,164,108,.1);border-color:rgba(20,164,108,.3)}
+body.light .bottomnav{background:rgba(255,253,246,.94);border-color:rgba(50,70,120,.14)}
+body.light .bnav{color:#5b6473}
+body.light .bnav.on{color:#1f3f9f;background:rgba(51,102,255,.10)}
+body.light .hud-compound{background:#fff;border-color:rgba(50,70,120,.16)}
+body.light .hud-compound b{color:#111827}
+body.light .setbtn{color:#39405c}
+body.light ::selection{background:rgba(51,102,255,.22);color:#111}
+
+/* ================= 5.2.0: экран решения ================= */
+/* живой предпросмотр под полем */
+.liveprev{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-2px 2px 10px;
+  padding:8px 12px;border-radius:var(--r);border:1px dashed var(--line);
+  background:var(--glass);font-size:13px;animation:fadeIn .16s ease-out}
+.liveprev[hidden]{display:none}
+.liveprev .lpk{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-dim);white-space:nowrap}
+.liveprev .lpq{font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:14px;
+  color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52%}
+.liveprev .lpa{font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:15px;
+  font-weight:700;color:var(--mint);white-space:nowrap}
+.liveprev .lpgo{margin-left:auto;border:0;border-radius:920px;padding:6px 12px;cursor:pointer;
+  font:650 12px/1 inherit;color:#fff;background:linear-gradient(135deg,#7c6cff,#35d0ff)}
+body.light .liveprev .lpgo{background:#3366ff}
+.liveprev .lpq.diff{color:#e0596a}
+
+/* переключатель «как показать разбор» — четыре режима, как в макете */
+.rmodes{display:flex;gap:2px;margin:16px 0 4px;padding:4px;border-radius:var(--r-pill);
+  background:var(--glass);border:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.rmodes::-webkit-scrollbar{display:none}
+.rm{flex:1 1 0;min-width:0;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+  font:650 12px/1 inherit;color:var(--ink-dim);
+  background:none;border:0;border-radius:var(--r-pill);padding:9px 4px;min-height:38px;
+  cursor:pointer;transition:.15s;-webkit-tap-highlight-color:transparent}
+.rm:hover{color:var(--ink)}
+.rm.on{background:var(--surface-3);color:var(--ink);box-shadow:var(--edge)}
+body.light .rm.on{background:#fff;color:#1f3f9f;box-shadow:0 2px 8px -4px rgba(40,40,60,.4)}
+.rmprev{margin:12px 0 0;padding:14px 16px;border-radius:var(--r);background:var(--surface-2);
+  border:1px solid var(--line);font-size:14px;line-height:1.6;color:var(--ink-soft)}
+.rmprev[hidden]{display:none}
+.rmprev h4{margin:0 0 8px;font-size:13px;color:var(--ink)}
+.rmprev .fchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rmprev .fchip{font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:13px;
+  padding:6px 10px;border-radius:var(--r-sm);background:var(--glass);border:1px solid var(--line);
+  color:var(--ink)}
+body.light .rmprev .fchip{background:#fff}
+
+/* «проще» у шага: то же место, что «почему», но человеческим языком */
+.shtools{display:inline-flex;gap:6px;align-items:center;vertical-align:middle}
+.stepmore{margin-top:10px;padding:12px 16px;border-radius:var(--r);font-size:13.5px;line-height:1.6;
+  border:1px solid rgba(52,211,153,.28);background:rgba(52,211,153,.07);color:#c9f7e2}
+.stepmore[hidden]{display:none}
+body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,108,.22);color:#20503f}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -2159,8 +2292,15 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
          рядом капсула уровня со всем, что в ней было, справа настройки -->
     <div class="brand">
       <button type="button" class="mark" id="brandBtn"
-        title="Решатель — версия и что нового" aria-label="О приложении: версия и что нового">
-        <span aria-hidden="true">∑</span>
+        title="Решатель — версия и что нового" aria-label="О приложении: версия и что нового"
+        aria-expanded="false" aria-controls="whatsNew">
+        <!-- 5.2.0: сигма нарисована линией, а не взята из шрифта.
+             Текстовый «∑» вставал по базовой линии и выглядел выше центра:
+             у шрифта свои метрики, и в квадратной капсуле это видно. -->
+        <svg class="sg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M19 5H5l7 7-7 7h14" fill="none" stroke="currentColor"
+                stroke-width="2.15" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
       </button>
       <button type="button" class="hud-compound" id="hudOpen"
         title="Прогресс, квесты и награды — открыть «Дэш»">
@@ -2316,6 +2456,11 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
     </button>
     <input type="file" id="ocrFile" accept="image/*" hidden>
   </form>
+  <!-- 5.2.0: живой предпросмотр. Пока ученик печатает, под полем появляется
+       строка «понял как → ответ». Не надо нажимать стрелку, чтобы узнать,
+       правильно ли понят пример: ошибку видно сразу, до отправки. -->
+  <div class="liveprev" id="livePrev" hidden></div>
+
   <!-- плашка распознавания: превью, прогресс и что вышло -->
   <div class="ocrnote" id="ocrNote" hidden role="status" aria-live="polite"></div>
 
@@ -2462,6 +2607,16 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
   <!-- 5.1.0: логотип открывает версию и последние изменения -->
   <section class="setscreen" id="whatsNew" hidden aria-label="О приложении и что нового">
     <div class="sethead">
+      <!-- 5.2.0: тот же логотип, что и в шапке, — нажатие возвращает в «Решить».
+           Окно закрывает шапку приложения, поэтому логотип повторён здесь:
+           кнопка «домой» должна оставаться на своём месте. -->
+      <button type="button" class="setmark" id="wnMark" title="Вернуться в «Решить»"
+              aria-label="Закрыть и вернуться на главный экран">
+        <svg class="sg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M19 5H5l7 7-7 7h14" fill="none" stroke="currentColor"
+                stroke-width="2.15" stroke-linejoin="round" stroke-linecap="round"/>
+        </svg>
+      </button>
       <h3>О приложении</h3>
       <button type="button" class="x" id="wnClose">Готово</button>
     </div>
@@ -2521,7 +2676,7 @@ body.light .ocrnote .onbar{background:rgba(20,25,45,.12)}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.1.2";
+const APP_VERSION="5.2.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -2953,17 +3108,22 @@ function stepsHtml(steps){
   return '<ol class="steps">'+steps.map(function(st,i){
     const ex=explainFor(st.h);
     const say=plainText(st.h+" "+st.b);
+    /* 5.2.0: у шага два уровня помощи — «почему?» (как это устроено вообще)
+       и «проще» (то же самое человеческим языком, одной фразой). */
+    const pl=plainFor(st.h);
     return '<li><div class="snum">'+(i+1)+'</div>'+
              '<div class="sbody">'+
-               '<div class="sh">'+st.h+
+               '<div class="sh" data-sh="'+i+'">'+st.h+
                  '<span class="shtools">'+
-                 (ex? '<button type="button" class="why" data-why="'+i+'">почему?</button>':'')+
+                 (ex? '<button type="button" class="why" data-why="'+i+'" aria-expanded="false">почему?</button>':'')+
+                 (pl? '<button type="button" class="why plain" data-plain="'+i+'" aria-expanded="false">проще</button>':'')+
                  (canSay? '<button type="button" class="saybtn" data-say="'+escAttr(say.slice(0,300))+'" '+
                     'aria-label="Озвучить шаг" title="Озвучить шаг">'+ICON("speak")+'</button>':'')+
                  '</span>'+
                '</div>'+
                '<div class="sb">'+st.b+'</div>'+
                (ex? '<div class="whybox" data-box="'+i+'" hidden>'+ex+'</div>' : '')+
+               (pl? '<div class="stepmore" data-more="'+i+'" hidden>'+pl+'</div>' : '')+
              '</div></li>';
   }).join("")+"</ol>";
 }
@@ -7069,15 +7229,26 @@ function render(res){
         '</div>'+
         '<button type="button" class="copy" data-copy="1"><svg class="ic" aria-hidden="true"><use href="#i-copy"/></svg> Копировать</button>'+
       '</div>'+
+      /* 5.2.0: четыре режима одним переключателем — от «только ответ»
+         до «дай похожую». Раньше это были разрозненные кнопки внизу,
+         и ученик искал глазами, где что. */
+      '<div class="rmodes" role="group" aria-label="Как показать разбор">'+
+        '<button type="button" class="rm" data-rm="answer" aria-pressed="false">Ответ</button>'+
+        '<button type="button" class="rm on" data-rm="steps" aria-pressed="true">По шагам</button>'+
+        '<button type="button" class="rm" data-rm="simple" aria-pressed="false">Проще</button>'+
+        '<button type="button" class="rm" data-rm="similar" aria-pressed="false">Похожая</button>'+
+      '</div>'+
       (checkMode? '<button type="button" class="reveal" id="reveal">Показать решение ▸</button>':'')+
       '<div class="steps-wrap"'+(checkMode? ' hidden':'')+'>'+
         '<div class="steps-title">Как получили</div>'+
         stepsHtml(res.steps)+
       '</div>'+
+      '<div class="rmprev" id="rmprev" hidden></div>'+
       '<div class="cardacts">'+
         '<button type="button" class="act" id="actTrain" title="Перейти в тренировку по этой теме">🎓 Потренировать тему</button>'+
         '<button type="button" class="act" id="actSheet" title="Собрать 10 похожих заданий для печати">🎲 Карточка на 10 таких</button>'+
         '<button type="button" class="act" id="actPng" title="Сохранить разбор картинкой">⤓ Картинкой</button>'+
+        '<button type="button" class="act" id="actNew" title="Очистить поле и решать следующую">✎ Новая задача</button>'+
       '</div>'+
     '</article>';
   /* .rval не раскрашиваем: ответ должен читаться золотым целиком */
@@ -7093,6 +7264,91 @@ function render(res){
   if(bs) bs.addEventListener("click", function(){ openSheet(kindKeyOf(res)); });
   const bp=document.getElementById("actPng");
   if(bp) bp.addEventListener("click", function(){ exportPNG(res); });
+  /* ---- 5.2.0: режимы показа разбора ---- */
+  (function bindModes(){
+    const bar=out.querySelector(".rmodes");
+    const wrap=out.querySelector(".steps-wrap");
+    const prev=document.getElementById("rmprev");
+    if(!bar||!wrap||!prev) return;
+    const SIMPLE={
+      lin:"Одна буква, первая степень. Всё с x — в одну сторону, числа — в другую, потом разделить на коэффициент.",
+      lin2:"Сначала раскрыть скобки, потом собрать x с одной стороны, числа с другой.",
+      quad:"Привести к виду ax² + bx + c = 0, найти D = b² − 4ac, затем корни по формуле.",
+      frac:"Общий знаменатель, потом действия с числителями. Деление — это умножение на перевёрнутую дробь.",
+      percent:"Процент — сотая часть. Считаем от того числа, с которым сравниваем.",
+      area:"Вспоминаем формулу площади и подставляем размеры. Следим за единицами.",
+      units:"Переводим через коэффициент: 1 км = 1000 м, 1 ч = 60 мин. Умножаем или делим — смотрим, что должно стать больше.",
+      system:"Из одного уравнения выражаем букву и подставляем в другое — останется одна неизвестная.",
+      motion:"Одна формула на всё: S = v · t. Выражаем то, что спрашивают.",
+      work:"Смотрим, какая часть работы делается за час, и складываем эти части.",
+      fl_kb:"y = kx + b: k — наклон, b — сдвиг по вертикали."
+    };
+    function build(res){
+      const kind=kindKeyOf(res||{});
+      const cat=({area:"areas",motion:"speed",work:"work",percent:"percent"})[kind]||"laws";
+      let items=[];
+      /* 5.2.0: сначала пробуем узкий набор формул именно под этот тип задачи,
+         и только если такого нет — общий «законы и формулы» */
+      const OWN={
+        quad:["Дискриминант: D = b² − 4ac","Корни: x = (−b ± √D) / 2a","Теорема Виета: x₁ + x₂ = −b/a, x₁x₂ = c/a"],
+        frac:["Общий знаменатель: a/b ± c/d = (ad ± bc)/bd","Деление: (a/b) : (c/d) = a·d / b·c","Смешанное число: a b/c = (ac + b)/c"],
+        lin:["Перенос: слагаемое меняет знак","ax = b  →  x = b/a","Проверка: подставить корень обратно"],
+        lin2:["a(b + c) = ab + ac","Минус перед скобкой меняет все знаки","Сначала скобки, потом подобные"],
+        units:["1 км = 1000 м · 1 м = 100 см","1 ч = 60 мин · 1 мин = 60 с","1 кг = 1000 г · 1 т = 1000 кг"],
+        system:["Сложить уравнения — убрать одну букву","Выразить и подставить","Ответ — пара (x; y)"],
+        fl_kb:["y = kx + b","k — наклон, b — сдвиг по OY","Точка (0; b) всегда на графике"]
+      };
+      if(OWN[kind]) items=OWN[kind].slice(0,4);
+      if(!items.length){
+        const c=(window.__CHEAT||[]).filter(function(x){ return x.k===cat; })[0];
+        items=(c?c.items:[]).slice(0,5);
+      }
+      let html='<h4>Коротко о задаче</h4><p>'+(SIMPLE[kind]||SIMPLE.lin)+'</p>';
+      if(items.length){
+        html+='<div class="fchips">'+items.map(function(it){
+          const txt=(typeof it==="string")? it : (it.n+': '+it.f);
+          return '<span class="fchip">'+txt+'</span>';
+        }).join("")+'</div>';
+      }
+      return html;
+    }
+    function similar(){
+      const key=kindKeyOf(LASTRES||{});
+      const G=window.__GEN_TYPES||{};
+      const k=G[key]? key : "lin";
+      let made=null;
+      try{ made=genSheet(k,1,2); }catch(e){ made=null; }
+      if(!made||!made.length) return false;
+      q.value=made[0].q;
+      run(made[0].q);
+      return true;
+    }
+    bar.addEventListener("click", function(e){
+      const b=e.target.closest(".rm");
+      if(!b) return;
+      const mode=b.getAttribute("data-rm");
+      if(mode==="similar"){ haptic(6); if(!similar()) return; }
+      Array.prototype.forEach.call(bar.querySelectorAll(".rm"), function(x){
+        const on=x===b;
+        x.classList.toggle("on", on);
+        x.setAttribute("aria-pressed", String(on));
+      });
+      wrap.hidden = (mode==="answer"||mode==="simple");
+      prev.hidden = (mode!=="simple");
+      if(mode==="simple") prev.innerHTML=build(LASTRES);
+      if(mode!=="answer" && mode!=="simple"){ wrap.hidden=false; }
+      haptic(4);
+    });
+  })();
+
+  /* ---- 5.2.0: «новая задача» — очистить и сразу печатать ---- */
+  const bnew=document.getElementById("actNew");
+  if(bnew) bnew.addEventListener("click", function(){
+    try{ window.__livePrevHide && window.__livePrevHide(); }catch(e){}
+    q.value=""; out.innerHTML=""; LASTRES=null;
+    syncClear(); q.focus(); window.scrollTo({top:0,behavior:"smooth"});
+  });
+
   const btr=document.getElementById("actTrain");
   if(btr) btr.addEventListener("click", function(){
     if(window.__trainTopic) window.__trainTopic(kindKeyOf(res));
@@ -7130,7 +7386,12 @@ function renderError(msg){
   out.innerHTML='<div class="card"><div class="err"><b>Не получилось разобрать условие</b>'+
     '<div class="msg">'+esc(msg)+'</div><ul>'+hints+'</ul></div></div>';
 }
+/* 5.2.0: короткая вибрация — «поймал» и «готово». На iPhone navigator.vibrate нет,
+   поэтому вызов всегда в try: отсутствие вибрации не ошибка. */
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||8); }catch(e){} }
+
 function run(text){
+  try{ window.__livePrevHide && window.__livePrevHide(); }catch(e){}
   let ok=false;
   try{ render(solve(text)); ok=true; }
   catch(e){
@@ -7151,6 +7412,7 @@ function run(text){
   syncClear();
 
   if(ok){
+    haptic(10);
     const res=out.querySelector(".result");
     runRing(res);                 /* бегущая обводка вокруг готового ответа */
     bumpStreak();
@@ -7163,6 +7425,59 @@ document.getElementById("form").addEventListener("submit",function(ev){
   run(q.value);
   out.scrollIntoView({behavior:"smooth",block:"nearest"});
 });
+
+/* ============================================================
+   5.2.0: ЖИВОЙ ПРЕДПРОСМОТР
+   Пока ученик печатает, под полем появляется строка «понял как = ответ».
+   Зачем: ошибку распознавания видно до нажатия стрелки, а ответ — сразу,
+   если нужен только он. Это и есть экономия времени: один взгляд вместо
+   «нажал → не то распозналось → стёр → поправил → нажал снова».
+   В режиме экзамена и в «проверь меня» предпросмотр молчит: там нельзя
+   показывать ответ заранее.
+   ============================================================ */
+(function livePreview(){
+  const inp=document.getElementById("q"), box=document.getElementById("livePrev");
+  if(!inp||!box) return;
+  let timer=null, shown="";
+
+  function esc2(t){
+    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function hide(){ box.hidden=true; box.innerHTML=""; shown=""; }
+  function quiet(){
+    if(document.body.classList.contains("exam-mode")) return true;
+    try{ if(lsGet("check","0")==="1") return true; }catch(e){}
+    return !!inp.readOnly;
+  }
+  function build(){
+    const raw=inp.value.trim();
+    if(raw.length<2 || quiet()){ hide(); return; }
+    let norm=raw, res=null;
+    try{ norm=(typeof prepText==="function"? prepText(raw) : raw) || raw; }catch(e){}
+    try{ res=solve(raw); }catch(e){ hide(); return; }
+    if(!res || !res.answer){ hide(); return; }
+    const ans=String(res.answer).replace(/&nbsp;/g," ");
+    const key=norm+"|"+ans;
+    if(key===shown) return;
+    shown=key;
+    box.hidden=false;
+    box.innerHTML='<span class="lpk">Понял как</span>'+
+      '<span class="lpq'+(norm!==raw? ' diff':'')+'" title="'+esc2(norm)+'">'+esc2(norm)+'</span>'+
+      '<span class="lpa">= '+esc2(ans)+'</span>'+
+      '<button type="button" class="lpgo" data-lpgo="1">Решить</button>';
+  }
+  inp.addEventListener("input", function(){ clearTimeout(timer); timer=setTimeout(build, 240); });
+  inp.addEventListener("keydown", function(e){ if(e.key==="Enter") hide(); });
+  inp.addEventListener("blur", function(){
+    setTimeout(function(){ if(!box.contains(document.activeElement)) hide(); }, 150);
+  });
+  box.addEventListener("click", function(e){
+    if(!e.target.closest("[data-lpgo]")) return;
+    e.preventDefault(); hide();
+    try{ document.getElementById("form").requestSubmit(); }catch(err){ run(inp.value); }
+  });
+  window.__livePrevHide=hide; window.__livePrevBuild=build;
+})();
 
 /* ============================================================
    4.11.0: примеры — три быстрых + «Примеры ▾» с шитом по темам.
@@ -8068,6 +8383,48 @@ function explainFor(h){
   return null;
 }
 
+/* 5.2.0: «проще» — вторая, короткая ступень объяснения.
+   Ученику, который застрял, не нужна лекция: нужна одна фраза о том,
+   что здесь происходит. Заголовки шагов пишет наш же движок, поэтому
+   словарь закрывает самые частые из них, а для остальных остаётся «почему?». */
+const PLAIN=[
+  {re:/^Ответ|^Результат/i, html:"Это итог. Все преобразования закончены. Если сомневаешься — подставь ответ в исходную запись: должно получиться верное равенство."},
+  {re:/^Считаем по действиям/i, html:"Просто арифметика по порядку: сначала умножение и деление, потом сложение и вычитание."},
+  {re:/^Считаем/i, html:"Тут только числа: делаем то, что написано, и следим за знаками."},
+  {re:/записываем уравнение/i, html:"Переводим условие с русского на язык математики: буквой обозначаем то, что ищем, и записываем равенство."},
+  {re:/как это на графике|графике|график/i, html:"Прямая линия. k отвечает за наклон, b — за то, где она пересекает вертикальную ось."},
+  {re:/что известно|что дано/i, html:"Выписываем числа из условия отдельно. Так ничего не теряется по дороге."},
+  {re:/что за функция/i, html:"Смотрим на степень при x: первая степень — линейная, вторая — квадратичная."},
+  {re:/коэффициент k|что говорит k/i, html:"k больше нуля — прямая идёт вверх. k меньше нуля — вниз. Чем дальше k от нуля, тем круче."},
+  {re:/число b|что говорит b/i, html:"b — высота, на которой прямая пересекает вертикальную ось. Точка (0; b) всегда лежит на графике."},
+  {re:/находим 1%|1%/i, html:"Процент — это сотая часть. Делим целое на 100 — получаем 1%, дальше умножаем на нужное число процентов."},
+  {re:/^Подставляем|подставляем значения/i, html:"Ставим на место буквы её число. Дальше это обычный пример — считаем аккуратно."},
+  {re:/дискриминант/i, html:"D = b² − 4ac. Больше нуля — два корня, равен нулю — один, меньше — корней нет."},
+  {re:/находим время|находим скорость|выражаем время|находим расстояние|считаем путь/i, html:"Берём формулу движения и выражаем из неё то, что спрашивают. Потом подставляем числа."},
+  {re:/производительность каждого/i, html:"Производительность — какая часть работы делается за час. Это 1, делённая на время."},
+  {re:/складываем производительности/i, html:"Работая вместе, складывают скорости работы, а время не складывают."},
+  {re:/простые множители/i, html:"Раскладываем числа на простые. Так сразу видно, что у них общее — это и есть НОД."},
+  {re:/модуль/i, html:"Модуль — расстояние от числа до нуля. Расстояние не бывает отрицательным."},
+  {re:/приводим подобные/i, html:"Складываем только одинаковое: 3x и 5x — можно, 3x и 5 — нельзя."},
+  {re:/раскрываем скобки/i, html:"Множитель перед скобкой умножаем на каждое слагаемое внутри — вместе со знаком."},
+  {re:/проверяем/i, html:"Берём ответ и подставляем в исходную запись. Сошлось — значит решено верно."},
+  {re:/главная идея/i, html:"Одна фраза о том, что мы вообще делаем в этой задаче."},
+  {re:/что переводим/i, html:"Решаем, из какой единицы в какую переводим, и во сколько раз они отличаются."},
+  {re:/вспоминаем/i, html:"Достаём нужную формулу и смотрим, каких величин в ней не хватает."},
+  {re:/записываем систему/i, html:"Каждое условие задачи — отдельное уравнение. Решаем их вместе, потому что буквы одни и те же."},
+  {re:/уравниваем коэффициенты/i, html:"Умножаем уравнения на такие числа, чтобы перед одной буквой встало одинаковое — тогда она уйдёт при вычитании."},
+  {re:/вычитаем одно/i, html:"Вычитаем уравнения друг из друга: одна буква пропадает, остаётся уравнение с одной."},
+  {re:/находим y/i, html:"x уже известен — подставляем его в любое уравнение и считаем y."},
+  {re:/смотрим на знаки/i, html:"Проверяем плюсы и минусы. Ошибка в знаке — самая частая, а ищется за пять секунд."},
+  {re:/читаем пример/i, html:"Разбираем запись по частям: какое действие первое, какое второе."},
+  {re:/записываем формулу|формулу/i, html:"Записываем формулу и смотрим, что в ней уже известно."}
+];
+function plainFor(h){
+  const head=String(h||"");
+  for(let i=0;i<PLAIN.length;i++){ if(PLAIN[i].re.test(head)) return PLAIN[i].html; }
+  return null;
+}
+
 /* ============================================================ */
 /*  12. Текст из HTML (для картинки)                             */
 /* ============================================================ */
@@ -8476,10 +8833,35 @@ if(btnHist) btnHist.addEventListener("click", function(){
 });
 renderHist();
 
+/* ---------- 5.2.0: тап по шагу — «не понял этот шаг» ---------- */
+out.addEventListener("click", function(e){
+  if(e.target.closest("button")) return;      /* кнопки обрабатываются ниже */
+  const sh=e.target.closest(".sh[data-sh]");
+  if(!sh) return;
+  const i=sh.getAttribute("data-sh");
+  /* сначала пробуем «почему?», если его нет — «проще» */
+  const t=sh.querySelector('.why[data-why="'+i+'"]')||sh.querySelector('.why.plain[data-plain="'+i+'"]');
+  if(!t) return;
+  t.click();
+  haptic(4);
+});
+
 /* ---------- «почему?» у шага ---------- */
 out.addEventListener("click", function(e){
   const b=e.target.closest(".why");
   if(!b) return;
+  /* 5.2.0: три вида кнопок у шага — «почему?», «проще» и озвучка */
+  const pl=b.getAttribute("data-plain");
+  if(pl!==null && pl!==undefined && pl!==""){
+    const mb=out.querySelector('.stepmore[data-more="'+pl+'"]');
+    if(!mb) return;
+    mb.hidden=!mb.hidden;
+    b.classList.toggle("on", !mb.hidden);
+    b.textContent = mb.hidden? "проще" : "скрыть";
+    haptic(4);
+    return;
+  }
+  if(b.hasAttribute("data-say")) return;
   const idx=b.getAttribute("data-why");
   const box=out.querySelector('.whybox[data-box="'+idx+'"]');
   if(!box) return;
@@ -10724,6 +11106,8 @@ const V4UI=(function(){
       {n:"Двое вместе", f:"t = t₁t₂ / (t₁ + t₂)"}
     ]}
   ];
+  /* 5.2.0: карточки формул нужны блоку «Проще» в разборе */
+  window.__CHEAT=CHEAT;
   let cheatCat="areas";
   function renderCheat(){
     const cats=$("cheatCats"), list=$("cheatList");
@@ -15436,19 +15820,39 @@ window.__LEARN={
     render();
     if(window.closeOverlays) try{ window.closeOverlays(); }catch(e){}
     scr.hidden=false;
+    try{ document.getElementById("brandBtn").setAttribute("aria-expanded","true"); }catch(e){}
     document.body.classList.add("set-on");
     document.body.style.overflow="hidden";
     const b=document.getElementById("wnClose"); if(b) b.focus();
   }
   function close(){
     scr.hidden=true;
+    try{ document.getElementById("brandBtn").setAttribute("aria-expanded","false"); }catch(e){}
     document.body.classList.remove("set-on");
     document.body.style.overflow="";
   }
+  /* 5.2.0: логотип работает в две стороны. Было: нажал — открылось окно
+     «О приложении», и закрыть его можно было только крестиком. Теперь второе
+     нажатие закрывает окно и возвращает на главный экран «Решить» —
+     это и есть «вернуться в центральное меню» из правки. */
+  function goHome(){
+    const b=document.querySelector('#bottomnav [data-goto="solve"]');
+    if(b && !b.classList.contains("on")) b.click();
+    const setOpen=document.getElementById("setScreen");
+    if(setOpen && !setOpen.hidden){ const c=document.getElementById("setClose"); if(c) c.click(); }
+    try{ window.scrollTo({top:0,behavior:"smooth"}); }catch(e){ window.scrollTo(0,0); }
+  }
+  function toggle(){
+    if(!scr.hidden){ close(); goHome(); }
+    else open();
+    try{ document.getElementById("brandBtn").setAttribute("aria-expanded", String(!scr.hidden)); }catch(e){}
+  }
   const brandBtn=document.getElementById("brandBtn");
-  if(brandBtn) brandBtn.addEventListener("click", open);
+  if(brandBtn) brandBtn.addEventListener("click", toggle);
   const cl=document.getElementById("wnClose");
   if(cl) cl.addEventListener("click", close);
+  const wm=document.getElementById("wnMark");
+  if(wm) wm.addEventListener("click", function(){ close(); goHome(); });
   const st=document.getElementById("wnSettings");
   if(st) st.addEventListener("click", function(){ close(); if(window.__openSettings) window.__openSettings(); });
   document.addEventListener("keydown", function(e){
