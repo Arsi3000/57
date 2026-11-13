@@ -2259,6 +2259,51 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
       border-color:var(--line);background:var(--glass);border-radius:var(--r-sm);text-align:left}
   }
 }
+
+/* ============ 5.2.1: «недавние» на главном ============ */
+.recent{margin:10px 0 0;padding:14px 14px 8px;border-radius:var(--r-lg);
+  border:1px solid var(--line);background:var(--surface-2);box-shadow:var(--edge)}
+.recent[hidden]{display:none}
+.recent h3{margin:0 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:800}
+.rlist{display:flex;flex-direction:column;gap:2px}
+.rrow{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:6px 8px;
+  border:0;border-radius:var(--r-sm);background:none;cursor:pointer;text-align:left;
+  font:inherit;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.rrow:hover{background:var(--glass)}
+.rrow .rq{flex:1 1 auto;min-width:0;font-family:"Cambria Math","STIX Two Math",Georgia,serif;
+  font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rrow .ra{flex:none;font-family:"Cambria Math","STIX Two Math",Georgia,serif;font-size:15px;
+  font-weight:700;color:var(--mint);max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.light .recent{background:#fffdf8}
+body.light .rrow .ra{color:#0e8f5c}
+body.exam-mode .recent{display:none !important}
+
+/* ============ 5.2.3: экранный калькулятор у поля ввода ============ */
+/* Кому проще набирать кнопками, чем печатать. Панель висит прямо над строкой
+   ввода и не поднимает системную клавиатуру: у поля на время работы ставится
+   inputmode="none" (на iOS ещё readonly), поэтому телефон молчит.
+   Двойной тап по клавише не приближает экран: touch-action:manipulation
+   и отсечка повторного нажатия в пределах 70 мс. */
+@media (max-width:640px){
+  body:not(.mode-other) #keyboard:not([hidden]){
+    position:fixed;left:10px;right:10px;
+    bottom:calc(140px + env(safe-area-inset-bottom,0px));
+    z-index:936;margin:0;padding:8px;
+    grid-template-columns:repeat(6,1fr);gap:6px;
+    border-radius:var(--r-lg);border:1px solid var(--line);
+    background:var(--surface-2);box-shadow:0 18px 44px -20px rgba(4,6,20,.85);
+  }
+  body:not(.mode-other).kb-on #livePrev{bottom:calc(358px + env(safe-area-inset-bottom,0px))}
+  body:not(.mode-other).kb-on{padding-bottom:calc(370px + env(safe-area-inset-bottom,0px))}
+  body:not(.mode-other).kb-on .cheatbtn,body:not(.mode-other).kb-on .mascot{bottom:calc(362px + env(safe-area-inset-bottom,0px))}
+  body.light #keyboard:not([hidden]){background:#fffdf8}
+}
+#keyboard .key{
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+#kbnav.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);border-color:transparent;color:#fff}
+body.light #kbnav.on{background:#3366ff}
 </style>
 </head>
 <body>
@@ -2276,6 +2321,7 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
      stroke=currentColor → иконка красится вместе с текстом и темой. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
+    <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.6"/><path d="M8.2 7.4h7.6"/><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01M8.6 14.6h.01M12 14.6h.01M15.4 14.6h.01M8.6 17.8h.01M12 17.8h.01M15.4 17.8h.01"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></symbol>
     <symbol id="i-sigma" viewBox="0 0 24 24"><path d="M18 4H6l6 8-6 8h12"/></symbol>
     <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/></symbol>
@@ -2479,6 +2525,9 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
     <button type="button" class="round" id="ocr" title="Распознать задачу с фото" aria-label="Распознать задачу с фото">
       <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg>
     </button>
+    <button type="button" class="round" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
+      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
+    </button>
     <input id="q" type="text" spellcheck="false"
       placeholder="Задача или пример" inputmode="text" enterkeyhint="go"
       aria-label="Уравнение или условие задачи" autocomplete="off">
@@ -2496,14 +2545,18 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
        правильно ли понят пример: ошибку видно сразу, до отправки. -->
   <div class="liveprev" id="livePrev" hidden></div>
 
+  <div class="keyboard" id="keyboard" hidden></div>
   <!-- плашка распознавания: превью, прогресс и что вышло -->
   <div class="ocrnote" id="ocrNote" hidden role="status" aria-live="polite"></div>
 
   <!-- прежний .toolrow оставлен пустым якорем: на него ссылается переключение режимов -->
   <div class="toolrow" hidden></div>
 
+  <!-- 5.2.1: после переноса строки ввода вниз середина экрана опустела. Заняли её
+       тем, что реально нужно на старте: последние задачи — одно касание, и пример снова в поле. -->
+  <section class="recent" id="recent" hidden aria-label="Недавние задачи"></section>
+
   <section class="hist" id="hist" hidden></section>
-  <div class="keyboard" id="keyboard" hidden></div>
 
   <div class="chips" id="chips"></div>
   <main id="out"></main>
@@ -2711,7 +2764,7 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.2.1";
+const APP_VERSION="5.2.3";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -7452,6 +7505,7 @@ function run(text){
     runRing(res);                 /* бегущая обводка вокруг готового ответа */
     bumpStreak();
     if(LASTRES) histAdd(text, LASTRES);
+    try{ renderRecent(); }catch(e){}
   }
 }
 
@@ -7478,7 +7532,7 @@ document.getElementById("form").addEventListener("submit",function(ev){
   function esc2(t){
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
-  function hide(){ box.hidden=true; box.innerHTML=""; shown=""; }
+  function hide(){ clearTimeout(timer); shown=""; box.hidden=true; box.innerHTML=""; }
   function quiet(){
     if(document.body.classList.contains("exam-mode")) return true;
     try{ if(lsGet("check","0")==="1") return true; }catch(e){}
@@ -7506,6 +7560,9 @@ document.getElementById("form").addEventListener("submit",function(ev){
   inp.addEventListener("blur", function(){
     setTimeout(function(){ if(!box.contains(document.activeElement)) hide(); }, 150);
   });
+  /* предпросмотр — подсказка на время набора; при прокрутке он только мешает
+     и на телефоне закрывает карточку ответа */
+  window.addEventListener("scroll", hide, {passive:true});
   box.addEventListener("click", function(e){
     if(!e.target.closest("[data-lpgo]")) return;
     e.preventDefault(); hide();
@@ -8501,6 +8558,41 @@ function histAdd(text, res){
   renderHist();
 }
 function histToday(){ const d=todayKey(); return histRead().filter(function(x){ return x.d===d; }); }
+
+/* 5.2.1: «недавние» на главном экране. Три последние задачи — тап возвращает
+   пример в поле и решает снова. Работает офлайн, данные из того же ключа solver.hist. */
+function renderRecent(){
+  const box=document.getElementById("recent");
+  if(!box) return;
+  let list=[];
+  try{ list=histRead()||[]; }catch(e){ list=[]; }
+  const seen={}, items=[];
+  for(let i=list.length-1;i>=0 && items.length<3;i--){
+    const r=list[i];
+    if(!r || !r.q || !r.a) continue;
+    const key=String(r.q).trim();
+    if(seen[key]) continue;
+    seen[key]=1; items.push(r);
+  }
+  if(!items.length || document.body.classList.contains("exam-mode")){ box.hidden=true; box.innerHTML=""; return; }
+  box.hidden=false;
+  box.innerHTML='<h3>Недавние</h3><div class="rlist">'+items.map(function(r){
+    const q=String(r.q).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const a=String(r.a).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return '<button type="button" class="rrow" data-recent="'+q.replace(/"/g,"&quot;")+'">'+
+             '<span class="rq">'+q+'</span><span class="ra">'+a+'</span></button>';
+  }).join("")+'</div>';
+  box.querySelectorAll("[data-recent]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const v=b.getAttribute("data-recent");
+      q.value=v;
+      try{ document.getElementById("form").requestSubmit(); }catch(e){ run(v); }
+      haptic(6);
+      out.scrollIntoView({behavior:"smooth",block:"nearest"});
+    });
+  });
+}
+window.__renderRecent=renderRecent;
 function renderHist(){
   /* с v4.0 историю рисует модуль с тегами и поиском */
   if(window.__v4hist){ window.__v4hist(); return; }
@@ -8804,7 +8896,17 @@ if(kbEl){
     b.type="button";
     b.className="key"+(/[x²√()]/.test(k[0])? " acc":"");
     b.textContent=k[0];
-    b.addEventListener("click", function(){ kbInsert(k[1]); });
+    /* 5.2.3: одно нажатие — один символ. Быстрый двойной тап (случайный или
+       попытка «зума») не вставляет два знака подряд и не масштабирует экран. */
+    let lastTap=0;
+    b.addEventListener("pointerdown", function(e){ e.preventDefault(); });
+    b.addEventListener("click", function(e){
+      e.preventDefault();
+      const now=Date.now();
+      if(now-lastTap<70) return;
+      lastTap=now;
+      kbInsert(k[1]);
+    });
     kbEl.appendChild(b);
   });
 }
@@ -8845,16 +8947,44 @@ window.__cleanPaste=cleanPaste;
 });
 
 const btnKb=document.getElementById("kbbtn");
+const btnKbNav=document.getElementById("kbnav");
+const IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||
+             (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+
+/* 5.2.3: системная клавиатура не должна выезжать поверх нашей панели.
+   На Android хватает inputmode="none"; на iOS надёжнее readonly — там
+   inputmode игнорируется, и телефон поднимает свою клавиатуру. */
+function kbQuiet(on){
+  try{
+    if(on){
+      q.setAttribute("inputmode","none");
+      if(IS_IOS) q.readOnly=true;
+    }else{
+      q.setAttribute("inputmode","text");
+      q.readOnly=false;
+    }
+  }catch(e){}
+}
 function syncKb(){
   const on=lsGet("kb","0")==="1";
   if(kbEl) kbEl.hidden=!on;
   if(btnKb) btnKb.classList.toggle("on", on);
+  if(btnKbNav){
+    btnKbNav.classList.toggle("on", on);
+    btnKbNav.setAttribute("aria-expanded", on? "true":"false");
+  }
+  document.body.classList.toggle("kb-on", on);
+  kbQuiet(on);
   if(on) kbHints();
 }
-if(btnKb) btnKb.addEventListener("click", function(){
-  lsSet("kb", lsGet("kb","0")==="1"? "0":"1");
-  syncKb();
+function toggleKb(){ lsSet("kb", lsGet("kb","0")==="1"? "0":"1"); syncKb(); }
+if(btnKb) btnKb.addEventListener("click", toggleKb);
+if(btnKbNav) btnKbNav.addEventListener("click", function(){ toggleKb(); haptic(5); });
+/* закрыть калькулятор: Esc и кнопка «Новая задача» */
+document.addEventListener("keydown", function(e){
+  if(e.key==="Escape" && lsGet("kb","0")==="1"){ lsSet("kb","0"); syncKb(); }
 });
+window.__toggleKb=toggleKb;
 syncKb();
 /* подсветка обновляется, когда двигают курсор и когда печатают с обычной клавиатуры */
 ["input","click","keyup"].forEach(function(ev){
@@ -8869,6 +8999,7 @@ if(btnHist) btnHist.addEventListener("click", function(){
   if(!h.hidden) renderHist();
 });
 renderHist();
+try{ renderRecent(); }catch(e){}
 
 /* ---------- 5.2.0: тап по шагу — «не понял этот шаг» ---------- */
 out.addEventListener("click", function(e){
