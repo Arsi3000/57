@@ -2366,6 +2366,238 @@ body.light .cardacts .act-primary:hover{background:#e4e9ff}
 .trseed-x{margin-left:auto;flex:none;border:0;background:none;color:var(--ink-dim);
   font:inherit;font-size:13px;cursor:pointer;padding:0 2px;line-height:1}
 body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
+
+
+/* ================= 5.5.0: «Потрогать» — график и чертёж ================= */
+.pt{margin:16px 0 4px;border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--surface-1);overflow:hidden}
+body.light .pt{background:#fff;border-color:rgba(50,70,120,.16)}
+body.warm .pt{background:#fbf5e7;border-color:rgba(120,90,60,.22)}
+.pt>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;align-items:center;gap:9px;
+  font-weight:700;font-size:13.5px;color:var(--ink);-webkit-tap-highlight-color:transparent}
+.pt>summary::-webkit-details-marker{display:none}
+.pt>summary .ptic{width:18px;height:18px;color:var(--accent,#7c6cff);flex:none}
+.pt>summary .ptchev{margin-left:auto;transition:.18s;opacity:.6;font-size:12px}
+.pt[open]>summary .ptchev{transform:rotate(180deg)}
+.ptbody{padding:0 14px 14px}
+.ptcanvas{display:block;width:100%;height:auto;border-radius:12px;background:#fbfdff}
+body.light .ptcanvas{background:#fbfcff}
+body.warm .ptcanvas{background:#fdf8ec}
+body:not(.light) .ptcanvas{background:#0d1220}
+.ptsliders{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px}
+.ptsl{display:grid;grid-template-columns:auto 1fr 46px;align-items:center;gap:10px;
+  font-size:12.5px;color:var(--ink-dim);flex:1 1 100%;min-width:0}
+.ptln{white-space:nowrap}
+.ptsl b{color:var(--ink);font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+@media (min-width:560px){ .ptsl{flex:1 1 calc(50% - 18px)} }
+.ptsl input[type=range]{flex:1;min-width:60px;accent-color:#7c6cff;height:22px;cursor:pointer}
+body.warm .ptsl input[type=range]{accent-color:#b47a2f}
+.ptout{margin-top:10px;font-size:13px;color:var(--ink-soft,#2a2f42);line-height:1.5}
+.ptout b{color:var(--ink)}
+.ptout .ptroot{color:#15855a;font-weight:700}
+body:not(.light) .ptout .ptroot{color:#4ad19a}
+
+/* ================= 5.3.0: кружок темы и список ================= */
+.tcirc{
+  width:34px;height:34px;padding:0;border-radius:50%;cursor:pointer;
+  border:1px solid var(--line);background:none;display:grid;place-items:center;
+  flex:none;-webkit-tap-highlight-color:transparent;transition:.18s;
+}
+.tcirc:hover{border-color:rgba(124,108,255,.6)}
+.tcirc-in{
+  width:26px;height:26px;border-radius:50%;display:block;
+  background:linear-gradient(135deg,#f7f3e8 0 50%,#141a2e 50% 100%);
+  box-shadow:inset 0 0 0 1px rgba(50,70,120,.18);
+  position:relative;
+}
+.tcirc-in:after{
+  content:"";position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;
+  border-radius:50%;background:#3366ff;box-shadow:0 0 0 2px rgba(255,255,255,.9);
+}
+/* цвет сердцевины меняется вместе с темой */
+body:not(.light)[data-theme="neon"] ~ * .tcirc-in:after,
+body[data-theme="neon"] .tcirc-in:after{background:#00ffe5}
+body[data-theme="retro"] .tcirc-in:after{background:#7ee787}
+body.light .tcirc-in:after{background:#3366ff}
+body.warm .tcirc-in{background:linear-gradient(135deg,#f3ead8 0 50%,#4a3a24 50% 100%)}
+body.warm .tcirc-in:after{background:#b47a2f}
+
+.themelist{
+  position:absolute;top:56px;right:12px;z-index:960;width:196px;padding:6px;
+  border-radius:14px;border:1px solid var(--line-strong,rgba(60,70,110,.5));
+  background:var(--surface-2,#141a2e);
+  box-shadow:0 18px 40px -20px rgba(4,6,20,.8);
+  animation:tlIn .16s ease-out;
+}
+.themelist[hidden]{display:none}
+@keyframes tlIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.titem{
+  display:flex;align-items:center;gap:9px;width:100%;min-height:40px;padding:5px 8px;
+  border:0;border-radius:9px;background:none;cursor:pointer;text-align:left;
+  font:inherit;font-size:13px;color:var(--ink);-webkit-tap-highlight-color:transparent;
+}
+.titem:hover{background:var(--glass,rgba(255,255,255,.06))}
+.titem.on{background:rgba(124,108,255,.16);color:var(--ink);font-weight:700}
+body.light .themelist,body.warm .themelist{background:#fffdf8;border-color:rgba(50,70,120,.2)}
+body.light .titem.on,body.warm .titem.on{background:#ecebff;color:#1f2450}
+.tdot{width:20px;height:20px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(50,70,120,.25)}
+.t-light{background:#f7f3e8}
+.t-dark{background:#141a2e}
+.t-neon{background:#7c6cff}
+.t-retro{background:#c8e6a0}
+.t-warm{background:#f3ead8}
+
+/* ================= 5.6.0: язычок «доска» у поля ================= */
+.boardtab{
+  position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);
+  width:52px;height:18px;padding:0;cursor:pointer;
+  border:1px solid var(--line);border-top:0;
+  border-radius:0 0 11px 11px;
+  background:var(--surface-2,#141a2e);
+  display:grid;place-items:center;color:var(--ink-dim);
+  -webkit-tap-highlight-color:transparent;transition:.16s;
+}
+.boardtab .ic{width:15px;height:15px;stroke-width:2.2}
+.boardtab:hover{color:var(--ink);border-color:rgba(124,108,255,.55)}
+.boardtab.on{color:#fff;background:linear-gradient(135deg,#7c6cff,#35d0ff);border-color:transparent}
+body.light .boardtab{background:#fffdf8}
+body.light .boardtab.on{background:#3366ff;color:#fff}
+body.warm .boardtab{background:#fbf5e7}
+body.exam-mode .boardtab,body.mode-other .boardtab{display:none !important}
+
+/* ================= 5.6.0: доска на весь экран ================= */
+.boardsheet{
+  position:fixed;inset:0;z-index:1200;display:flex;flex-direction:column;
+  background:#f7f3e8;animation:bsIn .2s ease-out;
+}
+.boardsheet[hidden]{display:none !important}
+@keyframes bsIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+body.light .boardsheet,body.warm .boardsheet{background:#f7f3e8}
+body.warm .boardsheet{background:#f3ead8}
+.bstop{display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid rgba(50,70,120,.14);background:rgba(255,253,248,.9);
+  padding-top:calc(10px + env(safe-area-inset-top,0px))}
+.bstitle{font-size:13px;font-weight:700;color:#20212a}
+.bshint{font-size:11.5px;color:#6c7280;margin-left:auto}
+.bsx{border:0;background:none;font:inherit;font-size:13px;font-weight:700;color:#2d55d8;
+  cursor:pointer;padding:6px 10px;border-radius:8px}
+.bsx:hover{background:#eef2ff}
+.bscanvas-wrap{position:relative;flex:1;overflow:hidden}
+.bscanvas-wrap:before{content:"";position:absolute;left:26px;top:0;bottom:0;width:2px;
+  background:rgba(214,120,120,.55);pointer-events:none;z-index:2}
+#bcanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;
+  background-color:#f7f3e8;
+  background-image:
+    linear-gradient(to right, rgba(120,150,200,.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(120,150,200,.22) 1px, transparent 1px);
+  background-size:26px 26px}
+body.warm #bcanvas{background-color:#f3ead8;
+  background-image:linear-gradient(to right,rgba(150,120,80,.16) 1px,transparent 1px),
+                   linear-gradient(to bottom,rgba(150,120,80,.16) 1px,transparent 1px)}
+.bsbtns{display:flex;align-items:center;gap:8px;padding:10px 12px;
+  padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid rgba(50,70,120,.14);background:rgba(255,253,248,.94)}
+.bsb{flex:1;height:46px;border-radius:999px;border:1px solid rgba(50,70,120,.18);
+  background:#fff;color:#20212a;font:700 12.5px/1 inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px}
+.bsb .ic{width:18px;height:18px}
+.bsb.ic2{flex:0 0 46px;width:46px;padding:0}
+.bsb.primary{background:#3366ff;border-color:transparent;color:#fff}
+.bsb:active{transform:translateY(1px)}
+
+/* ================= 5.3.0: тема «Тёплая бумага» ================= */
+/* Песочная бумага, коричневая клетка, охристый акцент. Белого нет вообще:
+   ночью и при слабом зрении белый фон режет глаз. */
+body.warm{
+  --bg:#f3ead8; --surface-1:#fbf5e7; --surface-2:#fbf5e7; --surface-3:#efe3cd;
+  --ink:#2f281e; --ink-dim:#6d6152; --ink-soft:#40382c;
+  --line:rgba(120,90,60,.22);
+  --mint:#2f7a52; --vio:#9a6520; --accent:#9a6520;
+  --glass:rgba(255,251,240,.7);
+  --r-lg:18px;
+  background:#f3ead8;color:#2f281e;
+}
+body.warm .bg .orb{display:none}
+body.warm .bg .grid{opacity:1;
+  background-image:linear-gradient(90deg,rgba(150,120,80,.13) 1px,transparent 1px),
+                   linear-gradient(rgba(150,120,80,.13) 1px,transparent 1px);
+  background-size:26px 26px}
+body.warm .bg:after{content:"";position:absolute;left:26px;top:0;bottom:0;width:2px;
+  background:rgba(190,140,110,.5)}
+body.warm .searchbar{background:#fbf5e7;border-color:rgba(120,90,60,.24);
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 16px 30px -28px rgba(90,70,40,.5)}
+body.warm .searchbar:focus-within{border-color:#b47a2f;background:#fdf9ee;
+  box-shadow:inset 0 0 0 1px rgba(180,122,47,.35)}
+body.warm #q{color:#2f281e}
+body.warm #q::placeholder{color:#8b7d68}
+body.warm .solve{background:linear-gradient(135deg,#c78a35,#a9691d);
+  box-shadow:0 10px 22px -14px rgba(150,100,30,.8),inset 0 1px 0 rgba(255,255,255,.25)}
+body.warm .card{background:#fbf5e7;border-color:rgba(120,90,60,.2);
+  box-shadow:0 12px 30px -30px rgba(90,70,40,.5)}
+body.warm .chip,body.warm .act,body.warm .key,body.warm .btn{background:#fbf5e7;
+  border-color:rgba(120,90,60,.2);color:#2f281e}
+body.warm .rval{color:#2f6a48}
+body.warm .result{background:rgba(47,122,82,.07);border-color:rgba(47,122,82,.28)}
+body.warm .eq{border-left-color:#b47a2f;background:rgba(180,122,47,.08)}
+body.warm .dockbar,body.warm .bottomnav{background:#f7efdd;border-color:rgba(120,90,60,.2)}
+body.warm .dockb{background:#fbf5e7;border-color:rgba(120,90,60,.2);color:#2f281e}
+
+/* На широком экране капсула ввода не висит над текстом разбора:
+   уезжает в правое поле вертикальной колонкой. На телефоне — как была, внизу. */
+@media (min-width:1200px){
+  .dockbar{left:auto;right:26px;top:50%;bottom:auto;transform:translateY(-50%);
+    flex-direction:column;max-width:none;width:64px;padding:8px;gap:8px;
+    border-radius:34px}
+  .dockb{width:48px;flex:0 0 48px}
+  .mascot{right:26px}
+}
+body.warm .dockb.on{background:#b47a2f;border-color:transparent;color:#fff}
+body.warm .bnav{color:#7a6d5c}
+body.warm .bnav.on{color:#8a5a14;background:rgba(180,122,47,.14)}
+body.warm .themebtn,body.warm .setbtn{background:#fbf5e7;border-color:rgba(120,90,60,.2);color:#3a3126}
+body.warm .hud-compound{background:#fbf5e7;border-color:rgba(120,90,60,.2)}
+body.warm .rrow{color:#3b5b9a}
+body.warm .rrow .ra{color:#2f7a52}
+body.warm header .brand .mark{color:#fff!important;-webkit-text-fill-color:#fff!important;
+  background:linear-gradient(140deg,#d9a557,#8a5f1e);
+  box-shadow:0 10px 24px -14px rgba(140,100,40,.85),inset 0 1px 0 rgba(255,255,255,.4)}
+body.warm .hud-compound,body.warm .dockbar{box-shadow:none}
+body.warm .solve,body.warm .solve .arr{color:#fff}
+body.warm .lvnum{background:linear-gradient(135deg,#d9a557,#a9691d);color:#fff;border-color:#c9973f}
+body.warm .hud-xp{background:rgba(120,90,60,.16)}
+body.warm .hud-xp i{background:linear-gradient(90deg,#d9a557,#a9691d)}
+body.warm ::selection{background:rgba(180,122,47,.25)}
+body.warm .why{color:#8a5a14;background:rgba(180,122,47,.10);border-color:rgba(180,122,47,.32)}
+body.warm .why:hover{background:rgba(180,122,47,.18)}
+body.warm .whybox{background:#fbf1de;border-color:rgba(180,122,47,.28);color:#40382c;border-left-color:#b47a2f}
+body.warm .eq{box-shadow:none}
+body.warm .saybtn{color:#8b7d68;border-color:rgba(120,90,60,.22)}
+body.warm .saybtn:hover{color:#5a4a35;background:rgba(180,122,47,.1)}
+body.warm .eq.big{background:rgba(180,122,47,.09);border-color:rgba(180,122,47,.28);color:#2f281e}
+body.warm .eq .v{color:#1d3f8f}
+body.warm .steps>li:not(:last-child):after{background:linear-gradient(180deg,rgba(180,122,47,.45),rgba(180,122,47,.05))}
+body.warm .cardhead,body.warm .steps-title{border-color:rgba(120,90,60,.2)}
+body.warm .steps-title:after{background:rgba(120,90,60,.18)}
+body.warm .steps-title{color:#6d6152}
+body.warm .kind{color:#8a5a14}
+body.warm .snum{background:rgba(180,122,47,.12);border-color:rgba(180,122,47,.4);color:#8a5a14}
+body.warm .sh{color:#2f281e}
+body.warm .sb{color:#40382c}
+body.warm .note,body.warm .vcnote{color:#6d6152}
+body.warm .rmodes{background:#f7efdd;border-color:rgba(120,90,60,.2)}
+body.warm .rmodes button.on{background:#fffdf8;color:#2f281e;box-shadow:0 1px 3px rgba(90,70,40,.15)}
+body.warm .chip{background:#fbf5e7}
+body.warm .mark,.warm .mark{}
+body.warm .rlabel{color:#2f7a52}
+body.warm .trseed{background:rgba(180,122,47,.1);border-color:rgba(180,122,47,.28);color:#6d4b16}
+body.warm .ocrnote{background:#fffdf8;border-color:rgba(120,90,60,.25)}
+body.warm .keyboard,body.warm #keyboard{background:#f7efdd;border-color:rgba(120,90,60,.22)}
+body.warm .key{background:#fffdf8;border-color:rgba(120,90,60,.2)}
+
+body.warm .cheat,body.warm .setscreen,body.warm .themelist{background:#fbf5e7;border-color:rgba(120,90,60,.2)}
+body.warm .liveprev{background:#fbf5e7;border-color:rgba(120,90,60,.3)}
+body.warm .cardacts .act{background:#fbf5e7;border-color:rgba(120,90,60,.22);color:#2f281e}
+body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#8a5a14}
 </style>
 </head>
 <body>
@@ -2384,6 +2616,11 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="i-cat" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2.5h6.5A1.5 1.5 0 0 1 20 8v9.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-12Z"/><path d="m8.6 11.4 2 2 4-4.4"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 8H5v4"/><path d="M5.4 12a7 7 0 1 1 1.6 5.4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9.5 4h5"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 11v5M13.5 11v5"/></symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M4 12h16"/></symbol>
+    <symbol id="i-paste" viewBox="0 0 24 24"><rect x="7.5" y="3.5" width="9" height="16" rx="2"/><path d="M5.6 7.5H4.5A1.5 1.5 0 0 0 3 9v9.5A1.5 1.5 0 0 0 4.5 20H12"/><path d="M10.2 7.6h3.6"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
     <symbol id="i-pen" viewBox="0 0 24 24"><path d="m14.5 5.5 4 4L8 20H4v-4L14.5 5.5Z"/><path d="m12.6 7.4 4 4"/></symbol>
     <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.6"/><path d="M8.2 7.4h7.6"/><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01M8.6 14.6h.01M12 14.6h.01M15.4 14.6h.01M8.6 17.8h.01M12 17.8h.01M15.4 17.8h.01"/></symbol>
     <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></symbol>
@@ -2468,10 +2705,26 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
           <svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg><b id="achvNum">0/8</b><span class="hud-txt">награды</span>
         </span>
       </button>
+      <!-- 5.3.0: тема переключается тут же, у шестерёнки.
+           Тап — следующая по кругу, удержание — список всех тем. -->
+      <button type="button" class="tcirc" id="themeBtn"
+        title="Тема: нажмите — следующая, удержите — выбрать из списка"
+        aria-label="Тема оформления" aria-expanded="false" aria-controls="themeList">
+        <span class="tcirc-in" aria-hidden="true"></span>
+      </button>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
         <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
       </button>
     </div>
+    <!-- 5.3.0: список тем по удержанию кружка -->
+    <div class="themelist" id="themeList" hidden role="menu" aria-label="Темы оформления">
+      <button type="button" class="titem" data-th="light" role="menuitem"><span class="tdot t-light"></span>Светлая</button>
+      <button type="button" class="titem" data-th="dark" role="menuitem"><span class="tdot t-dark"></span>Тёмная</button>
+      <button type="button" class="titem" data-th="neon" role="menuitem"><span class="tdot t-neon"></span>Неон</button>
+      <button type="button" class="titem" data-th="retro" role="menuitem"><span class="tdot t-retro"></span>Ретро</button>
+      <button type="button" class="titem" data-th="warm" role="menuitem"><span class="tdot t-warm"></span>Тёплая бумага</button>
+    </div>
+
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
     <p class="printonly" id="printHead">Решатель · разбор задачи</p>
 
@@ -2596,6 +2849,11 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
       <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
     </button>
     <input type="file" id="ocrFile" accept="image/*" hidden>
+    <!-- 5.6.0: язычок под полем — «разверни доску и пиши от руки» -->
+    <button type="button" class="boardtab" id="boardOpen"
+      title="Написать решение от руки" aria-label="Открыть доску: написать от руки" aria-expanded="false">
+      <svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>
+    </button>
   </form>
   <!-- 5.2.0: живой предпросмотр. Пока ученик печатает, под полем появляется
        строка «понял как → ответ». Не надо нажимать стрелку, чтобы узнать,
@@ -2672,6 +2930,9 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
             title="Шпаргалка с формулами" aria-label="Шпаргалка с формулами">
       <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg>
     </button>
+    <button type="button" class="dockb" id="pasteBtn" title="Вставить из буфера и решить" aria-label="Вставить из буфера">
+      <svg class="ic" aria-hidden="true"><use href="#i-paste"/></svg>
+    </button>
     <button type="button" class="dockb" id="ocr" title="Распознать задачу с фото" aria-label="Распознать задачу с фото">
       <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg>
     </button>
@@ -2713,6 +2974,7 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
           <button type="button" class="setbtn2" data-stheme="dark">🌙 Тёмная</button>
           <button type="button" class="setbtn2" data-stheme="neon">✷ Неон</button>
           <button type="button" class="setbtn2" data-stheme="retro">▚ Ретро</button>
+          <button type="button" class="setbtn2" data-stheme="warm">▤ Тёплая бумага</button>
         </div>
         <p class="note">Светлая лучше для печати и для слабого экрана на солнце.</p>
       </div>
@@ -2842,7 +3104,7 @@ body.light .trseed{background:#f2f5ff;border-color:#b9c9ff;color:#4a5270}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.2.6";
+const APP_VERSION="5.6.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -7374,6 +7636,7 @@ const EXAMPLES=[
 ];
 
 let LASTRES=null;
+let LASTQ=""; /* 5.5.0: исходный текст задачи — нужен живому графику */
 function render(res){
   LASTRES=res;
   const checkMode = lsGet("check","0")==="1";
@@ -7421,6 +7684,8 @@ function render(res){
     '</article>';
   /* .rval не раскрашиваем: ответ должен читаться золотым целиком */
   out.querySelectorAll(".eq").forEach(colorizeMath);
+  /* 5.5.0: «потрогать» — живой график или чертёж под шагами */
+  try{ if(window.__ptMount) window.__ptMount(out, res, LASTQ); }catch(e){}
 
   const rev=document.getElementById("reveal");
   if(rev) rev.addEventListener("click", function(){
@@ -7562,6 +7827,7 @@ function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||8); }catch
 
 function run(text){
   try{ window.__livePrevHide && window.__livePrevHide(); }catch(e){}
+  LASTQ=String(text==null? "":text);
   let ok=false;
   try{ render(solve(text)); ok=true; }
   catch(e){
@@ -8898,6 +9164,14 @@ syncCheck();
 
 /* тема: светлая, тёмная, неон, ретро (v4.0) */
 function applyTheme(){ V4.applyTheme(V4.themeNow()); }
+/* 5.3.0: тема переключается ещё и кружком в шапке — даём наружу мостик,
+   сам V4 живёт внутри этого замыкания и снаружи не виден. */
+window.__themeNow=function(){ return V4.themeNow(); };
+window.__setTheme=function(n){
+  V4.applyTheme(n);
+  try{ if(typeof settingsSync==="function") settingsSync(); }catch(e){}
+  try{ if(typeof applyTheme==="function") applyTheme(); }catch(e){}
+};
 document.querySelectorAll(".themebtn").forEach(function(b){
   b.addEventListener("click", function(){
     V4.applyTheme(b.getAttribute("data-theme"));
@@ -10865,25 +11139,42 @@ const V4=(function(){
   };
 
   /* ---------------- ТЕМЫ ---------------- */
-  const THEMES=["light","dark","neon","retro"];
+  /* 5.3.0: «Тёплая бумага» — пятая тема, песочная. Она светлая по контрасту,
+     поэтому живёт и в классе light, и в своём warm: warm перекрывает светлую. */
+  const THEMES=["light","dark","neon","retro","warm"];
   function themeNow(){ return LS.get("theme","light"); }
   function applyTheme(name){
     if(THEMES.indexOf(name)<0) name="light";
-    document.body.classList.toggle("light", name==="light");
-    if(name==="light"||name==="dark") document.body.removeAttribute("data-theme");
+    const isLight=(name==="light"||name==="warm");
+    document.body.classList.toggle("light", isLight);
+    document.body.classList.toggle("warm", name==="warm");
+    if(isLight||name==="dark") document.body.removeAttribute("data-theme");
     else document.body.setAttribute("data-theme", name);
     document.querySelectorAll(".themebtn").forEach(function(b){
       const on=b.getAttribute("data-theme")===name;
       b.classList.toggle("on", on);
       b.setAttribute("aria-pressed", on? "true":"false");
     });
+    document.querySelectorAll("[data-stheme]").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-stheme")===name);
+    });
+    document.querySelectorAll("#themeList .titem").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-th")===name);
+    });
+    const tb=document.getElementById("themeBtn");
+    if(tb){
+      const NAMES={light:"светлая",dark:"тёмная",neon:"неон",retro:"ретро",warm:"тёплая бумага"};
+      tb.setAttribute("aria-label","Тема: "+NAMES[name]);
+      tb.setAttribute("title","Тема — "+NAMES[name]+". Нажмите — следующая, удержите — список");
+    }
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta){
       meta.setAttribute("content", name==="light"? "#ffffff"
+        : name==="warm"? "#f3ead8"
         : name==="neon"? "#04060f" : name==="retro"? "#12142a" : "#070a14");
     }
     /* нативные select, скроллбары и input[type=file] берут оформление отсюда */
-    try{ document.documentElement.style.colorScheme = (name==="light")? "light" : "dark"; }catch(e){}
+    try{ document.documentElement.style.colorScheme = isLight? "light" : "dark"; }catch(e){}
     LS.set("theme", name);
   }
 
@@ -16077,7 +16368,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.1.2","d":"13.11","b":["Фото задания с кириллической «х» и «З» теперь решается верно: «у = -Зх - 7» даёт k = −3, b = −7","Задачи вида «постоянная часть + плата за единицу» решаются всегда — раньше часть из них не понималась («доставка 250 ₽, тетрадь 150 ₽ за штуку»)","Кириллическая «х» в формуле («2х + 5 = 13»), числа и знаки словами («два икс плюс пять равно тринадцати»)","В поле после фото — уже исправленная запись: без «! 1.» и с латинскими x, y, k, b","Номер задания не съедает знак: «-2^2» и «|−10| − |12|» больше не портятся","Кнопка решения контрастнее: белая стрелка видна на градиенте (3,62:1 вместо 2,89)","Поле ввода и круглые кнопки — 16 px и 44×44 на узких экранах; клавиатура открывается обычная, с буквами","Модальные окна держат фокус внутри по Tab; без JavaScript экран объясняет, что включить","Даты на листах работ — по-русски: «7 ноября 2026»","Распознавание фото под углом: кадр пробуется в поворотах 0°, 90° и 270°"]},{"v":"5.1.1","d":"12.11","b":["Знак суммы в логотипе снова белый — во всех темах.","Капсула уровня растянута от логотипа до настроек, сегменты делят ширину поровну.","На широком экране у сегментов есть подписи: уровень, серия, квесты, награды."]},{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
+  const CHANGES=[{"v": "5.6.0", "d": "14.11", "b": ["Тема переключается кружком в шапке: нажали — следующая, удержали — список всех пяти", "Новая тема «Тёплая бумага»: песочный фон, коричневая клетка, охристый акцент — для вечернего чтения", "Кнопка «Вставить» в капсуле ввода: скопировали задачу — и сразу решили, без ручной вставки", "Язычок под полем открывает доску: пишете решение от руки, «Готово» распознаёт и подставляет в поле", "Под разбором линейного уравнения — «Потрогать»: прямая y = kx + b с ползунками наклона и сдвига, корень виден точкой", "Под задачами на площадь — «Потрогать»: чертёж с ползунками сторон, площадь и периметр считаются на глазах", "На широком экране капсула ввода ушла в правое поле и больше не закрывает текст разбора"]},{"v":"5.1.2","d":"13.11","b":["Фото задания с кириллической «х» и «З» теперь решается верно: «у = -Зх - 7» даёт k = −3, b = −7","Задачи вида «постоянная часть + плата за единицу» решаются всегда — раньше часть из них не понималась («доставка 250 ₽, тетрадь 150 ₽ за штуку»)","Кириллическая «х» в формуле («2х + 5 = 13»), числа и знаки словами («два икс плюс пять равно тринадцати»)","В поле после фото — уже исправленная запись: без «! 1.» и с латинскими x, y, k, b","Номер задания не съедает знак: «-2^2» и «|−10| − |12|» больше не портятся","Кнопка решения контрастнее: белая стрелка видна на градиенте (3,62:1 вместо 2,89)","Поле ввода и круглые кнопки — 16 px и 44×44 на узких экранах; клавиатура открывается обычная, с буквами","Модальные окна держат фокус внутри по Tab; без JavaScript экран объясняет, что включить","Даты на листах работ — по-русски: «7 ноября 2026»","Распознавание фото под углом: кадр пробуется в поворотах 0°, 90° и 270°"]},{"v":"5.1.1","d":"12.11","b":["Знак суммы в логотипе снова белый — во всех темах.","Капсула уровня растянута от логотипа до настроек, сегменты делят ширину поровну.","На широком экране у сегментов есть подписи: уровень, серия, квесты, награды."]},{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
   const scr=document.getElementById("whatsNew");
   if(!scr) return;
   const list=document.getElementById("wnList");
@@ -16488,6 +16779,481 @@ window.__LEARN={
 })();
 </script>
 
+
+<script>
+/* ===== 5.3.0: кружок темы, «Вставить», язычок доски ===== */
+(function(){
+  const $=function(id){ return document.getElementById(id); };
+  const ORDER=["light","dark","neon","retro","warm"];
+  const NAMES={light:"светлая",dark:"тёмная",neon:"неон",retro:"ретро",warm:"тёплая бумага"};
+
+  /* ---------- тема ---------- */
+  const btn=$("themeBtn"), list=$("themeList");
+  function curTheme(){
+    try{ return window.__themeNow? window.__themeNow() : "light"; }catch(e){ return "light"; }
+  }
+  function setTh(name){
+    try{ if(window.__setTheme) window.__setTheme(name); }catch(e){}
+    closeList();
+  }
+  function openList(){
+    if(!list) return;
+    list.hidden=false;
+    if(btn) btn.setAttribute("aria-expanded","true");
+    list.querySelectorAll(".titem").forEach(function(b){
+      b.classList.toggle("on", b.getAttribute("data-th")===curTheme());
+    });
+  }
+  function closeList(){
+    if(!list) return;
+    list.hidden=true;
+    if(btn) btn.setAttribute("aria-expanded","false");
+  }
+  function toggleList(){ list && list.hidden ? openList() : closeList(); }
+
+  if(btn && list){
+    let timer=null, long=false;
+    const start=function(e){
+      long=false;
+      clearTimeout(timer);
+      timer=setTimeout(function(){ long=true; openList(); }, 430);
+    };
+    const cancel=function(){ clearTimeout(timer); };
+    btn.addEventListener("pointerdown", start);
+    btn.addEventListener("pointerup", cancel);
+    btn.addEventListener("pointerleave", cancel);
+    btn.addEventListener("pointercancel", cancel);
+    btn.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+    btn.addEventListener("click", function(e){
+      /* удержание уже открыло список — второй раз не листаем */
+      if(long){ long=false; e.preventDefault(); return; }
+      if(!list.hidden){ closeList(); return; }
+      const i=ORDER.indexOf(curTheme());
+      setTh(ORDER[(i<0? 0 : i+1)%ORDER.length]);
+    });
+    list.addEventListener("click", function(e){
+      const b=e.target.closest(".titem"); if(!b) return;
+      setTh(b.getAttribute("data-th"));
+    });
+    document.addEventListener("pointerdown", function(e){
+      if(list.hidden) return;
+      if(e.target.closest("#themeList")||e.target.closest("#themeBtn")) return;
+      closeList();
+    }, true);
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeList(); });
+    /* шестерёнка рядом: список тем не должен висеть поверх настроек */
+    const so=$("setOpen");
+    if(so) so.addEventListener("click", closeList);
+  }
+
+  /* ---------- «Вставить» ---------- */
+  const paste=$("pasteBtn");
+  if(paste){
+    let busy=false;
+    function flash(txt, ok){
+      const old=paste.getAttribute("title");
+      paste.setAttribute("title", txt);
+      paste.classList.toggle("warn", !ok);
+      setTimeout(function(){ paste.setAttribute("title", old); paste.classList.remove("warn"); }, 1800);
+    }
+    paste.addEventListener("click", async function(){
+      if(busy) return;
+      const q=$("q"); if(!q) return;
+      busy=true;
+      try{
+        if(!navigator.clipboard || !navigator.clipboard.readText) throw new Error("NOAPI");
+        const t=await navigator.clipboard.readText();
+        const text=String(t||"").trim();
+        if(!text){ flash("В буфере пусто — скопируйте задачу", false); return; }
+        /* в буфере бывает целая страница: берём первую осмысленную строку с цифрой */
+        const lines=text.split(/[\r\n]+/).map(function(x){ return x.trim(); })
+          .filter(function(x){ return x.length>1; });
+        let pick=lines.find(function(x){ return /\d/.test(x) && x.length<=160; }) || lines[0] || text;
+        if(text.length<=200 && !/[\r\n]/.test(text)) pick=text;
+        if(pick.length>400) pick=pick.slice(0,400);
+        q.value=pick;
+        q.dispatchEvent(new Event("input",{bubbles:true}));
+        const form=$("form");
+        if(form && typeof form.requestSubmit==="function") form.requestSubmit();
+        else if(form) form.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+        if(navigator.vibrate) try{ navigator.vibrate(8); }catch(e){}
+      }catch(err){
+        flash("Браузер не даёт читать буфер — вставьте вручную: Ctrl+V", false);
+        const q2=$("q");
+        if(q2){ q2.focus(); }
+      }finally{ busy=false; }
+    });
+  }
+
+  /* ---------- доска ---------- */
+  const tab=$("boardOpen");
+  if(tab){
+    const sheet=document.createElement("div");
+    sheet.className="boardsheet"; sheet.id="board"; sheet.hidden=true;
+    sheet.innerHTML=
+      '<div class="bstop">'+
+        '<span class="bstitle">Доска</span>'+
+        '<span class="bshint">пишите, как в тетради</span>'+
+        '<button type="button" class="bsx" id="bsClose">Закрыть</button>'+
+      '</div>'+
+      '<div class="bscanvas-wrap"><canvas id="bcanvas"></canvas></div>'+
+      '<div class="bsbtns">'+
+        '<button type="button" class="bsb ic2" id="bsUndo" title="Отменить" aria-label="Отменить">'+
+          '<svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg></button>'+
+        '<button type="button" class="bsb ic2" id="bsClear" title="Стереть всё" aria-label="Стереть всё">'+
+          '<svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg></button>'+
+        '<button type="button" class="bsb" id="bsScan">'+
+          '<svg class="ic" aria-hidden="true"><use href="#i-scan"/></svg>Распознать</button>'+
+        '<button type="button" class="bsb primary" id="bsDone">Готово</button>'+
+      '</div>';
+    document.body.appendChild(sheet);
+
+    const cv=sheet.querySelector("#bcanvas");
+    const ctx=cv.getContext("2d");
+    let strokes=[], mode=null, last=null, dpr=1;
+    const PEN={light:"#1f43b8", dark:"#9dc0ff", warm:"#243f8f"};
+
+    function penColor(){
+      const t=curTheme();
+      return PEN[t]||PEN.light;
+    }
+    function sizeCanvas(){
+      const r=cv.getBoundingClientRect();
+      dpr=Math.min(window.devicePixelRatio||1, 2);
+      cv.width=Math.max(1,Math.round(r.width*dpr));
+      cv.height=Math.max(1,Math.round(r.height*dpr));
+      redraw();
+    }
+    function redraw(){
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      const w=cv.width/dpr, h=cv.height/dpr;
+      ctx.clearRect(0,0,w,h);
+      ctx.lineCap="round"; ctx.lineJoin="round";
+      strokes.forEach(function(st){
+        ctx.strokeStyle=st.c; ctx.lineWidth=st.w;
+        ctx.beginPath();
+        st.p.forEach(function(pt,i){ i? ctx.lineTo(pt[0],pt[1]) : ctx.moveTo(pt[0],pt[1]); });
+        if(st.p.length===1){ ctx.lineTo(st.p[0][0]+0.1,st.p[0][1]+0.1); }
+        ctx.stroke();
+      });
+    }
+    function pos(e){
+      const r=cv.getBoundingClientRect();
+      return [e.clientX-r.left, e.clientY-r.top];
+    }
+    cv.addEventListener("pointerdown", function(e){
+      cv.setPointerCapture(e.pointerId);
+      mode="draw";
+      last={ c:penColor(), w:(e.pointerType==="pen"? 2.6 : 2.4), p:[pos(e)] };
+      strokes.push(last);
+      redraw();
+      e.preventDefault();
+    });
+    cv.addEventListener("pointermove", function(e){
+      if(mode!=="draw"||!last) return;
+      last.p.push(pos(e));
+      redraw();
+      e.preventDefault();
+    });
+    const stop=function(){ mode=null; last=null; };
+    cv.addEventListener("pointerup", stop);
+    cv.addEventListener("pointercancel", stop);
+    cv.addEventListener("pointerleave", function(e){ if(mode==="draw"&&e.buttons===0) stop(); });
+
+    sheet.querySelector("#bsUndo").addEventListener("click", function(){ strokes.pop(); redraw(); });
+    sheet.querySelector("#bsClear").addEventListener("click", function(){ strokes=[]; redraw(); });
+    sheet.querySelector("#bsClose").addEventListener("click", close);
+
+    function open(){
+      sheet.hidden=false;
+      tab.classList.add("on"); tab.setAttribute("aria-expanded","true");
+      document.body.style.overflow="hidden";
+      requestAnimationFrame(sizeCanvas);
+    }
+    function close(){
+      sheet.hidden=true;
+      tab.classList.remove("on"); tab.setAttribute("aria-expanded","false");
+      document.body.style.overflow="";
+    }
+    tab.addEventListener("click", open);
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape"&&!sheet.hidden) close(); });
+    window.addEventListener("orientationchange", function(){ if(!sheet.hidden) setTimeout(sizeCanvas,220); });
+    window.addEventListener("resize", function(){ if(!sheet.hidden) sizeCanvas(); });
+
+    /* Готово = распознать написанное и подставить в поле.
+       Если распознаватель недоступен — не теряем написанное, говорим честно. */
+    const done=$("bsDone"), scan=$("bsScan");
+    function send(){
+      if(!strokes.length){ close(); return; }
+      if(typeof window.__ocrRun!=="function"){
+        alert("Распознаватель не загружен (нет папки lib). Написанное можно оставить и решить вручную.");
+        return;
+      }
+      done.disabled=true; scan.disabled=true;
+      const txt=done.textContent; done.textContent="Читаю…";
+      cv.toBlob(function(blob){
+        try{
+          const f=new File([blob],"board.png",{type:"image/png"});
+          window.__ocrRun(f);
+        }catch(e){
+          try{ window.__ocrRun(blob); }catch(e2){}
+        }
+        done.disabled=false; scan.disabled=false; done.textContent=txt;
+        strokes=[]; redraw(); close();
+      }, "image/png");
+    }
+    done.addEventListener("click", send);
+    scan.addEventListener("click", function(){
+      /* «Распознать» только читает и показывает текст, поле не трогаем */
+      if(!strokes.length){ return; }
+      if(typeof window.__ocrRun!=="function"){ alert("Распознаватель не загружен (нет папки lib)."); return; }
+      cv.toBlob(function(blob){
+        try{ window.__ocrRun(new File([blob],"board.png",{type:"image/png"})); }
+        catch(e){ window.__ocrRun(blob); }
+        close();
+      }, "image/png");
+    });
+
+    /* ушли в другой раздел — доска больше не нужна */
+    document.addEventListener("click", function(e){
+      if(sheet.hidden) return;
+      if(e.target.closest("#bottomnav,#modesw,#brandBtn,#setOpen")) close();
+    }, true);
+    window.__board={open:open,close:close};
+  }
+})();
+</script>
+
+<script>
+/* ===== 5.5.0: «Потрогать» — живой график и живой чертёж =====
+   Не отдельная игра, а довесок к разбору: ученик видит, что k и b —
+   это не буквы из формулы, а наклон и сдвиг. Свернуто по умолчанию. */
+(function(){
+  const $=function(id){ return document.getElementById(id); };
+
+  function ink(){
+    const light=document.body.classList.contains("light");
+    const warm=document.body.classList.contains("warm");
+    return warm
+      ? {grid:"rgba(150,120,80,.20)", axis:"rgba(120,90,60,.55)", line:"#b4552a", dot:"#2f7a52", text:"#5a4a35", label:"#8a5a14"}
+      : light
+      ? {grid:"rgba(120,150,200,.22)", axis:"rgba(50,70,120,.5)", line:"#3366ff", dot:"#0e9f6e", text:"#5b6473", label:"#2b4fd8"}
+      : {grid:"rgba(255,255,255,.10)", axis:"rgba(255,255,255,.35)", line:"#7fa5ff", dot:"#4ad19a", text:"#9aa4c0", label:"#a99cff"};
+  }
+
+  function fitCanvas(cv, h){
+    const dpr=Math.min(window.devicePixelRatio||1,2);
+    const w=cv.clientWidth||320;
+    cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
+    cv.style.height=h+"px";
+    const ctx=cv.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx:ctx,w:w,h:h};
+  }
+
+  /* ---------- прямая y = kx + b ---------- */
+  function drawLine(cv, k, b){
+    const H=Math.max(180, Math.min(260, Math.round(cv.clientWidth*0.62)));
+    const {ctx,w,h}=fitCanvas(cv,H);
+    const c=ink();
+    const R=10;                      /* мир: x и y от −R до R */
+    const sx=w/(2*R), sy=h/(2*R);
+    const X=function(x){ return w/2 + x*sx; };
+    const Y=function(y){ return h/2 - y*sy; };
+    ctx.clearRect(0,0,w,h);
+    ctx.lineWidth=1;
+    ctx.strokeStyle=c.grid;
+    for(let i=-R;i<=R;i++){
+      if(!i) continue;
+      ctx.beginPath(); ctx.moveTo(X(i),0); ctx.lineTo(X(i),h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,Y(i)); ctx.lineTo(w,Y(i)); ctx.stroke();
+    }
+    ctx.strokeStyle=c.axis; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(0,Y(0)); ctx.lineTo(w,Y(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0),0); ctx.lineTo(X(0),h); ctx.stroke();
+    /* подписи осей */
+    ctx.fillStyle=c.text; ctx.font="11px system-ui,sans-serif";
+    ctx.fillText("x", w-12, Y(0)-6); ctx.fillText("y", X(0)+6, 12);
+    ctx.fillText("0", X(0)-11, Y(0)+13);
+    /* прямая: считаем две крайние точки и обрезаем по кадру */
+    ctx.strokeStyle=c.line; ctx.lineWidth=2.4; ctx.lineCap="round";
+    ctx.beginPath();
+    const x1=-R, y1=k*x1+b, x2=R, y2=k*x2+b;
+    ctx.moveTo(X(x1), Y(Math.max(-R*1.6, Math.min(R*1.6,y1))));
+    ctx.lineTo(X(x2), Y(Math.max(-R*1.6, Math.min(R*1.6,y2))));
+    ctx.stroke();
+    /* точка пересечения с осью x — это и есть корень */
+    let root=null;
+    if(Math.abs(k)>1e-9){
+      root=-b/k;
+      if(root>=-R && root<=R){
+        ctx.fillStyle=c.dot;
+        ctx.beginPath(); ctx.arc(X(root), Y(0), 4.4, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle=c.dot; ctx.lineWidth=1.4; ctx.setLineDash([3,3]);
+        ctx.beginPath(); ctx.moveTo(X(root), Y(0)); ctx.lineTo(X(root), Y(0)-Math.min(26,h/2-8)); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle=c.dot; ctx.font="600 12px system-ui,sans-serif";
+        ctx.fillText("x = "+fmt(root), X(root)+8, Y(0)-10);
+      }
+    }
+    return root;
+  }
+
+  /* kx + b без «+ -8»: знак выносим наружу, единицу не пишем */
+  function term(k,b){
+    const km = (k===1? "x" : k===-1? "−x" : fmt(k)+"x");
+    if(!b) return km;
+    return km + (b>0? " + " : " − ") + fmt(Math.abs(b));
+  }
+
+  function fmt(v){
+    const r=Math.round(v*100)/100;
+    const t=Number.isInteger(r)? String(r) : String(r).replace(".",",");
+    return t.replace(/^-/,"−");
+  }
+
+  /* ---------- прямоугольник: площадь и периметр ---------- */
+  function drawRect(cv, a, b){
+    const H=Math.max(160, Math.min(240, Math.round(cv.clientWidth*0.55)));
+    const {ctx,w,h}=fitCanvas(cv,H);
+    const c=ink();
+    ctx.clearRect(0,0,w,h);
+    const pad=34;
+    const sc=Math.min((w-2*pad)/a, (h-2*pad)/b);
+    const W=a*sc, Hh=b*sc;
+    const x0=(w-W)/2, y0=(h-Hh)/2;
+    ctx.strokeStyle=c.grid; ctx.lineWidth=1;
+    /* клетка под рисунком — как в тетради */
+    for(let x=x0; x<=x0+W+.1; x+=sc){ ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y0+Hh); ctx.stroke(); }
+    for(let y=y0; y<=y0+Hh+.1; y+=sc){ ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x0+W,y); ctx.stroke(); }
+    ctx.strokeStyle=c.line; ctx.lineWidth=2.4;
+    ctx.strokeRect(x0,y0,W,Hh);
+    ctx.fillStyle=c.text; ctx.font="600 12px system-ui,sans-serif"; ctx.textAlign="center";
+    ctx.fillText(fmt(a)+" см", x0+W/2, y0-9);
+    ctx.save(); ctx.translate(x0-11, y0+Hh/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText(fmt(b)+" см", 0, 0); ctx.restore();
+    ctx.textAlign="left";
+  }
+
+  /* ---------- сборка блока ---------- */
+  function box(title, icon, inner){
+    return '<details class="pt"><summary>'+
+      '<svg class="ic ptic" aria-hidden="true"><use href="#'+icon+'"/></svg>'+
+      '<span>'+title+'</span><span class="ptchev">▾</span></summary>'+
+      '<div class="ptbody">'+inner+'</div></details>';
+  }
+
+  function seedKB(text){
+    /* из «2x+5=13» достаём k и сдвиг так, чтобы корень совпал с ответом */
+    const m=String(text||"").replace(/\s+/g,"").match(/^(-?\d*)([a-z])([+-]\d+)?=(-?\d+)$/i);
+    if(!m) return null;
+    const k=m[1]===""?1:(m[1]==="-"?-1:parseFloat(m[1]));
+    const b0=m[3]?parseFloat(m[3]):0;
+    const c=parseFloat(m[4]);
+    if(!isFinite(k)||!isFinite(c)||!k) return null;
+    return {k:k, b:b0-c, isX:true};
+  }
+
+  function mount(out, res, input){
+    if(!out||!res) return;
+    if(document.body.classList.contains("exam-mode")) return;
+    const kind=String(res.kind||"");
+    const steps=out.querySelector(".steps-wrap");
+    if(!steps) return;
+
+    let html="", after=null;
+
+    if(/Линейное уравнение|Задача на движение|линейн/i.test(kind) && /уравнени/i.test(kind)){
+      const sd=seedKB(input)||{k:2,b:-8,isX:true};
+      html=box("Потрогать: прямая y = kx + b","i-chart",
+        '<canvas class="ptcanvas" id="ptCanvas"></canvas>'+
+        '<div class="ptsliders">'+
+          '<label class="ptsl"><span class="ptln">наклон k</span><input type="range" id="ptK" min="-4" max="4" step="0.1" value="'+sd.k+'"><b id="ptKv">'+fmt(sd.k)+'</b></label>'+
+          '<label class="ptsl"><span class="ptln">сдвиг b</span><input type="range" id="ptB" min="-10" max="10" step="0.5" value="'+sd.b+'"><b id="ptBv">'+fmt(sd.b)+'</b></label>'+
+        '</div>'+
+        '<div class="ptout" id="ptOut"></div>');
+      after=function(){
+        const cv=$("ptCanvas");
+        const kI=$("ptK"), bI=$("ptB");
+        const kk=$("ptKv"), bv=$("ptBv");
+        const res1=$("ptOut");
+        let done=false;
+        function paint(){
+          const k=parseFloat(kI.value), b=parseFloat(bI.value);
+          kk.textContent=fmt(k); bv.textContent=fmt(b);
+          const root=drawLine(cv,k,b);
+          const eq=term(k,b)+" = 0";
+          let t;
+          if(root===null){
+            t='k = 0 — прямая горизонтальная, и уравнение <b>'+eq+'</b> корня не имеет.';
+          } else {
+            const mine=(Math.abs(k-sd.k)<1e-9 && Math.abs(b-sd.b)<1e-9);
+            t=(mine? 'Это ваша задача: <b>'+eq+'</b>.<br>' : '')+
+              'Прямая пересекает ось x в точке <span class="ptroot">x = '+fmt(root)+'</span>'+
+              (mine? ' — это и есть ваш корень.' : ' — это корень уравнения <b>'+eq+'</b>.')+
+              '<br>Сдвиньте b — прямая поедет вверх-вниз, и корень уедет вместе с ней. '+
+              'Сдвиньте k — прямая станет круче, и корень побежит быстрее.';
+          }
+          res1.innerHTML=t;
+        }
+        window.__ptLastPaint=paint;
+        kI.addEventListener("input",paint); bI.addEventListener("input",paint);
+        const det=out.querySelector(".pt");
+        det.addEventListener("toggle", function(){
+          if(det.open){ requestAnimationFrame(paint); done=true; }
+        });
+      };
+    } else if(/площад|Периметр|прямоугольник|квадрат/i.test(kind)){
+      let a=6,b=4;
+      const m=String(input||"").match(/(\d+(?:[.,]\d+)?)\s*(?:см|м|дм|мм)?\s*[и,]\s*(\d+(?:[.,]\d+)?)/);
+      if(m){ a=parseFloat(m[1].replace(",",".")); b=parseFloat(m[2].replace(",",".")); }
+      html=box("Потрогать: прямоугольник","i-target",
+        '<canvas class="ptcanvas" id="ptCanvas"></canvas>'+
+        '<div class="ptsliders">'+
+          '<label class="ptsl"><span class="ptln">сторона a</span><input type="range" id="ptA" min="1" max="12" step="0.5" value="'+a+'"><b id="ptAv">'+fmt(a)+'</b></label>'+
+          '<label class="ptsl"><span class="ptln">сторона b</span><input type="range" id="ptB" min="1" max="12" step="0.5" value="'+b+'"><b id="ptBv">'+fmt(b)+'</b></label>'+
+        '</div>'+
+        '<div class="ptout" id="ptOut"></div>');
+      after=function(){
+        const cv=$("ptCanvas"), aI=$("ptA"), bI=$("ptB");
+        const av=$("ptAv"), bv=$("ptBv"), ro=$("ptOut");
+        function paint(){
+          const x=parseFloat(aI.value), y=parseFloat(bI.value);
+          av.textContent=fmt(x); bv.textContent=fmt(y);
+          drawRect(cv,x,y);
+          const S=Math.round(x*y*100)/100, P=Math.round(2*(x+y)*100)/100;
+          let t='Площадь S = a · b = <span class="ptroot">'+fmt(S)+' см²</span> · '+
+                'периметр P = 2(a + b) = <b>'+fmt(P)+' см</b>.';
+          if(Math.abs(x-y)<1e-9) t+='<br>Стороны равны — это квадрат.';
+          else if(x*y>0) t+='<br>При той же сумме сторон площадь больше у квадрата — проверьте: сдвиньте ползунки так, чтобы '+fmt(x)+' + '+fmt(y)+' осталось тем же.';
+          ro.innerHTML=t;
+        }
+        window.__ptLastPaint=paint;
+        aI.addEventListener("input",paint); bI.addEventListener("input",paint);
+        const det=out.querySelector(".pt");
+        det.addEventListener("toggle", function(){ if(det.open) requestAnimationFrame(paint); });
+      };
+    }
+
+    if(!html) return;
+    steps.insertAdjacentHTML("afterend", html);
+    if(after) after();
+  }
+
+  window.__ptMount=mount;
+  /* смена темы — перерисовать живое с новыми цветами */
+  let oldSet=window.__setTheme;
+  if(oldSet) window.__setTheme=function(n){
+    const r=oldSet.apply(this,arguments);
+    setTimeout(function(){
+      if(window.__ptLastPaint){
+        try{ window.__ptLastPaint(); }catch(e){}
+      }
+    },80);
+    return r;
+  };
+})();
+</script>
 </body>
 
 </html>
