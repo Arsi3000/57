@@ -2567,6 +2567,12 @@ body.warm .lvnum{background:linear-gradient(135deg,#d9a557,#a9691d);color:#fff;b
 body.warm .hud-xp{background:rgba(120,90,60,.16)}
 body.warm .hud-xp i{background:linear-gradient(90deg,#d9a557,#a9691d)}
 body.warm ::selection{background:rgba(180,122,47,.25)}
+/* формулы: числа — чернильные, переменные — синие, знаки — зелёные.
+   Без этого в тёплой теме оставались фиолетовые числа из светлой. */
+body.warm .math-num{color:#8a4b1e}
+body.warm .math-op{color:#2f7a52}
+body.warm .v,body.warm .eq .v,body.warm .rval .v{color:#1d3f8f}
+body.warm .eq{color:#2f281e}
 body.warm .why{color:#8a5a14;background:rgba(180,122,47,.10);border-color:rgba(180,122,47,.32)}
 body.warm .why:hover{background:rgba(180,122,47,.18)}
 body.warm .whybox{background:#fbf1de;border-color:rgba(180,122,47,.28);color:#40382c;border-left-color:#b47a2f}
@@ -3104,7 +3110,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.6.0";
+const APP_VERSION="5.6.1";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
