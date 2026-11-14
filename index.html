@@ -2448,6 +2448,24 @@ body.light .titem.on,body.warm .titem.on{background:#ecebff;color:#1f2450}
 .t-warm{background:#f3ead8}
 
 
+
+/* ================= 5.7.0: строка «с доски» под полем ================= */
+.boardnote{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin:8px 0 0;padding:8px 12px;border-radius:12px;
+  background:rgba(124,108,255,.08);border:1px solid rgba(124,108,255,.26);
+  font-size:12.5px;color:var(--ink-soft,#2a2f42);line-height:1.4;
+}
+.boardnote b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--ink)}
+.boardnote button{
+  border:0;background:none;padding:2px 0;font:inherit;font-size:12.5px;font-weight:700;
+  color:#3366ff;cursor:pointer;text-decoration:underline;text-underline-offset:2px;
+}
+body.warm .boardnote{background:rgba(180,122,47,.10);border-color:rgba(180,122,47,.3);color:#40382c}
+body.warm .boardnote button{color:#8a5a14}
+body:not(.light) .boardnote{background:rgba(124,108,255,.14);border-color:rgba(124,108,255,.4);color:#c9d2ea}
+body:not(.light) .boardnote button{color:#a99cff}
+
 /* ================= 5.7.0: панель распознавания на доске ================= */
 .bsres{
   border-top:1px solid rgba(50,70,120,.14);
@@ -3140,7 +3158,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.0";
+const APP_VERSION="5.7.1";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17034,6 +17052,29 @@ window.__LEARN={
     }
     function hideRes(){ if(resBox){ resBox.hidden=true; resBox.innerHTML=""; } }
 
+    /* «с доски: 1+2» — короткая строка под полем. Нужна, чтобы распознанное
+       не появлялось молча: если прочитано неверно, это видно сразу и
+       правится одним касанием, а не выясняется по неверному ответу. */
+    function boardNote(t){
+      const formEl=document.getElementById("form");
+      if(!formEl || !formEl.parentNode) return;
+      let n=document.getElementById("boardNote");
+      if(!n){
+        n=document.createElement("div");
+        n.className="boardnote"; n.id="boardNote";
+        formEl.parentNode.insertBefore(n, formEl.nextSibling);
+      }
+      n.innerHTML='<span>С доски: <b></b></span><button type="button">поправить</button>'+
+                  '<button type="button" data-hide="1" aria-label="Скрыть">✕</button>';
+      n.querySelector("b").textContent=t;
+      n.querySelector("button").addEventListener("click", function(){
+        const qIn=document.getElementById("q");
+        if(qIn){ qIn.focus(); qIn.select(); }
+      });
+      n.querySelector('[data-hide]').addEventListener("click", function(){ n.remove(); });
+      n.hidden=false;
+    }
+
     function applyText(t, solveIt){
       const qIn=document.getElementById("q");
       const formEl=document.getElementById("form");
@@ -17093,8 +17134,10 @@ window.__LEARN={
         if(!list.length){ showVariants([], {detail:out.detail, ms:ms}); return; }
         const best=list[0];
         if(out.auto){
-          /* уверены — не спрашиваем: ставим в поле и решаем */
+          /* уверены — не спрашиваем: ставим в поле, решаем и оставляем
+             под полем строку «с доски», чтобы промах был виден сразу */
           applyText(best.text, true);
+          boardNote(best.text);
           strokes=[]; redraw(); hideRes(); close();
         } else {
           showVariants(list, {auto:false, ms:ms});
