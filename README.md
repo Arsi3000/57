@@ -4,7 +4,7 @@
 Работает офлайн и без сервера: код приложения — в одном файле `index.html`, распознавание с фото — в папке `lib/`.
 
 [![Лицензия: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Версия](https://img.shields.io/badge/version-5.2.5-6c5ce7.svg)](CHANGELOG.md)
+[![Версия](https://img.shields.io/badge/version-5.2.6-6c5ce7.svg)](CHANGELOG.md)
 [![Офлайн](https://img.shields.io/badge/offline-100%25-00b894.svg)](#технические-детали)
 [![Один файл](https://img.shields.io/badge/код-1%20файл%2C%20~996%20КБ-lightgrey.svg)](#технические-детали)
 
