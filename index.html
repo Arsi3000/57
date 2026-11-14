@@ -2447,6 +2447,36 @@ body.light .titem.on,body.warm .titem.on{background:#ecebff;color:#1f2450}
 .t-retro{background:#c8e6a0}
 .t-warm{background:#f3ead8}
 
+
+/* ================= 5.7.0: панель распознавания на доске ================= */
+.bsres{
+  border-top:1px solid rgba(50,70,120,.14);
+  background:#fffdf8;padding:10px 12px 12px;
+  max-height:34vh;overflow:auto;-webkit-overflow-scrolling:touch;
+  animation:bsrIn .18s ease-out;
+}
+.bsres[hidden]{display:none !important}
+@keyframes bsrIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.bsrhead{font-size:12.5px;font-weight:700;color:#20212a;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.bsrms{font-weight:600;color:#7c8496;font-size:11px;background:#eef1f7;border-radius:99px;padding:2px 7px}
+.bsrlist{display:flex;flex-wrap:wrap;gap:7px}
+.bsrchip{
+  border:1px solid rgba(50,70,120,.2);background:#fff;border-radius:11px;
+  padding:9px 12px;font:600 15px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+  color:#1b2233;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  font-variant-numeric:tabular-nums;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+}
+.bsrchip.on{border-color:#3366ff;background:#eef3ff;color:#173a8a}
+.bsrchip:active{transform:translateY(1px)}
+.bsrhint{font-size:11.5px;color:#6c7280;margin-top:8px;line-height:1.45}
+.bsres.err .bsrhead{color:#a12a2a}
+body.warm .bsres{background:#fbf5e7;border-color:rgba(120,90,60,.2)}
+body.warm .bsrhead{color:#2f281e}
+body.warm .bsrchip{background:#fffdf8;border-color:rgba(120,90,60,.24);color:#2f281e}
+body.warm .bsrchip.on{border-color:#b47a2f;background:rgba(180,122,47,.12);color:#6d4b16}
+body.warm .bsrms{background:rgba(120,90,60,.12);color:#7a6d5c}
+body.warm .bsrhint{color:#6d6152}
+
 /* ================= 5.6.0: язычок «доска» у поля ================= */
 .boardtab{
   position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);
@@ -3110,7 +3140,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.6.1";
+const APP_VERSION="5.7.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -16903,6 +16933,7 @@ window.__LEARN={
         '<button type="button" class="bsx" id="bsClose">Закрыть</button>'+
       '</div>'+
       '<div class="bscanvas-wrap"><canvas id="bcanvas"></canvas></div>'+
+      '<div class="bsres" id="bsRes" hidden></div>'+
       '<div class="bsbtns">'+
         '<button type="button" class="bsb ic2" id="bsUndo" title="Отменить" aria-label="Отменить">'+
           '<svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg></button>'+
@@ -16975,6 +17006,9 @@ window.__LEARN={
       tab.classList.add("on"); tab.setAttribute("aria-expanded","true");
       document.body.style.overflow="hidden";
       requestAnimationFrame(sizeCanvas);
+      /* 5.7.0: пока человек пишет, распознаватель уже грузится.
+         Без этого первое «Готово» ждало бы 7 МБ моделей. */
+      try{ if(window.__boardAI) window.__boardAI.warm(); }catch(e){}
     }
     function close(){
       sheet.hidden=true;
@@ -16986,46 +17020,103 @@ window.__LEARN={
     window.addEventListener("orientationchange", function(){ if(!sheet.hidden) setTimeout(sizeCanvas,220); });
     window.addEventListener("resize", function(){ if(!sheet.hidden) sizeCanvas(); });
 
-    /* Готово = распознать написанное и подставить в поле.
-       Если распознаватель недоступен — не теряем написанное, говорим честно. */
+    /* 5.7.0: «Готово» больше не снимает картинку — распознаватель получает
+       сами штрихи (ink-on, модель CoMER). Картинка нужна только запасному
+       движку, и её собираем уже из штрихов, без клетки и красной линии. */
     const done=$("bsDone"), scan=$("bsScan");
-    function send(){
-      if(!strokes.length){ close(); return; }
-      if(typeof window.__ocrRun!=="function"){
-        alert("Распознаватель не загружен (нет папки lib). Написанное можно оставить и решить вручную.");
+    const resBox=sheet.querySelector("#bsRes");
+
+    function say(txt, kind){
+      if(!resBox) return;
+      resBox.hidden=false;
+      resBox.className="bsres"+(kind? " "+kind:"");
+      resBox.innerHTML=txt;
+    }
+    function hideRes(){ if(resBox){ resBox.hidden=true; resBox.innerHTML=""; } }
+
+    function applyText(t, solveIt){
+      const qIn=document.getElementById("q");
+      const formEl=document.getElementById("form");
+      if(!qIn) return;
+      qIn.value=t;
+      qIn.dispatchEvent(new Event("input",{bubbles:true}));
+      if(solveIt===false) { qIn.focus(); return; }
+      if(formEl && formEl.requestSubmit) formEl.requestSubmit();
+      else if(formEl) formEl.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+    }
+
+    /* панель с вариантами: «распознал так — не так, поправь одним касанием» */
+    function showVariants(variants, meta){
+      if(!variants.length){
+        say("Не разобрал написанное. Попробуйте писать крупнее или введите руками."+
+            (meta && meta.detail? ' <i>'+meta.detail+'</i>':''), "err");
         return;
       }
-      done.disabled=true; scan.disabled=true;
-      const txt=done.textContent; done.textContent="Читаю…";
-      cv.toBlob(function(blob){
-        try{
-          const f=new File([blob],"board.png",{type:"image/png"});
-          window.__ocrRun(f);
-        }catch(e){
-          try{ window.__ocrRun(blob); }catch(e2){}
-        }
-        done.disabled=false; scan.disabled=false; done.textContent=txt;
-        strokes=[]; redraw(); close();
-      }, "image/png");
+      const auto=(meta && meta.auto);
+      const html='<div class="bsrhead">'+(auto? "Распознал" : "Как прочитать?")+
+        (meta && meta.ms? ' <span class="bsrms">'+meta.ms+' мс</span>':'')+'</div>'+
+        '<div class="bsrlist">'+variants.map(function(v,i){
+          return '<button type="button" class="bsrchip'+(i===0? " on":"")+'" data-i="'+i+'">'+
+            escHtml(v.text)+'</button>';
+        }).join("")+'</div>'+
+        (variants.length>1? '<div class="bsrhint">Не то? Выберите другой вариант или поправьте в поле.</div>' : '');
+      say(html);
+      resBox.querySelectorAll(".bsrchip").forEach(function(b){
+        b.addEventListener("click", function(){
+          const v=variants[+b.getAttribute("data-i")];
+          applyText(v.text, true);
+          strokes=[]; redraw(); hideRes(); close();
+        });
+      });
     }
-    done.addEventListener("click", send);
-    scan.addEventListener("click", function(){
-      /* «Распознать» только читает и показывает текст, поле не трогаем */
-      if(!strokes.length){ return; }
-      if(typeof window.__ocrRun!=="function"){ alert("Распознаватель не загружен (нет папки lib)."); return; }
-      cv.toBlob(function(blob){
-        try{ window.__ocrRun(new File([blob],"board.png",{type:"image/png"})); }
-        catch(e){ window.__ocrRun(blob); }
-        close();
-      }, "image/png");
-    });
+    function escHtml(t){
+      return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    async function recognize(closeAfter){
+      if(!strokes.length){ if(closeAfter) close(); return; }
+      if(!window.__boardAI){ say("Распознаватель не загружен (нет папки lib/inkon).","err"); return; }
+      done.disabled=true; scan.disabled=true;
+      const txtDone=done.textContent, txtScan=scan.textContent;
+      done.textContent="Читаю…";
+      hideRes();
+      say('<div class="bsrhead">Читаю написанное…</div>'+
+          '<div class="bsrhint" id="bsrProg">первый раз гружу распознаватель, дальше он в памяти</div>');
+      const t0=performance.now();
+      try{
+        const out=await window.__boardAI.recognize(strokes, function(stage){
+          const el=sheet.querySelector("#bsrProg");
+          if(el && stage) el.textContent=stage;
+        });
+        const ms=Math.round(performance.now()-t0);
+        const list=out.variants||[];
+        if(!list.length){ showVariants([], {detail:out.detail, ms:ms}); return; }
+        const best=list[0];
+        if(out.auto){
+          /* уверены — не спрашиваем: ставим в поле и решаем */
+          applyText(best.text, true);
+          strokes=[]; redraw(); hideRes(); close();
+        } else {
+          showVariants(list, {auto:false, ms:ms});
+        }
+      }catch(e){
+        say("Ошибка распознавания: "+escHtml(String((e&&e.message)||e)), "err");
+      }finally{
+        done.disabled=false; scan.disabled=false;
+        done.textContent=txtDone; scan.textContent=txtScan;
+      }
+    }
+    done.addEventListener("click", function(){ recognize(true); });
+    scan.addEventListener("click", function(){ recognize(false); });
 
     /* ушли в другой раздел — доска больше не нужна */
     document.addEventListener("click", function(e){
       if(sheet.hidden) return;
       if(e.target.closest("#bottomnav,#modesw,#brandBtn,#setOpen")) close();
     }, true);
-    window.__board={open:open,close:close};
+    window.__board={open:open,close:close,
+      getStrokes:function(){ return strokes; },
+      clear:function(){ strokes=[]; redraw(); hideRes(); }};
   }
 })();
 </script>
@@ -17260,6 +17351,492 @@ window.__LEARN={
   };
 })();
 </script>
+<script>
+/* ===== 5.7.0: распознавание рукописи с доски =====
+   Доска отдаёт не картинку, а штрихи. Их читает ink-on — модель CoMER
+   (ECCV 2022) через ONNX Runtime в WASM, целиком на устройстве.
+   Запасной движок — тот же Tesseract, но не по снимку доски, а по чистой
+   картинке из штрихов: чёрным по белому, без клетки и красной линии,
+   обрезанной по краям. Так он видит ровно то, что нужно прочитать.
+
+   Скорость построена на трёх правилах:
+   1) сначала дешёвый проход по ВСЕМ строкам (жадное декодирование);
+   2) дорогой поиск по лучу — только для той строки, которая претендует
+      на ответ, и только если дешёвый проход не дал решаемой записи;
+   3) Tesseract — последняя линия обороны, когда модель не дала вообще
+      ничего осмысленного. Обычный школьный пример до него не доходит. */
+(function(){
+  "use strict";
+
+  const BASE=(function(){
+    try{ return new URL("lib/inkon/", location.href).href; }catch(e){ return "lib/inkon/"; }
+  })();
+
+  let scriptP=null, engine=null, vocab=null, warmP=null, tessP=null;
+
+  function loadBundle(){
+    if(window.InkOn) return Promise.resolve(window.InkOn);
+    if(scriptP) return scriptP;
+    scriptP=new Promise(function(res,rej){
+      const sc=document.createElement("script");
+      sc.src=BASE+"ink-on.bundle.js";
+      sc.async=true;
+      sc.onload=function(){
+        if(!window.InkOn){ rej(new Error("нет ink-on.bundle.js")); return; }
+        try{
+          /* Потоки — только там, где браузер разрешает: APK, локальный файл,
+             свой сервер с COOP/COEP. На GitHub Pages заголовков нет,
+             SharedArrayBuffer недоступен, остаётся один поток. */
+          let threads=1;
+          try{
+            if(self.crossOriginIsolated){
+              threads=Math.max(1, Math.min(4, (navigator.hardwareConcurrency||2)-1));
+            }
+          }catch(e){}
+          const o=window.InkOn.ort;
+          o.env.wasm.numThreads=threads;
+          o.env.wasm.simd=true;
+          o.env.wasm.proxy=false;
+          o.env.wasm.wasmPaths=BASE;
+          o.env.logLevel="error";
+        }catch(e){}
+        res(window.InkOn);
+      };
+      sc.onerror=function(){ scriptP=null; rej(new Error("нет папки lib/inkon")); };
+      document.head.appendChild(sc);
+    });
+    return scriptP;
+  }
+
+  function warm(stage){
+    if(warmP) return warmP;
+    warmP=(async function(){
+      if(stage) stage("готовлю распознаватель…");
+      const Ink=await loadBundle();
+      if(stage) stage("читаю словарь…");
+      vocab=vocab || await Ink.loadVocab(BASE+"models/vocab.json");
+      if(stage) stage("загружаю модель (7 МБ, первый раз)…");
+      engine=engine || new Ink.InferenceEngine({
+        encoderUrl: BASE+"models/encoder_int8.onnx",
+        decoderUrl: BASE+"models/decoder_int8.onnx",
+        beamWidth: 1,
+        executionProvider: "wasm"
+      });
+      await engine.init();
+      /* Первый проход по модели стоит несколько секунд: WASM компилирует графы
+         под форму тензора. Платим здесь — пока человек пишет, а не когда он
+         уже нажал «Готово». Тензор 256×128 — самый частый размер записи. */
+      try{
+        if(stage) stage("разогреваю распознаватель…");
+        const dummy=[{points:[{x:6,y:50},{x:70,y:50},{x:70,y:100},{x:10,y:100}], lineWidth:3}];
+        const prep=Ink.preprocessStrokes(dummy);
+        await engine.recognize(prep, vocab, "number");
+      }catch(e){}
+      return true;
+    })().catch(function(e){ warmP=null; throw e; });
+    return warmP;
+  }
+
+  /* ---------------- геометрия штрихов ---------------- */
+  function box(st){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    for(let i=0;i<st.p.length;i++){
+      const p=st.p[i];
+      if(p[0]<x0) x0=p[0]; if(p[0]>x1) x1=p[0];
+      if(p[1]<y0) y0=p[1]; if(p[1]>y1) y1=p[1];
+    }
+    return {x0:x0,y0:y0,x1:x1,y1:y1,w:x1-x0,h:y1-y0,cy:(y0+y1)/2};
+  }
+
+  /* строки собираем по перекрытию по вертикали, а не по расстоянию между
+     центрами: у цифры «2» центр верхней черты и центр нижней далеко,
+     хотя это один символ одной строки */
+  function groupLines(strokes){
+    const items=strokes.filter(function(s){ return s.p && s.p.length>1; })
+      .map(function(s){ return {s:s, b:box(s)}; });
+    if(!items.length) return [];
+    /* размер штриха — большая сторона: у горизонтальной черты высота нулевая,
+       и медиана по одной высоте проваливалась почти до нуля */
+    const hs=items.map(function(i){ return Math.max(4, Math.max(i.b.w, i.b.h)); }).sort(function(a,b){ return a-b; });
+    const med=hs[Math.floor(hs.length/2)]||10;
+    items.sort(function(a,b){ return a.b.y0-b.b.y0; });
+    const lines=[];
+    items.forEach(function(it){
+      let placed=false;
+      for(let k=lines.length-1; k>=0 && !placed; k--){
+        const L=lines[k];
+        const ov=Math.min(it.b.y1,L.y1)-Math.max(it.b.y0,L.y0);
+        const minH=Math.max(1, Math.min(it.b.h, L.h));
+        if(ov > minH*0.45 || Math.abs(it.b.cy-L.cy) < med*0.45){
+          L.items.push(it);
+          L.y0=Math.min(L.y0,it.b.y0); L.y1=Math.max(L.y1,it.b.y1);
+          L.h=L.y1-L.y0; L.cy=(L.y0+L.y1)/2;
+          placed=true;
+        }
+      }
+      if(!placed) lines.push({items:[it], y0:it.b.y0, y1:it.b.y1, h:it.b.h, cy:it.b.cy});
+    });
+    /* строку из одного крошечного штриха (случайная точка) выбрасываем */
+    return lines.filter(function(L){
+      if(L.items.length===1 && L.h<med*0.5) return false;
+      return true;
+    }).map(function(L){
+      L.items.sort(function(a,b){ return a.b.x0-b.b.x0; });
+      return {strokes:L.items.map(function(i){ return i.s; }), cy:L.cy, y0:L.y0, y1:L.y1};
+    }).sort(function(a,b){ return a.cy-b.cy; });
+  }
+
+  function toInk(strokes){
+    return strokes.filter(function(s){ return s.p && s.p.length>1; }).map(function(s){
+      const pts=[];
+      for(let i=0;i<s.p.length;i++){
+        const p=s.p[i], q=pts[pts.length-1];
+        /* прореживаем: точки ближе 1,2 px модели не нужны, а времени едят много */
+        if(!q || Math.abs(p[0]-q.x)>1.2 || Math.abs(p[1]-q.y)>1.2) pts.push({x:p[0], y:p[1]});
+      }
+      if(pts.length<2) pts.push({x:s.p[s.p.length-1][0], y:s.p[s.p.length-1][1]});
+      return {points:pts, lineWidth: Math.max(2.6, s.w||2.6)};
+    });
+  }
+
+  function hints(strokes){
+    const bs=strokes.map(box);
+    if(!bs.length) return {clusters:0, eq:false, medH:12};
+    const hs=bs.map(function(b){ return Math.max(4, Math.max(b.w,b.h)); }).sort(function(a,b){ return a-b; });
+    const med=hs[Math.floor(hs.length/2)]||10;
+    /* граница символа — разрыв шире 12 % высоты: у почерка символы стоят
+       почти вплотную, и щедрый порог сливал всю строку в один «символ» */
+    const gap=Math.max(2, med*0.12);
+    const cols=[];
+    bs.slice().sort(function(a,b){ return a.x0-b.x0; }).forEach(function(b){
+      const last=cols[cols.length-1];
+      if(last && b.x0 <= last.x1 + gap){ last.x1=Math.max(last.x1,b.x1); }
+      else cols.push({x1:b.x1, x0:b.x0});
+    });
+    /* «=» — две почти горизонтальные черты одна над другой, похожей длины */
+    let eq=false;
+    const horiz=bs.filter(function(b){ return b.w>med*0.55 && b.h<Math.max(2.5, med*0.22); });
+    for(let i=0;i<horiz.length && !eq;i++){
+      for(let j=i+1;j<horiz.length;j++){
+        const a=horiz[i], b=horiz[j];
+        const dy=Math.abs(a.cy-b.cy);
+        const ov=Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0);
+        const minW=Math.min(a.w,b.w);
+        if(dy>med*0.15 && dy<med*0.85 && minW>0 && ov>minW*0.55){ eq=true; break; }
+      }
+    }
+    return {clusters:cols.length, eq:eq, medH:med};
+  }
+
+  /* ---------------- LaTeX → строка для решателя ---------------- */
+  function latexToText(latex){
+    let s=String(latex||"");
+    s=s.replace(/\\left|\\right|\\!|\\,/g," ");
+    for(let i=0;i<8 && s.indexOf("\\frac")>=0;i++){
+      const before=s;
+      s=s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "($1)/($2)");
+      if(s===before) break;
+    }
+    s=s.replace(/\\sqrt\s*\{([^{}]*)\}/g, "√($1)");
+    s=s.replace(/\\sqrt\s*(\d+)/g, "√$1");
+    s=s.replace(/\\cdot|\\times/g,"*");
+    s=s.replace(/\\div/g,"/");
+    s=s.replace(/\\pi/g,"π");
+    s=s.replace(/\\leq?/g,"<=").replace(/\\geq?/g,">=").replace(/\\neq/g,"!=");
+    s=s.replace(/\\[a-zA-Z]+/g," ");
+    s=s.replace(/\^\{([^{}]*)\}/g,"^$1");
+    s=s.replace(/[{}]/g,"");
+    /* CROHME разделяет каждый символ пробелом: «2 x + 5 = 1 3».
+       Убираем пробелы целиком — иначе решатель видит «1 3» как два числа. */
+    s=s.replace(/\s+/g,"");
+    s=s.replace(/[−–—]/g,"-").replace(/[«»„“”]/g,'"');
+    return s;
+  }
+
+  function parses(t){
+    if(!t) return false;
+    try{ window.__solve(t); return true; }catch(e){ return false; }
+  }
+  function symbolsCount(t){
+    let n=0;
+    for(let i=0;i<t.length;i++){
+      const c=t[i];
+      if(c==="^"||c==="("||c===")"||c==="√"||c==="*") continue;
+      n++;
+    }
+    return n;
+  }
+  function score(text, h, src){
+    if(!text) return -99;
+    let sc=0;
+    if(parses(text)) sc+=4;
+    const hasEq=text.indexOf("=")>=0;
+    if(hasEq) sc+= h.eq? 2 : 0;
+    if(!hasEq && h.eq) sc-=2;
+    if(h.clusters){
+      const d=Math.abs(symbolsCount(text)-h.clusters)/Math.max(1,h.clusters);
+      if(d<=0.3) sc+=2; else if(d<=0.6) sc+=1; else if(d>1.2) sc-=1;
+    }
+    if(/[а-яё]/i.test(text)) sc-=4;          /* кириллица в математике — почти всегда ошибка */
+    if(/[qwzvQWZV]/.test(text)) sc-=1;
+    if(text.length<2) sc-=4;
+    if(text.length>48) sc-=2;
+    if(src==="beam") sc+=1;
+    if(src==="tess") sc-=1;                  /* запасной движок: доверяем чуть меньше */
+    return sc;
+  }
+
+  /* ---------------- запасной движок ---------------- */
+  function cleanCanvas(strokes, h){
+    let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
+    strokes.forEach(function(s){
+      s.p.forEach(function(p){
+        if(p[0]<minX) minX=p[0]; if(p[0]>maxX) maxX=p[0];
+        if(p[1]<minY) minY=p[1]; if(p[1]>maxY) maxY=p[1];
+      });
+    });
+    if(maxX<=minX || maxY<=minY) return null;
+    const pad=Math.max(10, (h.medH||12)*0.8);
+    const w=maxX-minX+pad*2, hh=maxY-minY+pad*2;
+    /* целимся в высоту ~110 px: Tesseract любит крупные ровные символы */
+    const k=Math.max(1, Math.min(4, 110/Math.max(1,maxY-minY)));
+    const c=document.createElement("canvas");
+    c.width=Math.round(w*k); c.height=Math.round(hh*k);
+    const g=c.getContext("2d");
+    g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height);
+    g.strokeStyle="#000"; g.lineCap="round"; g.lineJoin="round";
+    strokes.forEach(function(s){
+      g.lineWidth=Math.max(3, (s.w||2.6)*k*1.5);
+      g.beginPath();
+      for(let i=0;i<s.p.length;i++){
+        const x=(s.p[i][0]-minX+pad)*k, y=(s.p[i][1]-minY+pad)*k;
+        if(i) g.lineTo(x,y); else g.moveTo(x,y);
+      }
+      if(s.p.length===1) g.lineTo((s.p[0][0]-minX+pad)*k+0.1, (s.p[0][1]-minY+pad)*k+0.1);
+      g.stroke();
+    });
+    return c;
+  }
+
+  function tidyTess(t){
+    let s=String(t||"").replace(/\u00a0/g," ").trim();
+    if(!s) return "";
+    s=s.replace(/[ОOоo]/g,"0").replace(/[lIІ|]/g,"1").replace(/[S]/g,"5").replace(/[ВB]/g,"8");
+    s=s.replace(/[хХ]/g,"x").replace(/[уY]/g,"y");
+    s=s.replace(/\s*([+\-*/=^])\s*/g,"$1");
+    s=s.replace(/\s+/g,"");
+    s=s.replace(/\+\++/g,"+").replace(/-{2,}/g,"-").replace(/\*{2,}/g,"*").replace(/\/{2,}/g,"/").replace(/={2,}/g,"=");
+    s=s.replace(/[^0-9+\-*/=().,xXyYkKbB^√²³]/g,"");
+    return s;
+  }
+
+  function getTess(){
+    if(tessP) return tessP;
+    tessP=(async function(){
+      if(!window.Tesseract){
+        await new Promise(function(res,rej){
+          const sc=document.createElement("script");
+          sc.src=new URL("lib/tesseract.min.js", location.href).href;
+          sc.onload=res; sc.onerror=function(){ rej(new Error("нет tesseract")); };
+          document.head.appendChild(sc);
+        });
+      }
+      const LIB=new URL("lib/", location.href).href;
+      const w=await window.Tesseract.createWorker("rus", 1, {
+        workerPath: LIB+"worker.min.js",
+        corePath:   LIB+"tesseract-core-simd-lstm.wasm.js",
+        langPath:   LIB,
+        gzip:       false
+      });
+      /* только математика, одна строка, без пробелов между символами */
+      await w.setParameters({
+        tessedit_char_whitelist: "0123456789+-*/=().,xXyYkKbB√²³^",
+        tessedit_pageseg_mode: "7",
+        preserve_interword_spaces: "0"
+      });
+      return w;
+    })().catch(function(e){ tessP=null; throw e; });
+    return tessP;
+  }
+
+  async function tessLine(strokes, h){
+    const c=cleanCanvas(strokes, h);
+    if(!c) return "";
+    const w=await getTess();
+    const res=await w.recognize(c.toDataURL("image/png"));
+    return tidyTess((res && res.data && res.data.text)||"");
+  }
+
+  /* ---------------- проходы ---------------- */
+  function makeLine(line, idx){
+    const h=hints(line.strokes);
+    let prep=null, ok=true;
+    try{
+      const ink=toInk(line.strokes);
+      if(!window.InkOn.isStrokeMeaningful(ink)) ok=false;
+      else prep=window.InkOn.preprocessStrokes(ink);
+    }catch(e){ ok=false; }
+    return {idx:idx, strokes:line.strokes, hints:h, prep:prep, ok:ok,
+            variants:[], seen:{}, ms:0, cost:0};
+  }
+
+  function push(L, text, src){
+    if(!text) return;
+    const key=text.replace(/[^0-9a-z+\-*/=().,^]/gi,"");
+    if(!key || L.seen[key]) return;
+    L.seen[key]=1;
+    L.variants.push({text:text, src:src, score:score(text, L.hints, src), line:L.idx});
+  }
+
+  async function fastPass(L){
+    if(!L.ok || !L.prep) return L;
+    const t0=performance.now();
+    try{
+      engine.options.beamWidth=1;
+      const r=await engine.recognize(L.prep, vocab, "auto");
+      push(L, latexToText(r.latex), "fast");
+    }catch(e){}
+    L.ms+=Math.round(performance.now()-t0);
+    L.cost=1;
+    return L;
+  }
+  function lineBest(L){
+    return L.variants.slice().sort(function(a,b){ return b.score-a.score; })[0] || null;
+  }
+
+  async function slowPass(L, stage){
+    if(!L.ok || !L.prep) return L;
+    if(stage) stage("уточняю…");
+    let t0=performance.now();
+    try{
+      engine.options.beamWidth=3;
+      const r=await engine.recognize(L.prep, vocab, "auto");
+      push(L, latexToText(r.latex), "beam");
+      /* если в записи нет букв — числовой режим точнее: он не может выдать «S» вместо 5 */
+      const joined=L.variants.map(function(v){ return v.text; }).join("");
+      if(!/[a-zA-Zа-яА-Я]/.test(joined)){
+        const r2=await engine.recognize(L.prep, vocab, "number");
+        push(L, latexToText(r2.latex), "beam");
+      }
+    }catch(e){}
+    L.ms+=Math.round(performance.now()-t0);
+    const b=lineBest(L);
+    if(b && b.score>=5) return L;
+
+    /* совсем не выходит — пробуем второй движок по чистой картинке.
+       Но только если уже не потратили на попытки больше четырёх секунд:
+       ждать десять секунд ради того же «не разобрал» — хуже, чем честно
+       показать, что не вышло. */
+    if(L.ms>4000) return L;
+    if(stage) stage("пробую запасной способ…");
+    t0=performance.now();
+    try{ push(L, latexToText(await tessLine(L.strokes, L.hints)), "tess"); }catch(e){}
+    L.ms+=Math.round(performance.now()-t0);
+    return L;
+  }
+
+  /* ---------------- вся доска ---------------- */
+  let cache={key:"", val:null};
+
+  let busyP=null;
+  async function recognize(strokes, stage){
+    if(!strokes || !strokes.length) return {variants:[], detail:"пусто"};
+    /* движок один и настройка луча в нём общая: два одновременных
+       распознавания подменяли бы её друг другу */
+    if(busyP){ try{ await busyP; }catch(e){} }
+    const job=doRecognize(strokes, stage);
+    busyP=job.catch(function(){});
+    try{ return await job; } finally { busyP=null; }
+  }
+
+  async function doRecognize(strokes, stage){
+    const key=strokes.map(function(s){
+      return s.p.length+":"+Math.round(s.p[0][0])+","+Math.round(s.p[0][1]);
+    }).join("|");
+    if(cache.key===key && cache.val) return cache.val;
+
+    try{ await warm(stage); }
+    catch(e){
+      cache={key:"", val:null};
+      return {variants:[], detail:"распознаватель не загрузился: "+((e&&e.message)||e)};
+    }
+
+    const lines=groupLines(strokes);
+    if(!lines.length) return {variants:[], detail:"нет линий"};
+
+    /* 1. дешёвый проход по всем строкам сразу */
+    const Ls=[];
+    for(let i=0;i<lines.length;i++){
+      if(stage && lines.length>1) stage("читаю строку "+(i+1)+" из "+lines.length+"…");
+      Ls.push(await fastPass(makeLine(lines[i], i+1)));
+    }
+
+    /* 2. какая строка претендует на ответ: сначала та, что решается и с «=» */
+    const rank=function(L){
+      const b=lineBest(L);
+      if(!b) return -99;
+      let r=b.score;
+      if(parses(b.text)) r+=2;
+      if(b.text.indexOf("=")>=0) r+=1;
+      return r;
+    };
+    Ls.sort(function(a,b){ return rank(b)-rank(a); });
+
+    let ms=Ls.reduce(function(a,L){ return a+L.ms; }, 0);
+    const top=lineBest(Ls[0]);
+
+    /* 3. дешёвый проход уже дал решаемую запись — второй не нужен */
+    const goodEnough=function(b){
+      return !!b && b.score>=5 && parses(b.text) && (b.text.indexOf("=")>=0)===!!Ls[0].hints.eq;
+    };
+
+    if(!goodEnough(top)){
+      await slowPass(Ls[0], stage);
+      ms+=Ls[0].ms;
+      /* если лучшая строка так и не дала ответа, а рядом есть близкая — пробуем и её */
+      const second=Ls[1];
+      if(second && !goodEnough(lineBest(Ls[0]))){
+        const b2=lineBest(second);
+        if(b2 && b2.score>=2){ await slowPass(second, stage); ms+=second.ms; }
+      }
+    }
+
+    /* 4. собираем варианты: сначала решаемые, потом по оценке */
+    const all=[];
+    Ls.forEach(function(L){ L.variants.forEach(function(v){ all.push(v); }); });
+    all.sort(function(a,b){
+      const pa=parses(a.text)?1:0, pb=parses(b.text)?1:0;
+      if(pa!==pb) return pb-pa;
+      const ea=a.text.indexOf("=")>=0?1:0, eb=b.text.indexOf("=")>=0?1:0;
+      if(ea!==eb) return eb-ea;
+      return b.score-a.score;
+    });
+    const uniq=[], used={};
+    all.forEach(function(v){ if(!used[v.text]){ used[v.text]=1; uniq.push(v); } });
+
+    const first=uniq[0]||null;
+    const res={
+      variants:uniq.slice(0,3),
+      ms:ms,
+      lines:lines.length,
+      auto:!!(first && first.score>=5 && parses(first.text))
+    };
+    cache={key:key, val:res};
+    return res;
+  }
+
+  window.__boardAI={warm:warm, recognize:recognize,
+    _latexToText:latexToText, _groupLines:groupLines, _hints:hints, _score:score,
+    _dbg:function(){ return {engine:engine, vocab:vocab}; }};
+
+  /* при простое подтягиваем скрипт движка: к открытию доски останутся только модели */
+  try{
+    const idle=window.requestIdleCallback||function(f){ return setTimeout(f, 2500); };
+    idle(function(){ loadBundle().catch(function(){}); });
+  }catch(e){}
+})();
+</script>
+
 </body>
 
 </html>
