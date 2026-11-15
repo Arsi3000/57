@@ -3158,7 +3158,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.1";
+const APP_VERSION="5.7.2";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17519,6 +17519,36 @@ window.__LEARN={
       }
       if(!placed) lines.push({items:[it], y0:it.b.y0, y1:it.b.y1, h:it.b.h, cy:it.b.cy});
     });
+    /* Мелкие штрихи — запятые и точки — своей строкой быть не должны: по
+       высоте они не дотягивают до медианы и уезжают в отдельную «строку»
+       из трёх огрызков. Тогда «2,5+6,3=8,8» читается как «25+63=88», и это
+       опасно: 25+63 действительно равно 88, ошибка не видна ни модели,
+       ни арифметике. Поэтому каждый мелкий штрих приклеиваем к ближайшей
+       настоящей строке — запятая всегда стоит при своей записи. */
+    const tiny=function(L){
+      return L.items.every(function(it){ return Math.max(it.b.w,it.b.h) < med*0.5; });
+    };
+    if(lines.length>1){
+      const big=lines.filter(function(L){ return !tiny(L); });
+      const small=lines.filter(tiny);
+      if(big.length && small.length){
+        small.forEach(function(L){
+          L.items.forEach(function(it){
+            let best=big[0], bd=1e9;
+            for(let j=0;j<big.length;j++){
+              const d=Math.abs(it.b.cy-big[j].cy);
+              if(d<bd){ bd=d; best=big[j]; }
+            }
+            best.items.push(it);
+            best.y0=Math.min(best.y0,it.b.y0); best.y1=Math.max(best.y1,it.b.y1);
+            best.h=best.y1-best.y0; best.cy=(best.y0+best.y1)/2;
+          });
+        });
+        lines.length=0;
+        for(let k=0;k<big.length;k++) lines.push(big[k]);
+      }
+    }
+
     /* строку из одного крошечного штриха (случайная точка) выбрасываем */
     return lines.filter(function(L){
       if(L.items.length===1 && L.h<med*0.5) return false;
@@ -17568,7 +17598,33 @@ window.__LEARN={
         if(dy>med*0.15 && dy<med*0.85 && minW>0 && ov>minW*0.55){ eq=true; break; }
       }
     }
-    return {clusters:cols.length, eq:eq, medH:med};
+    /* запятые: в данных сборщика они приходят короткими вертикальными
+       штрихами (а иногда и штрихом из одной точки). Считаем их отдельно —
+       модель запятую не читает вовсе, а без неё «2,5+6,3» превращается
+       в «25+63», и равенство остаётся верным по ошибке. */
+    let dots=0;
+    bs.forEach(function(b){
+      const mx=Math.max(b.w,b.h);
+      if(mx>3 && mx<med*0.55 && b.h>b.w*1.15 && b.h>med*0.14) dots++;
+    });
+    return {clusters:cols.length, eq:eq, medH:med, dots:Math.min(dots,4)};
+  }
+
+  /* Запятые считаем по ВСЕЙ доске, а не по строке: короткий штрих легко
+     уезжает в «свою» строку из-за сдвига по высоте, и тогда запятая теряется,
+     хотя на доске она есть. Запятых в школьной записи единицы, так что
+     общий счёт по доске не мешает. */
+  function dotsCount(strokes){
+    const bs=strokes.filter(function(s){ return s.p && s.p.length; }).map(box);
+    if(!bs.length) return 0;
+    const hs=bs.map(function(b){ return Math.max(b.w,b.h); }).sort(function(a,b){ return a-b; });
+    const med=hs[Math.floor(hs.length/2)]||10;
+    let dots=0;
+    bs.forEach(function(b){
+      const mx=Math.max(b.w,b.h);
+      if(mx>3 && mx<med*0.6 && b.h>b.w*1.15 && b.h>med*0.14) dots++;
+    });
+    return Math.min(dots,4);
   }
 
   /* ---------------- LaTeX → строка для решателя ---------------- */
@@ -17596,6 +17652,171 @@ window.__LEARN={
     return s;
   }
 
+  /* ---------------- числовая проверка равенства ----------------
+     Движок решателя годится только для уравнений с неизвестным: на «3*6=18»
+     он честно кидает «В уравнении нет неизвестного». А школьная арифметика —
+     это как раз чистые числа. Поэтому свой счёт: точные дроби на BigInt,
+     без eval и без float, — 0,1+0,2=0,3 обязано сходиться ровно. */
+  function frac(n,d){ d=(d===undefined?1n:d); if(d<0n){ n=-n; d=-d; } return {n:n,d:d}; }
+  function fAdd(a,b){ return frac(a.n*b.d+b.n*a.d, a.d*b.d); }
+  function fSub(a,b){ return frac(a.n*b.d-b.n*a.d, a.d*b.d); }
+  function fMul(a,b){ return frac(a.n*b.n, a.d*b.d); }
+  function fDiv(a,b){ if(b.n===0n) return null; return frac(a.n*b.d, a.d*b.n); }
+  function fPow(a,e){
+    if(e.d!==1n) return null;                 /* дробная степень — не считаем */
+    let k=e.n;
+    if(k<0n || k>12n) return null;
+    let r=frac(1n), base=a;
+    while(k>0n){ if(k&1n) r=fMul(r,base); base=fMul(base,base); k>>=1n; }
+    return r;
+  }
+  function fCmp(a,b){ const l=a.n*b.d, r=b.n*a.d; return l===r?0:(l<r?-1:1); }
+
+  function parseNum(s){
+    let i=0;
+    function ws(){ while(i<s.length && s[i]===" ") i++; }
+    function atom(){
+      ws();
+      if(i>=s.length) return null;
+      const c=s[i];
+      if(c==="("){ i++; const v=expr(); if(!v) return null; ws(); if(s[i]===")") i++; return v; }
+      if(c==="-"){ i++; const v=atom(); return v?frac(-v.n,v.d):null; }
+      if(c==="+"){ i++; return atom(); }
+      const m=/^\d+(?:[.,]\d+)?/.exec(s.slice(i));
+      if(!m) return null;
+      i+=m[0].length;
+      const t=m[0].replace(",",".");
+      const p=t.split(".");
+      const digits=(p[1]||"");
+      return frac(BigInt(p[0]+digits), 10n**BigInt(digits.length));
+    }
+    function power(){
+      let a=atom();
+      if(!a) return null;
+      ws();
+      if(s[i]==="^"){ i++; const b=atom(); if(!b) return null; return fPow(a,b); }
+      return a;
+    }
+    function term(){
+      let a=power();
+      if(!a) return null;
+      for(;;){
+        ws();
+        const c=s[i];
+        if(c==="*"||c==="×"){ i++; const b=power(); if(!b) return null; a=fMul(a,b); }
+        else if(c==="/"||c==="÷"){ i++; const b=power(); if(!b) return null; a=fDiv(a,b); if(!a) return null; }
+        else break;
+      }
+      return a;
+    }
+    function expr(){
+      let a=term();
+      if(!a) return null;
+      for(;;){
+        ws();
+        const c=s[i];
+        if(c==="+"){ i++; const b=term(); if(!b) return null; a=fAdd(a,b); }
+        else if(c==="-"){ i++; const b=term(); if(!b) return null; a=fSub(a,b); }
+        else break;
+      }
+      return a;
+    }
+    const v=expr(); ws();
+    if(!v || i!==s.length) return null;
+    return v;
+  }
+
+  /* "true" — равенство арифметически верно, "false" — неверно,
+     "na" — проверить нельзя (буквы, нет «=», одна часть не разобралась) */
+  function numVerdict(text){
+    const t=String(text||"");
+    if(!t) return "na";
+    if(/[а-яёa-z]/i.test(t)) return "na";
+    const parts=t.split("=");
+    if(parts.length!==2 || !parts[0] || !parts[1]) return "na";
+    const a=parseNum(parts[0]), b=parseNum(parts[1]);
+    if(!a || !b) return "na";
+    return fCmp(a,b)===0 ? "true" : "false";
+  }
+  function countCommas(t){ const m=String(t||"").match(/[.,]/g); return m?m.length:0; }
+
+  /* Варианты с запятыми, вставленными между цифрами. Запятая приходит
+     отдельным штрихом и в последовательность модели не попадает вовсе —
+     остаётся только текст, из которого её можно восстановить перебором
+     и проверить арифметикой. */
+  function commaCandidates(text, k){
+    const base=String(text||"").replace(/[.,]/g,"");
+    if(k<1) return [];
+    const gaps=[];
+    for(let i=1;i<base.length;i++){
+      if(/\d/.test(base[i-1]) && /\d/.test(base[i])) gaps.push(i);
+    }
+    if(!gaps.length || gaps.length>15) return [];
+    const out=[], idx=[];
+    (function rec(start,left){
+      if(out.length>600) return;
+      if(left===0){
+        let s="", prev=0;
+        for(let j=0;j<idx.length;j++){ s+=base.slice(prev,idx[j])+","; prev=idx[j]; }
+        s+=base.slice(prev);
+        out.push(s); return;
+      }
+      for(let j=start;j<gaps.length;j++){ idx.push(gaps[j]); rec(j+1,left-1); idx.pop(); }
+    })(0,k);
+    return out;
+  }
+
+  /* ищем вариант, в котором число запятых совпадает со штрихами, а равенство
+     при этом верное. Диапазон вокруг подсказки — потому что запятую иногда
+     ведут с росчерком, и один штрих из счёта выпадает */
+  function commaRepair(L){
+    const dots=L.hints.dots||0;
+    /* одна короткая черта на доске — это скорее точка умножения или хвост
+       цифры, чем запятая. Перебор включаем только от двух запятых: иначе
+       «10*5=50» превращалось в «1,0*5=5,0» — арифметически верно, по смыслу нет */
+    if(dots<2) return;
+    const lo=Math.max(2,dots-1), hi=Math.min(3,dots+1);
+    const texts=L.variants.map(function(v){ return v.text; }).slice(0,3);
+    for(let k=lo;k<=hi;k++){
+      for(let t=0;t<texts.length;t++){
+        const src=texts[t];
+        if(/[а-яёa-z]/i.test(src)) continue;
+        if(countCommas(src)===k && numVerdict(src)==="true") return;  /* уже хорошо */
+        const cands=commaCandidates(src,k);
+        for(let i=0;i<cands.length;i++){
+          if(numVerdict(cands[i])==="true"){ push(L, cands[i], "comma"); return; }
+        }
+      }
+    }
+  }
+
+  /* Модель иногда читает цифру как похожую букву: «6*6=36» → «6*f=36»,
+     «9-7=2» → «y-y=2». Буквы x, y, k, b — настоящие неизвестные, их не
+     трогаем. Остальные (f, l, o, s, z, i, g, t, q, e, a) в школьной записи
+     цифр почти всегда означают цифру. Подставляем 0…9 и проверяем
+     арифметикой: если равенство сошлось — это и есть верное чтение. */
+  const SUSPECT=/[floszigteaqFLOSZIGTEAQ]/;
+  function digitFix(L){
+    const texts=L.variants.map(function(v){ return v.text; }).slice(0,3);
+    for(let t=0;t<texts.length;t++){
+      const src=texts[t];
+      if(!SUSPECT.test(src)) continue;
+      if(numVerdict(src)==="true") continue;
+      const letters={};
+      (src.match(/[A-Za-z]/g)||[]).forEach(function(ch){ letters[ch.toLowerCase()]=ch; });
+      const bad=Object.keys(letters).filter(function(ch){ return SUSPECT.test(ch); });
+      if(!bad.length || bad.length>2) continue;
+      for(let d1=0;d1<10;d1++){
+        let cand=src;
+        bad.forEach(function(ch,i){
+          const re=new RegExp(letters[ch]===ch?"["+ch+ch.toUpperCase()+"]":"["+ch+ch.toUpperCase()+"]","g");
+          cand=cand.replace(re, String(i===0?d1:(d1+3)%10));
+        });
+        if(numVerdict(cand)==="true"){ push(L, cand, "digit"); return; }
+      }
+    }
+  }
+
   function parses(t){
     if(!t) return false;
     try{ window.__solve(t); return true; }catch(e){ return false; }
@@ -17609,13 +17830,29 @@ window.__LEARN={
     }
     return n;
   }
-  function score(text, h, src){
+  function score(text, h, src, nvIn){
     if(!text) return -99;
     let sc=0;
+    /* Арифметика — самый сильный признак из всех. «3*6=18» против «3*-44»:
+       оба не решаются движком уравнений, но первое складывается, а второе нет.
+       На верном чтении модель уверена не всегда, зато считает арифметика. */
+    const nv=(nvIn===undefined)? numVerdict(text) : nvIn;
+    if(nv==="true") sc+=7;
+    else if(nv==="false") sc-=2;             /* умеренно: ребёнок мог написать неверно */
     if(parses(text)) sc+=4;
     const hasEq=text.indexOf("=")>=0;
     if(hasEq) sc+= h.eq? 2 : 0;
     if(!hasEq && h.eq) sc-=2;
+    /* запись, начинающаяся со знака, — почти всегда обрывок: «=2», «-13», «*s» */
+    if(/^[=+*/^]/.test(text) || /^-?\d*$/.test(text)) sc-=6;
+    /* запятые есть в штрихах — значит и в тексте они должны быть.
+       Бонус мягкий: запятую с росчерком легко недосчитать, а лишнюю
+       точку — принять за неё, поэтому требовать точного совпадения нельзя */
+    if(h.dots>=2){
+      const cc=countCommas(text);
+      if(cc>0 && Math.abs(cc-h.dots)<=1) sc+=2;
+      if(cc===h.dots) sc+=1;
+    }
     if(h.clusters){
       const d=Math.abs(symbolsCount(text)-h.clusters)/Math.max(1,h.clusters);
       if(d<=0.3) sc+=2; else if(d<=0.6) sc+=1; else if(d>1.2) sc-=1;
@@ -17627,6 +17864,12 @@ window.__LEARN={
     if(src==="beam") sc+=1;
     if(src==="tess") sc-=1;                  /* запасной движок: доверяем чуть меньше */
     return sc;
+  }
+
+  /* запись, с которой можно работать дальше: либо её решает движок уравнений,
+     либо она верна арифметически */
+  function solvedOk(text){
+    return numVerdict(text)==="true" || parses(text);
   }
 
   /* ---------------- запасной движок ---------------- */
@@ -17711,8 +17954,9 @@ window.__LEARN={
   }
 
   /* ---------------- проходы ---------------- */
-  function makeLine(line, idx){
+  function makeLine(line, idx, boardDots){
     const h=hints(line.strokes);
+    if(boardDots>h.dots) h.dots=boardDots;
     let prep=null, ok=true;
     try{
       const ink=toInk(line.strokes);
@@ -17723,12 +17967,19 @@ window.__LEARN={
             variants:[], seen:{}, ms:0, cost:0};
   }
 
+  /* Разбор записи (numVerdict + __solve) стоит дорого, а спрашивают его
+     в score, в ранжировании строк и в сортировке — по многу раз на один
+     и тот же текст. Поэтому считаем один раз здесь и держим при варианте. */
   function push(L, text, src){
     if(!text) return;
     const key=text.replace(/[^0-9a-z+\-*/=().,^]/gi,"");
     if(!key || L.seen[key]) return;
     L.seen[key]=1;
-    L.variants.push({text:text, src:src, score:score(text, L.hints, src), line:L.idx});
+    const nv=numVerdict(text);
+    const ps=(nv==="true")? false : parses(text);
+    L.variants.push({text:text, src:src, nv:nv, ps:ps,
+                     solved:(nv==="true"||ps),
+                     score:score(text, L.hints, src, nv), line:L.idx});
   }
 
   async function fastPass(L){
@@ -17738,13 +17989,19 @@ window.__LEARN={
       engine.options.beamWidth=1;
       const r=await engine.recognize(L.prep, vocab, "auto");
       push(L, latexToText(r.latex), "fast");
+      commaRepair(L);
+      digitFix(L);
     }catch(e){}
     L.ms+=Math.round(performance.now()-t0);
     L.cost=1;
     return L;
   }
   function lineBest(L){
-    return L.variants.slice().sort(function(a,b){ return b.score-a.score; })[0] || null;
+    let best=null;
+    for(let i=0;i<L.variants.length;i++){
+      if(!best || L.variants[i].score>best.score) best=L.variants[i];
+    }
+    return best;
   }
 
   async function slowPass(L, stage){
@@ -17763,6 +18020,8 @@ window.__LEARN={
       }
     }catch(e){}
     L.ms+=Math.round(performance.now()-t0);
+    commaRepair(L);
+    digitFix(L);
     const b=lineBest(L);
     if(b && b.score>=5) return L;
 
@@ -17806,12 +18065,13 @@ window.__LEARN={
 
     const lines=groupLines(strokes);
     if(!lines.length) return {variants:[], detail:"нет линий"};
+    const boardDots=dotsCount(strokes);
 
     /* 1. дешёвый проход по всем строкам сразу */
     const Ls=[];
     for(let i=0;i<lines.length;i++){
       if(stage && lines.length>1) stage("читаю строку "+(i+1)+" из "+lines.length+"…");
-      Ls.push(await fastPass(makeLine(lines[i], i+1)));
+      Ls.push(await fastPass(makeLine(lines[i], i+1, boardDots)));
     }
 
     /* 2. какая строка претендует на ответ: сначала та, что решается и с «=» */
@@ -17819,7 +18079,7 @@ window.__LEARN={
       const b=lineBest(L);
       if(!b) return -99;
       let r=b.score;
-      if(parses(b.text)) r+=2;
+      if(solvedOk(b.text)) r+=2;
       if(b.text.indexOf("=")>=0) r+=1;
       return r;
     };
@@ -17830,7 +18090,7 @@ window.__LEARN={
 
     /* 3. дешёвый проход уже дал решаемую запись — второй не нужен */
     const goodEnough=function(b){
-      return !!b && b.score>=5 && parses(b.text) && (b.text.indexOf("=")>=0)===!!Ls[0].hints.eq;
+      return !!b && b.score>=5 && solvedOk(b.text) && (b.text.indexOf("=")>=0)===!!Ls[0].hints.eq;
     };
 
     if(!goodEnough(top)){
@@ -17848,8 +18108,10 @@ window.__LEARN={
     const all=[];
     Ls.forEach(function(L){ L.variants.forEach(function(v){ all.push(v); }); });
     all.sort(function(a,b){
-      const pa=parses(a.text)?1:0, pb=parses(b.text)?1:0;
+      const pa=a.solved?1:0, pb=b.solved?1:0;
       if(pa!==pb) return pb-pa;
+      const ta=a.nv==="true"?1:0, tb=b.nv==="true"?1:0;
+      if(ta!==tb) return tb-ta;
       const ea=a.text.indexOf("=")>=0?1:0, eb=b.text.indexOf("=")>=0?1:0;
       if(ea!==eb) return eb-ea;
       return b.score-a.score;
@@ -17858,11 +18120,16 @@ window.__LEARN={
     all.forEach(function(v){ if(!used[v.text]){ used[v.text]=1; uniq.push(v); } });
 
     const first=uniq[0]||null;
+    /* на доске есть «=», а в прочитанном его нет — это обрывок, а не ответ:
+       показывать «24» вместо «1/2+3/4=5/4» хуже, чем честно попросить поправить */
+    const boardEq=hints(strokes).eq;
+    const autoOk=!!(first && first.solved && first.score>=4 &&
+      (!boardEq || first.text.indexOf("=")>=0));
     const res={
       variants:uniq.slice(0,3),
       ms:ms,
       lines:lines.length,
-      auto:!!(first && first.score>=5 && parses(first.text))
+      auto:autoOk
     };
     cache={key:key, val:res};
     return res;
@@ -17870,6 +18137,7 @@ window.__LEARN={
 
   window.__boardAI={warm:warm, recognize:recognize,
     _latexToText:latexToText, _groupLines:groupLines, _hints:hints, _score:score,
+    _num:numVerdict, _dots:dotsCount, _commas:commaCandidates,
     _dbg:function(){ return {engine:engine, vocab:vocab}; }};
 
   /* при простое подтягиваем скрипт движка: к открытию доски останутся только модели */

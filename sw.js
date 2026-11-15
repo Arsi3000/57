@@ -1,6 +1,6 @@
 /* Решатель — офлайн-кеш (B10).
    Версия кэша меняется при каждой сборке: старая чистка уходит сама. */
-const VERSION = "5.7.1";
+const VERSION = "5.7.2";
 const CACHE = "reshatel-" + VERSION;
 const SHELL = ["./", "./index.html"];
 
