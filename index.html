@@ -3158,7 +3158,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.2";
+const APP_VERSION="5.7.3";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17559,6 +17559,92 @@ window.__LEARN={
     }).sort(function(a,b){ return a.cy-b.cy; });
   }
 
+  /* ---------------- дроби столбиком ----------------
+     Дробь на доске пишут двумерно: числитель сверху, черта, знаменатель снизу.
+     Наша разбивка на строки резала такую запись на три ряда, и «1/2+3/4=5/4»
+     превращалось в «24». А модель (CoMER обучен на CROHME, где дроби как раз
+     двумерные) читает её правильно ровно тогда, когда получает ВСЕ штрихи
+     одной лентой: выдаёт \frac{1}{2} + \frac{3}{4} = \frac{5}{4}.
+
+     Поэтому здесь только распознаём наличие дробей. Решение «не делить на
+     строки» принимается по нему, в splitBoard ниже. */
+  function detectFractions(strokes){
+    const items=strokes.filter(function(s){ return s.p && s.p.length>1; })
+      .map(function(s){ return {s:s, b:box(s)}; });
+    if(items.length<3) return [];
+    const size=function(i){ return Math.max(i.b.w,i.b.h); };
+    const hs=items.map(size).sort(function(a,b){ return a-b; });
+    const medAll=hs[Math.floor(hs.length/2)]||10;
+
+    /* Черта — заметно шире, чем толще, и не короче символа */
+    let cands=items.filter(function(i){
+      return i.b.w>=medAll*0.9 && i.b.h<=Math.max(3, medAll*0.3);
+    });
+    if(!cands.length) return [];
+    /* Размер обычного СИМВОЛА считаем без самих черт: черта длиннее цифры и
+       поднимает медиану, из-за чего потом всё «влезает» в допуски. */
+    const others=items.filter(function(i){ return cands.indexOf(i)<0; });
+    const hs2=(others.length? others : items).map(size).sort(function(a,b){ return a-b; });
+    const med=hs2[Math.floor(hs2.length/2)]||medAll;
+
+    const frs=[];
+    cands.forEach(function(bar){
+      /* «=» — две полосы одна над другой с теми же краями: это не дробь */
+      const twin=cands.some(function(o){
+        if(o===bar) return false;
+        const ov=Math.min(o.b.x1,bar.b.x1)-Math.max(o.b.x0,bar.b.x0);
+        const dy=Math.abs(o.b.cy-bar.b.cy);
+        return ov>Math.min(o.b.w,bar.b.w)*0.6 && dy>0 && dy<med*0.5;
+      });
+      if(twin) return;
+
+      /* над чертой и под чертой должны быть символы, вплотную к ней */
+      const near=function(above){
+        return items.some(function(it){
+          if(it===bar) return false;
+          if(it.b.x1 < bar.b.x0 - med*0.35 || it.b.x0 > bar.b.x1 + med*0.35) return false;
+          if(above){
+            if(it.b.y1 > bar.b.y0 + 2) return false;
+            return (bar.b.y0 - it.b.y1) <= med*0.7;
+          }
+          if(it.b.y0 < bar.b.y1 - 2) return false;
+          return (it.b.y0 - bar.b.y1) <= med*0.7;
+        });
+      };
+      if(!near(true) || !near(false)) return;
+
+      /* Половины дроби — обычные по размеру символы. Если над чертой стоит
+         полноразмерная цифра, а под ней другая строка, это не дробь, а черта
+         между рядами: так «8+7=15» превращалось в 3+(7)/(15)=. */
+      const halfOk=function(above){
+        const list=items.filter(function(it){
+          if(it===bar) return false;
+          if(it.b.x1 < bar.b.x0 - med*0.35 || it.b.x0 > bar.b.x1 + med*0.35) return false;
+          if(above) return it.b.y1 <= bar.b.y0 + 2 && (bar.b.y0 - it.b.y1) <= med*0.7;
+          return it.b.y0 >= bar.b.y1 - 2 && (it.b.y0 - bar.b.y1) <= med*0.7;
+        });
+        if(!list.length) return false;
+        const mx=Math.max.apply(null, list.map(function(i){ return i.b.y1-i.b.y0; }));
+        return mx <= med*1.25;
+      };
+      if(!halfOk(true) || !halfOk(false)) return;
+      frs.push(bar);
+    });
+    return frs;
+  }
+
+  /* Разбивка доски на строки. Обычно по геометрии (groupLines), но если на
+     доске есть дробь столбиком — вся доска считается ОДНОЙ записью: делить
+     её нельзя, иначе дробь разваливается на числитель и знаменатель. */
+  function splitBoard(strokes){
+    const frs=detectFractions(strokes);
+    if(frs.length){
+      const all=strokes.filter(function(s){ return s.p && s.p.length>1; });
+      if(all.length) return [{strokes:all, cy:0, y0:0, y1:0}];
+    }
+    return groupLines(strokes);
+  }
+
   function toInk(strokes){
     return strokes.filter(function(s){ return s.p && s.p.length>1; }).map(function(s){
       const pts=[];
@@ -17588,7 +17674,7 @@ window.__LEARN={
     });
     /* «=» — две почти горизонтальные черты одна над другой, похожей длины */
     let eq=false;
-    const horiz=bs.filter(function(b){ return b.w>med*0.55 && b.h<Math.max(2.5, med*0.22); });
+    const horiz=bs.filter(function(b){ return b.w>med*0.35 && b.h<Math.max(2.5, med*0.22); });
     for(let i=0;i<horiz.length && !eq;i++){
       for(let j=i+1;j<horiz.length;j++){
         const a=horiz[i], b=horiz[j];
@@ -17636,6 +17722,9 @@ window.__LEARN={
       s=s.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "($1)/($2)");
       if(s===before) break;
     }
+    /* \frac{1}{2} превращается в (1)/(2); для записи и для решателя лишние
+       скобки вокруг одиночного числа только мешают — убираем */
+    for(let k=0;k<4;k++){ s=s.replace(/\(\s*([0-9a-zA-Z])\s*\)\s*\/\s*\(\s*([0-9a-zA-Z])\s*\)/g, "$1/$2"); }
     s=s.replace(/\\sqrt\s*\{([^{}]*)\}/g, "√($1)");
     s=s.replace(/\\sqrt\s*(\d+)/g, "√$1");
     s=s.replace(/\\cdot|\\times/g,"*");
@@ -17738,6 +17827,18 @@ window.__LEARN={
     if(!a || !b) return "na";
     return fCmp(a,b)===0 ? "true" : "false";
   }
+  /* Структурно целая запись: с обеих сторон «=» стоят числа, которые можно
+     посчитать. Неверный ответ ученика — это тоже целая запись: «2/1+2/3=4»
+     прочитано правильно, хотя арифметика не сходится. Путать это с «не
+     разобрал» нельзя. */
+  function numParses(text){
+    const t=String(text||"");
+    if(!t || /[а-яёa-z]/i.test(t)) return false;
+    const parts=t.split("=");
+    if(parts.length!==2 || !parts[0] || !parts[1]) return false;
+    return !!parseNum(parts[0]) && !!parseNum(parts[1]);
+  }
+
   function countCommas(t){ const m=String(t||"").match(/[.,]/g); return m?m.length:0; }
 
   /* Варианты с запятыми, вставленными между цифрами. Запятая приходит
@@ -17954,9 +18055,10 @@ window.__LEARN={
   }
 
   /* ---------------- проходы ---------------- */
-  function makeLine(line, idx, boardDots){
+  function makeLine(line, idx, boardDots, boardEq){
     const h=hints(line.strokes);
     if(boardDots>h.dots) h.dots=boardDots;
+    if(boardEq) h.boardEq=true;
     let prep=null, ok=true;
     try{
       const ink=toInk(line.strokes);
@@ -18057,21 +18159,32 @@ window.__LEARN={
     }).join("|");
     if(cache.key===key && cache.val) return cache.val;
 
+
     try{ await warm(stage); }
     catch(e){
       cache={key:"", val:null};
       return {variants:[], detail:"распознаватель не загрузился: "+((e&&e.message)||e)};
     }
 
-    const lines=groupLines(strokes);
+    const lines=splitBoard(strokes);
     if(!lines.length) return {variants:[], detail:"нет линий"};
     const boardDots=dotsCount(strokes);
+    /* «=» ищем по штрихам БЕЗ черт дроби: черта длиннее цифры и поднимает
+       медиану так, что настоящие две палочки «=» перестают под неё подходить */
+    let boardEq=hints(strokes).eq;
+    const fracBars=detectFractions(strokes);
+    if(fracBars.length){
+      const bars={};
+      fracBars.forEach(function(b){ bars[strokes.indexOf(b.s)]=1; });
+      const rest=strokes.filter(function(x,k){ return !bars[k]; });
+      boardEq=hints(rest).eq;
+    }
 
     /* 1. дешёвый проход по всем строкам сразу */
     const Ls=[];
     for(let i=0;i<lines.length;i++){
       if(stage && lines.length>1) stage("читаю строку "+(i+1)+" из "+lines.length+"…");
-      Ls.push(await fastPass(makeLine(lines[i], i+1, boardDots)));
+      Ls.push(await fastPass(makeLine(lines[i], i+1, boardDots, boardEq)));
     }
 
     /* 2. какая строка претендует на ответ: сначала та, что решается и с «=» */
@@ -18090,7 +18203,10 @@ window.__LEARN={
 
     /* 3. дешёвый проход уже дал решаемую запись — второй не нужен */
     const goodEnough=function(b){
-      return !!b && b.score>=5 && solvedOk(b.text) && (b.text.indexOf("=")>=0)===!!Ls[0].hints.eq;
+      if(!b) return false;
+      const complete=numParses(b.text);
+      const strong=b.score>=5 && solvedOk(b.text);
+      return (complete || strong) && (b.text.indexOf("=")>=0)===!!Ls[0].hints.eq;
     };
 
     if(!goodEnough(top)){
@@ -18122,8 +18238,11 @@ window.__LEARN={
     const first=uniq[0]||null;
     /* на доске есть «=», а в прочитанном его нет — это обрывок, а не ответ:
        показывать «24» вместо «1/2+3/4=5/4» хуже, чем честно попросить поправить */
-    const boardEq=hints(strokes).eq;
-    const autoOk=!!(first && first.solved && first.score>=4 &&
+    /* Показывать без «поправить» можно и тогда, когда запись прочитана
+       целиком, но арифметика не сошлась: неверный ответ ученика — это тоже
+       правильное чтение, просить «поправьте» тут не за что. */
+    const full=!!(first && numParses(first.text) && first.text.indexOf("=")>=0);
+    const autoOk=!!(first && (full || (first.score>=4 && first.solved)) &&
       (!boardEq || first.text.indexOf("=")>=0));
     const res={
       variants:uniq.slice(0,3),
@@ -18137,7 +18256,7 @@ window.__LEARN={
 
   window.__boardAI={warm:warm, recognize:recognize,
     _latexToText:latexToText, _groupLines:groupLines, _hints:hints, _score:score,
-    _num:numVerdict, _dots:dotsCount, _commas:commaCandidates,
+    _num:numVerdict, _dots:dotsCount, _commas:commaCandidates, _split:splitBoard, _fracs:detectFractions, _numParses:numParses,
     _dbg:function(){ return {engine:engine, vocab:vocab}; }};
 
   /* при простое подтягиваем скрипт движка: к открытию доски останутся только модели */
