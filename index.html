@@ -3158,7 +3158,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.4";
+const APP_VERSION="5.7.5";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17739,7 +17739,7 @@ window.__LEARN={
     }
     /* \frac{1}{2} превращается в (1)/(2); для записи и для решателя лишние
        скобки вокруг одиночного числа только мешают — убираем */
-    for(let k=0;k<4;k++){ s=s.replace(/\(\s*([0-9a-zA-Z])\s*\)\s*\/\s*\(\s*([0-9a-zA-Z])\s*\)/g, "$1/$2"); }
+    for(let k=0;k<4;k++){ s=s.replace(/\(\s*([0-9a-zA-Z]{1,3})\s*\)\s*\/\s*\(\s*([0-9a-zA-Z]{1,3})\s*\)/g, "$1/$2"); }
     s=s.replace(/\\sqrt\s*\{([^{}]*)\}/g, "√($1)");
     s=s.replace(/\\sqrt\s*(\d+)/g, "√$1");
     s=s.replace(/\\cdot|\\times/g,"*");
@@ -17752,6 +17752,9 @@ window.__LEARN={
     /* CROHME разделяет каждый символ пробелом: «2 x + 5 = 1 3».
        Убираем пробелы целиком — иначе решатель видит «1 3» как два числа. */
     s=s.replace(/\s+/g,"");
+    /* CROHME пишет каждый символ через пробел: \frac { 1 0 } { 6 } — после
+       склейки получается (10)/(6). Скобки снимаем ещё раз, уже без пробелов. */
+    for(let k=0;k<4;k++){ s=s.replace(/\(([0-9a-zA-Z]{1,3})\)\/\(([0-9a-zA-Z]{1,3})\)/g, "$1/$2"); }
     s=s.replace(/[−–—]/g,"-").replace(/[«»„“”]/g,'"');
     return s;
   }
@@ -17907,29 +17910,61 @@ window.__LEARN={
   }
 
   /* Модель иногда читает цифру как похожую букву: «6*6=36» → «6*f=36»,
-     «9-7=2» → «y-y=2». Буквы x, y, k, b — настоящие неизвестные, их не
-     трогаем. Остальные (f, l, o, s, z, i, g, t, q, e, a) в школьной записи
-     цифр почти всегда означают цифру. Подставляем 0…9 и проверяем
-     арифметикой: если равенство сошлось — это и есть верное чтение. */
+     «1/2+2/3» → «1/2+a/3», «9-7=2» → «y-y=2». Настоящих неизвестных в
+     школьной записи четыре: x, y, k, b. Всё остальное латинское — почти
+     всегда неверно прочитанная ЦИФРА (на доске «2» с петелькой выглядит
+     ровно как «a», «5» — как «s», «0» — как «o»).
+
+     Порядок действий: сначала пробуем цифры и проверяем арифметикой —
+     если равенство сошлось, это и есть верное чтение. Если арифметика не
+     сходится (ученик мог посчитать неверно), берём цифру по таблице
+     похожести: запись хотя бы перестаёт содержать несуществующую букву. */
+  const REAL_UNKNOWN=/[xykbXY]/;
   const SUSPECT=/[floszigteaqFLOSZIGTEAQ]/;
+  /* какую цифру модель путает с какой буквой */
+  const CONFUSE={ a:"2", s:"5", z:"2", t:"7", l:"1", i:"1", o:"0",
+                  g:"9", f:"6", e:"9", q:"9" };
+
   function digitFix(L){
     const texts=L.variants.map(function(v){ return v.text; }).slice(0,3);
     for(let t=0;t<texts.length;t++){
       const src=texts[t];
       if(!SUSPECT.test(src)) continue;
       if(numVerdict(src)==="true") continue;
+
       const letters={};
-      (src.match(/[A-Za-z]/g)||[]).forEach(function(ch){ letters[ch.toLowerCase()]=ch; });
-      const bad=Object.keys(letters).filter(function(ch){ return SUSPECT.test(ch); });
+      (src.match(/[A-Za-z]/g)||[]).forEach(function(ch){
+        const lo=ch.toLowerCase();
+        if(SUSPECT.test(lo) && !REAL_UNKNOWN.test(lo)) letters[lo]=ch;
+      });
+      const bad=Object.keys(letters);
       if(!bad.length || bad.length>2) continue;
-      for(let d1=0;d1<10;d1++){
-        let cand=src;
-        bad.forEach(function(ch,i){
-          const re=new RegExp(letters[ch]===ch?"["+ch+ch.toUpperCase()+"]":"["+ch+ch.toUpperCase()+"]","g");
-          cand=cand.replace(re, String(i===0?d1:(d1+3)%10));
-        });
-        if(numVerdict(cand)==="true"){ push(L, cand, "digit"); return; }
+
+      const sub=function(txt, ch, digit){
+        const re=new RegExp("["+ch+ch.toUpperCase()+"]","g");
+        return txt.replace(re, digit);
+      };
+
+      /* 1) перебор цифр с проверкой арифметикой */
+      let found=null;
+      for(let d1=0; d1<10 && !found; d1++){
+        for(let d2=0; d2<10 && !found; d2++){
+          let cand=sub(src, bad[0], String(d1));
+          if(bad[1]) cand=sub(cand, bad[1], String(d2));
+          if(numVerdict(cand)==="true") found=cand;
+        }
       }
+      if(found){ push(L, found, "digit"); return; }
+
+      /* 2) арифметика не сошлась — берём по таблице похожести, но только
+            если запись от этого становится целой (все части считаются) */
+      let cand=src;
+      bad.forEach(function(ch, i){
+        const d=CONFUSE[ch] || String((i===0?2:3));
+        cand=sub(cand, ch, d);
+      });
+      if(cand!==src && numParses(cand)) push(L, cand, "digit?");
+      else if(cand!==src) push(L, cand, "digit?");
     }
   }
 
@@ -17955,7 +17990,11 @@ window.__LEARN={
     const nv=(nvIn===undefined)? numVerdict(text) : nvIn;
     if(nv==="true") sc+=7;
     else if(nv==="false") sc-=2;             /* умеренно: ребёнок мог написать неверно */
-    if(parses(text)) sc+=4;
+    /* Движок уравнений берёт любую латинскую букву за неизвестное и «решает»
+       запись с опечаткой распознавания: «1/2+a/3=4» → «a = 7/2». Это не
+       решение, а поблажка, поэтому за такую запись баллы не даём. */
+    const bogus=/[floszigteaq]/i.test(text);
+    if(!bogus && parses(text)) sc+=4;
     const hasEq=text.indexOf("=")>=0;
     if(hasEq) sc+= h.eq? 2 : 0;
     if(!hasEq && h.eq) sc-=2;
@@ -17974,6 +18013,11 @@ window.__LEARN={
       if(d<=0.3) sc+=2; else if(d<=0.6) sc+=1; else if(d>1.2) sc-=1;
     }
     if(/[а-яё]/i.test(text)) sc-=4;          /* кириллица в математике — почти всегда ошибка */
+    /* латинская буква, которой в школьной записи быть не может: скорее
+       всего это неверно прочитанная цифра, и вариант с цифрой лучше */
+    if(/[floszigteaq]/i.test(text)) sc-=3;
+    if(src==="digit") sc+=2;                 /* и замена подтверждена арифметикой */
+    if(src==="digit?") sc-=1;
     if(/[qwzvQWZV]/.test(text)) sc-=1;
     if(text.length<2) sc-=4;
     if(text.length>48) sc-=2;
@@ -18093,7 +18137,8 @@ window.__LEARN={
     if(!key || L.seen[key]) return;
     L.seen[key]=1;
     const nv=numVerdict(text);
-    const ps=(nv==="true")? false : parses(text);
+    const bogus=/[floszigteaq]/i.test(text);
+    const ps=(nv==="true" || bogus)? false : parses(text);
     L.variants.push({text:text, src:src, nv:nv, ps:ps,
                      solved:(nv==="true"||ps),
                      score:score(text, L.hints, src, nv), line:L.idx});
@@ -18238,7 +18283,12 @@ window.__LEARN={
     /* 4. собираем варианты: сначала решаемые, потом по оценке */
     const all=[];
     Ls.forEach(function(L){ L.variants.forEach(function(v){ all.push(v); }); });
+    /* Запись без «несуществующих» букв всегда лучше записи с ними: буква
+       f, a, s вместо цифры — это ошибка чтения, даже если общий балл совпал */
+    const bogusN=function(t){ const m=String(t||"").match(/[floszigteaq]/gi); return m?m.length:0; };
     all.sort(function(a,b){
+      const ba=bogusN(a.text), bb=bogusN(b.text);
+      if(ba!==bb) return ba-bb;
       const pa=a.solved?1:0, pb=b.solved?1:0;
       if(pa!==pb) return pb-pa;
       const ta=a.nv==="true"?1:0, tb=b.nv==="true"?1:0;
