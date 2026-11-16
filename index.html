@@ -3158,7 +3158,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.3";
+const APP_VERSION="5.7.4";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17646,7 +17646,22 @@ window.__LEARN={
   }
 
   function toInk(strokes){
-    return strokes.filter(function(s){ return s.p && s.p.length>1; }).map(function(s){
+    /* Модель смотрит на НАРИСОВАННУЮ картинку, а не на координаты, и ей важно
+       не абсолютное перо, а его толщина ОТНОСИТЕЛЬНО размера записи. На доске
+       толщина постоянна (2,6 px), а размер записи зависит от устройства: на
+       телефоне та же фраза занимает половину ширины и выходит вдвое толще
+       относительно. Из-за этого один и тот же почерк читался по-разному на
+       разных экранах. Считаем перо от высоты записи: 5 % — середина
+       измеренного оптимума (тоньше 1 % и толще 10 % точность падает втрое). */
+    const ink=strokes.filter(function(s){ return s.p && s.p.length>1; });
+    if(!ink.length) return [];
+    let y0=1e9, y1=-1e9;
+    ink.forEach(function(s){
+      s.p.forEach(function(p){ if(p[1]<y0) y0=p[1]; if(p[1]>y1) y1=p[1]; });
+    });
+    const H=Math.max(1, y1-y0);
+    const lw=Math.max(2, Math.min(9, H*0.05));
+    return ink.map(function(s){
       const pts=[];
       for(let i=0;i<s.p.length;i++){
         const p=s.p[i], q=pts[pts.length-1];
@@ -17654,7 +17669,7 @@ window.__LEARN={
         if(!q || Math.abs(p[0]-q.x)>1.2 || Math.abs(p[1]-q.y)>1.2) pts.push({x:p[0], y:p[1]});
       }
       if(pts.length<2) pts.push({x:s.p[s.p.length-1][0], y:s.p[s.p.length-1][1]});
-      return {points:pts, lineWidth: Math.max(2.6, s.w||2.6)};
+      return {points:pts, lineWidth:lw};
     });
   }
 
