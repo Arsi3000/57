@@ -2493,6 +2493,30 @@ body.warm .bsrhead{color:#2f281e}
 body.warm .bsrchip{background:#fffdf8;border-color:rgba(120,90,60,.24);color:#2f281e}
 body.warm .bsrchip.on{border-color:#b47a2f;background:rgba(180,122,47,.12);color:#6d4b16}
 body.warm .bsrms{background:rgba(120,90,60,.12);color:#7a6d5c}
+
+/* 5.7.7: «движок не поднялся» — состояние, а не ошибка в консоли.
+   Плашка стоит над кнопками, читается спокойно, не краснеет: связь
+   пропала не по вине ученика, и урок из-за этого не должен встать. */
+.bseng{
+  border-top:1px solid rgba(50,70,120,.14);background:#fff6e6;
+  padding:9px 12px;font-size:11.5px;line-height:1.5;color:#6b5325;
+  display:flex;align-items:flex-start;gap:9px;
+}
+.bseng[hidden]{display:none !important}
+.bseng b{color:#4a3a12}
+.bseng .bsengbtn{
+  flex:0 0 auto;border:1px solid rgba(120,90,20,.3);background:#fffdf8;
+  color:#5a4514;font:700 11px/1 inherit;border-radius:9px;padding:7px 10px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.bseng .bsengbtn:active{transform:translateY(1px)}
+.bseng.wait{background:#f4f6fa;color:#5c6472}
+body.warm .bseng{background:#f7ecd6;border-color:rgba(120,90,60,.2);color:#6d5a33}
+body.warm .bseng.wait{background:#f3ead8;color:#7a6d5c}
+/* идёт чтение: доска не принимает штрихи, курсор это показывает */
+#bcanvas.busy{cursor:progress}
+.bsb[disabled]{opacity:.45;cursor:default}
+.bsb[disabled]:active{transform:none}
 body.warm .bsrhint{color:#6d6152}
 
 /* ================= 5.6.0: язычок «доска» у поля ================= */
@@ -3158,7 +3182,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.5";
+const APP_VERSION="5.7.7";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -16951,6 +16975,7 @@ window.__LEARN={
         '<button type="button" class="bsx" id="bsClose">Закрыть</button>'+
       '</div>'+
       '<div class="bscanvas-wrap"><canvas id="bcanvas"></canvas></div>'+
+      '<div class="bseng" id="bsEng" hidden></div>'+
       '<div class="bsres" id="bsRes" hidden></div>'+
       '<div class="bsbtns">'+
         '<button type="button" class="bsb ic2" id="bsUndo" title="Отменить" aria-label="Отменить">'+
@@ -16966,6 +16991,25 @@ window.__LEARN={
     const cv=sheet.querySelector("#bcanvas");
     const ctx=cv.getContext("2d");
     let strokes=[], mode=null, last=null, dpr=1;
+
+    /* ===== 5.7.7: у доски одно состояние, а не десяток флагов =====
+       closed   — закрыта
+       empty    — открыта, ничего не написано
+       writing  — человек пишет
+       reading  — идёт распознавание: штрихи заморожены
+       result   — есть варианты, ждём выбора
+       noengine — распознаватель не поднялся (нет связи / нет lib/inkon)
+       Почему это не украшение: пока модель читает, доска принимала новые
+       штрихи. Кеш ответа считался по старым, а применялся к новым — то есть
+       дописанная сгоряча цифра меняла доску, но не ответ. Теперь в
+       состоянии reading рисование, «Отменить», «Стереть» и повторное
+       «Готово» просто не работают. */
+    let bstate="closed";
+    /* номер попытки чтения: закрыл доску — старый ответ уже не применяем */
+    let bgen=0;
+    /* состояние распознавателя: null — ещё проверяю, true/false — ответ известен */
+    let eng={ok:null, err:""};
+
     const PEN={light:"#1f43b8", dark:"#9dc0ff", warm:"#243f8f"};
 
     function penColor(){
@@ -16997,8 +17041,11 @@ window.__LEARN={
       return [e.clientX-r.left, e.clientY-r.top];
     }
     cv.addEventListener("pointerdown", function(e){
+      /* читаем — не рисуем: иначе ответ будет от одной записи, а на доске другая */
+      if(bstate==="reading") return;
       cv.setPointerCapture(e.pointerId);
       mode="draw";
+      if(bstate==="empty"||bstate==="result"){ hideRes(); setState("writing"); }
       last={ c:penColor(), w:(e.pointerType==="pen"? 2.6 : 2.4), p:[pos(e)] };
       strokes.push(last);
       redraw();
@@ -17015,23 +17062,38 @@ window.__LEARN={
     cv.addEventListener("pointercancel", stop);
     cv.addEventListener("pointerleave", function(e){ if(mode==="draw"&&e.buttons===0) stop(); });
 
-    sheet.querySelector("#bsUndo").addEventListener("click", function(){ strokes.pop(); redraw(); });
-    sheet.querySelector("#bsClear").addEventListener("click", function(){ strokes=[]; redraw(); });
-    sheet.querySelector("#bsClose").addEventListener("click", close);
+    const undoBtn=sheet.querySelector("#bsUndo"), clearBtn=sheet.querySelector("#bsClear");
+    const closeBtn=sheet.querySelector("#bsClose");
+    undoBtn.addEventListener("click", function(){
+      if(bstate==="reading") return;
+      strokes.pop(); redraw(); hideRes();
+      setState(strokes.length? "writing":"empty");
+    });
+    clearBtn.addEventListener("click", function(){
+      if(bstate==="reading") return;
+      strokes=[]; redraw(); hideRes(); setState("empty");
+    });
+    closeBtn.addEventListener("click", close);
 
     function open(){
       sheet.hidden=false;
       tab.classList.add("on"); tab.setAttribute("aria-expanded","true");
       document.body.style.overflow="hidden";
       requestAnimationFrame(sizeCanvas);
+      setState(strokes.length? "writing":"empty");
       /* 5.7.0: пока человек пишет, распознаватель уже грузится.
-         Без этого первое «Готово» ждало бы 7 МБ моделей. */
-      try{ if(window.__boardAI) window.__boardAI.warm(); }catch(e){}
+         5.7.7: и если он не поднялся, об этом сказано ДО того, как человек
+         исписал полдоски. Раньше отказ выяснялся по «Готово», после письма. */
+      checkEngine();
     }
     function close(){
+      /* закрывают во время чтения — ответ уже не нужен: иначе он придёт
+         и подменит поле, когда человек ушёл в другой раздел */
+      if(bstate==="reading") bgen++;
       sheet.hidden=true;
       tab.classList.remove("on"); tab.setAttribute("aria-expanded","false");
       document.body.style.overflow="";
+      setState("closed");
     }
     tab.addEventListener("click", open);
     document.addEventListener("keydown", function(e){ if(e.key==="Escape"&&!sheet.hidden) close(); });
@@ -17041,7 +17103,6 @@ window.__LEARN={
     /* 5.7.0: «Готово» больше не снимает картинку — распознаватель получает
        сами штрихи (ink-on, модель CoMER). Картинка нужна только запасному
        движку, и её собираем уже из штрихов, без клетки и красной линии. */
-    const done=$("bsDone"), scan=$("bsScan");
     const resBox=sheet.querySelector("#bsRes");
 
     function say(txt, kind){
@@ -17051,6 +17112,62 @@ window.__LEARN={
       resBox.innerHTML=txt;
     }
     function hideRes(){ if(resBox){ resBox.hidden=true; resBox.innerHTML=""; } }
+
+    /* ---------- плашка «распознавателя нет» ---------- */
+    const engBox=sheet.querySelector("#bsEng");
+    function paintEngine(){
+      if(!engBox) return;
+      if(eng.ok!==false){ engBox.hidden=true; engBox.innerHTML=""; return; }
+      engBox.hidden=false; engBox.className="bseng";
+      engBox.innerHTML='<span><b>Распознавание не загрузилось.</b> '+
+        'Обычно это нет связи. Пример можно набрать в поле ввода — '+
+        'остальное работает.</span>'+
+        '<button type="button" class="bsengbtn" id="bsEngRetry">Повторить</button>';
+      const rb=engBox.querySelector("#bsEngRetry");
+      if(rb) rb.addEventListener("click", function(){ checkEngine(true); });
+      if(eng.err) engBox.title=eng.err;
+    }
+    /* preflight не грузит 7 МБ заново, если движок уже поднят, и честно
+       возвращает отказ, если он упал — тогда кнопка «Повторить» имеет смысл */
+    function checkEngine(force){
+      if(eng.ok===true && !force) { paintEngine(); return; }
+      if(!window.__boardAI){
+        eng={ok:false, err:"нет папки lib/inkon"};
+        paintEngine();
+        if(bstate!=="closed" && bstate!=="reading") setState("noengine");
+        return;
+      }
+      const before=eng.ok;
+      eng={ok:null, err:""};
+      paintEngine();
+      let p;
+      try{ p=window.__boardAI.preflight(); }
+      catch(e){ p=Promise.resolve({ok:false, err:String((e&&e.message)||e)}); }
+      p.then(function(r){
+        eng={ok:!!(r&&r.ok), err:(r&&r.err)||""};
+        paintEngine();
+        /* отказ — это состояние доски, а не сообщение: кнопки приводим к нему */
+        if(!eng.ok && bstate!=="closed" && bstate!=="reading") setState("noengine");
+        else if(eng.ok && bstate==="noengine") setState(strokes.length? "writing":"empty");
+      });
+      if(before===null){ /* уже проверяли — второй раз не дёргаем вслепую */ }
+    }
+
+    /* ---------- переходы ---------- */
+    const done=$("bsDone"), scan=$("bsScan");
+    const LBL_DONE=done.textContent, LBL_SCAN=scan.textContent;
+    function setState(ns){
+      bstate=ns;
+      const reading=(ns==="reading");
+      done.disabled=reading; scan.disabled=reading;
+      undoBtn.disabled=reading; clearBtn.disabled=reading;
+      cv.classList.toggle("busy", reading);
+      /* «Распознать» без движка не предлагаем: это кнопка в пустоту */
+      scan.hidden=(ns==="noengine");
+      done.textContent=reading? "Читаю…" : LBL_DONE;
+      scan.textContent=LBL_SCAN;
+      if(ns==="empty"||ns==="writing") hideRes();
+    }
 
     /* «с доски: 1+2» — короткая строка под полем. Нужна, чтобы распознанное
        не появлялось молча: если прочитано неверно, это видно сразу и
@@ -17075,6 +17192,15 @@ window.__LEARN={
       n.hidden=false;
     }
 
+    /* 5.7.7: без распознавателя «Готово» — это «закрыть и дать поле»,
+       а не «подожди и получи отказ». Написанное не теряем: штрихи остаются,
+       вернулась связь — «Повторить», и можно прочитать. */
+    function focusQ(){
+      const qIn=document.getElementById("q");
+      if(!qIn) return;
+      try{ qIn.focus(); }catch(e){}
+    }
+
     function applyText(t, solveIt){
       const qIn=document.getElementById("q");
       const formEl=document.getElementById("form");
@@ -17095,7 +17221,8 @@ window.__LEARN={
       }
       const auto=(meta && meta.auto);
       const html='<div class="bsrhead">'+(auto? "Распознал" : "Как прочитать?")+
-        (meta && meta.ms? ' <span class="bsrms">'+meta.ms+' мс</span>':'')+'</div>'+
+        (meta && meta.ms? ' <span class="bsrms">'+meta.ms+' мс</span>':'')+
+        (meta && meta.lines>1? ' <span class="bsrms">строк: '+meta.lines+'</span>':'')+'</div>'+
         '<div class="bsrlist">'+variants.map(function(v,i){
           return '<button type="button" class="bsrchip'+(i===0? " on":"")+'" data-i="'+i+'">'+
             escHtml(v.text)+'</button>';
@@ -17116,10 +17243,18 @@ window.__LEARN={
 
     async function recognize(closeAfter){
       if(!strokes.length){ if(closeAfter) close(); return; }
-      if(!window.__boardAI){ say("Распознаватель не загружен (нет папки lib/inkon).","err"); return; }
-      done.disabled=true; scan.disabled=true;
-      const txtDone=done.textContent, txtScan=scan.textContent;
-      done.textContent="Читаю…";
+      /* идёт чтение — второе нажатие ничего не делает: движок один, и
+         настройка луча в нём общая, а человек успевает нажать трижды */
+      if(bstate==="reading") return;
+      /* движка нет — не мучаем ни ожиданием, ни ложной надеждой:
+         «Готово» закрывает доску и ставит курсор в поле ввода */
+      if(eng.ok===false){
+        if(closeAfter){ close(); focusQ(); }
+        else { setState("noengine"); paintEngine(); }
+        return;
+      }
+      const myGen=++bgen;
+      setState("reading");
       hideRes();
       say('<div class="bsrhead">Читаю написанное…</div>'+
           '<div class="bsrhint" id="bsrProg">первый раз гружу распознаватель, дальше он в памяти</div>');
@@ -17129,9 +17264,21 @@ window.__LEARN={
           const el=sheet.querySelector("#bsrProg");
           if(el && stage) el.textContent=stage;
         });
+        /* доску закрыли или начали новое чтение, пока модель думала */
+        if(myGen!==bgen) return;
         const ms=Math.round(performance.now()-t0);
         const list=out.variants||[];
-        if(!list.length){ showVariants([], {detail:out.detail, ms:ms}); return; }
+        if(!list.length){
+          const why=String(out.detail||"");
+          if(/не загрузил|lib\/inkon|bundle|model|vocab|fetch|Failed|network/i.test(why)){
+            eng={ok:false, err:why};
+            setState("noengine"); paintEngine();
+            return;
+          }
+          setState("writing");
+          showVariants([], {detail:out.detail, ms:ms, lines:out.lines});
+          return;
+        }
         const best=list[0];
         if(out.auto){
           /* уверены — не спрашиваем: ставим в поле, решаем и оставляем
@@ -17140,13 +17287,17 @@ window.__LEARN={
           boardNote(best.text);
           strokes=[]; redraw(); hideRes(); close();
         } else {
-          showVariants(list, {auto:false, ms:ms});
+          setState("result");
+          showVariants(list, {auto:false, ms:ms, lines:out.lines});
         }
       }catch(e){
-        say("Ошибка распознавания: "+escHtml(String((e&&e.message)||e)), "err");
-      }finally{
-        done.disabled=false; scan.disabled=false;
-        done.textContent=txtDone; scan.textContent=txtScan;
+        if(myGen!==bgen) return;
+        /* ошибка чтения — тоже «движок не поднялся», если дело в загрузке */
+        const msg=String((e&&e.message)||e);
+        if(/lib\/inkon|bundle|model|vocab|fetch|Failed|network/i.test(msg)) eng={ok:false, err:msg};
+        setState(eng.ok===false? "noengine":"writing");
+        say("Ошибка распознавания: "+escHtml(msg), "err");
+        paintEngine();
       }
     }
     done.addEventListener("click", function(){ recognize(true); });
@@ -17159,7 +17310,11 @@ window.__LEARN={
     }, true);
     window.__board={open:open,close:close,
       getStrokes:function(){ return strokes; },
-      clear:function(){ strokes=[]; redraw(); hideRes(); }};
+      clear:function(){ strokes=[]; redraw(); hideRes(); setState("empty"); },
+      /* 5.7.7: состояние наружу — для отладки и для стенда */
+      state:function(){ return bstate; },
+      engine:function(){ return {ok:eng.ok, err:eng.err}; },
+      retryEngine:function(){ checkEngine(true); }};
   }
 })();
 </script>
@@ -17925,6 +18080,23 @@ window.__LEARN={
   const CONFUSE={ a:"2", s:"5", z:"2", t:"7", l:"1", i:"1", o:"0",
                   g:"9", f:"6", e:"9", q:"9" };
 
+  /* «Опечатка распознавания»: строчная буква, которой в записи быть не может,
+     при том что других букв (переменных) рядом нет. Прописные A, B, C и
+     настоящие неизвестные x, y, k, b — это переменные, их не трогаем. */
+  function isBogus(text){
+    const t=String(text||"");
+    if(/[A-Z]/.test(t)) return false;
+    const ls=t.match(/[A-Za-z]/g);
+    if(!ls) return false;
+    let susp=false, innoc=false;
+    ls.forEach(function(ch){
+      const lo=ch.toLowerCase();
+      if(lo in CONFUSE) susp=true;
+      else if(!REAL_UNKNOWN.test(lo)) innoc=true;
+    });
+    return susp && !innoc;
+  }
+
   function digitFix(L){
     const texts=L.variants.map(function(v){ return v.text; }).slice(0,3);
     for(let t=0;t<texts.length;t++){
@@ -17956,15 +18128,23 @@ window.__LEARN={
       }
       if(found){ push(L, found, "digit"); return; }
 
-      /* 2) арифметика не сошлась — берём по таблице похожести, но только
-            если запись от этого становится целой (все части считаются) */
+      /* 2) арифметика не сошлась — можно взять цифру по таблице похожести,
+            но ТОЛЬКО если запись не похожа на алгебру: если рядом стоят
+            прописные (A, B, C) или «посторонние» строчные (c, m, n), то это
+            переменные, а не цифры. Замер на CROHME: без этого правила
+            точность падала с 36 % до 17 % — «A*B» читалось как «2*B». */
+      if(/[A-Z]/.test(src)) continue;
+      const innoc=(src.match(/[A-Za-z]/g)||[]).filter(function(ch){
+        const lo=ch.toLowerCase();
+        return !(lo in CONFUSE) && !REAL_UNKNOWN.test(lo);
+      });
+      if(innoc.length) continue;
       let cand=src;
       bad.forEach(function(ch, i){
         const d=CONFUSE[ch] || String((i===0?2:3));
         cand=sub(cand, ch, d);
       });
-      if(cand!==src && numParses(cand)) push(L, cand, "digit?");
-      else if(cand!==src) push(L, cand, "digit?");
+      if(cand!==src) push(L, cand, "digit?");
     }
   }
 
@@ -17993,7 +18173,7 @@ window.__LEARN={
     /* Движок уравнений берёт любую латинскую букву за неизвестное и «решает»
        запись с опечаткой распознавания: «1/2+a/3=4» → «a = 7/2». Это не
        решение, а поблажка, поэтому за такую запись баллы не даём. */
-    const bogus=/[floszigteaq]/i.test(text);
+    const bogus=isBogus(text);
     if(!bogus && parses(text)) sc+=4;
     const hasEq=text.indexOf("=")>=0;
     if(hasEq) sc+= h.eq? 2 : 0;
@@ -18015,7 +18195,7 @@ window.__LEARN={
     if(/[а-яё]/i.test(text)) sc-=4;          /* кириллица в математике — почти всегда ошибка */
     /* латинская буква, которой в школьной записи быть не может: скорее
        всего это неверно прочитанная цифра, и вариант с цифрой лучше */
-    if(/[floszigteaq]/i.test(text)) sc-=3;
+    if(bogus) sc-=3;
     if(src==="digit") sc+=2;                 /* и замена подтверждена арифметикой */
     if(src==="digit?") sc-=1;
     if(/[qwzvQWZV]/.test(text)) sc-=1;
@@ -18137,7 +18317,7 @@ window.__LEARN={
     if(!key || L.seen[key]) return;
     L.seen[key]=1;
     const nv=numVerdict(text);
-    const bogus=/[floszigteaq]/i.test(text);
+    const bogus=isBogus(text);
     const ps=(nv==="true" || bogus)? false : parses(text);
     L.variants.push({text:text, src:src, nv:nv, ps:ps,
                      solved:(nv==="true"||ps),
@@ -18285,7 +18465,7 @@ window.__LEARN={
     Ls.forEach(function(L){ L.variants.forEach(function(v){ all.push(v); }); });
     /* Запись без «несуществующих» букв всегда лучше записи с ними: буква
        f, a, s вместо цифры — это ошибка чтения, даже если общий балл совпал */
-    const bogusN=function(t){ const m=String(t||"").match(/[floszigteaq]/gi); return m?m.length:0; };
+    const bogusN=function(t){ return isBogus(t)?1:0; };
     all.sort(function(a,b){
       const ba=bogusN(a.text), bb=bogusN(b.text);
       if(ba!==bb) return ba-bb;
@@ -18319,7 +18499,20 @@ window.__LEARN={
     return res;
   }
 
-  window.__boardAI={warm:warm, recognize:recognize,
+  /* 5.7.7: «поднялся ли движок» — обычный вопрос с ответом, а не падение
+     в консоль. Доска спрашивает это при открытии, чтобы отказ был виден
+     до письма, а не после «Готово». Повторный вызов после отказа реально
+     перезагружает бандл и модели: связь могла вернуться. */
+  let preflightFell=false;
+  function errText(e){
+    return String((e&&e.message)||e||"неизвестная ошибка").slice(0,160);
+  }
+  function preflight(){
+    return warm().then(function(){ preflightFell=false; return {ok:true}; },
+                       function(e){ preflightFell=true; return {ok:false, err:errText(e)}; });
+  }
+
+  window.__boardAI={warm:warm, recognize:recognize, preflight:preflight,
     _latexToText:latexToText, _groupLines:groupLines, _hints:hints, _score:score,
     _num:numVerdict, _dots:dotsCount, _commas:commaCandidates, _split:splitBoard, _fracs:detectFractions, _numParses:numParses,
     _dbg:function(){ return {engine:engine, vocab:vocab}; }};
