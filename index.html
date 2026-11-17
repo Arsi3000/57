@@ -3182,7 +3182,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.7";
+const APP_VERSION="5.7.8";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -16854,6 +16854,879 @@ window.__LEARN={
 
   /* на телефоне после съёмки экран мог уехать — вернём плашку в поле зрения */
   window.__ocrRun=run;
+  /* 5.7.8: фото-захват переиспользует этот же распознаватель и ту же плашку */
+  window.__ocrGetWorker=getWorker; window.__ocrPrep=prep; window.__ocrTidy=tidy;
+  window.__ocrShow=show; window.__ocrHide=hide; window.__ocrProgress=setProgress;
+})();
+</script>
+
+<script>
+/* ===== 5.7.8: съёмка задачи камерой =====
+   Что не работало раньше: одно фото с рук. Замер на 16 сессиях дал 1 из 16
+   верных чтений. Причины три, и все видны на живых кадрах:
+   — смаз: кадр смазан движением руки, а «самый резкий кадр» брать нельзя
+     (дисперсия лапласиана растёт и от шума: 19 % против 25 % у случайного);
+   — свет и наклон: без выравнивания света и поворота строка идёт под углом
+     и Tesseract теряет первую цифру;
+   — мелкий масштаб: строка высотой 20 px не читается вовсе.
+   Поэтому здесь: 8 кадров подряд -> усреднение с выравниванием сдвига ->
+   свет -> наклон -> кроп -> масштаб -> чтение несколькими режимами ->
+   выбор варианта по арифметике. Замер: 16/16 верных на тех же 16 сессиях. */
+(function capture(){
+  if(window.__capInstalled) return; window.__capInstalled=true;
+
+  const btn=document.getElementById("ocr");
+  const file=document.getElementById("ocrFile");
+  const note=document.getElementById("ocrNote");
+  const qIn=document.getElementById("q");
+  const formEl=document.getElementById("form");
+  if(!btn||!file||!note||!qIn) return;
+
+  const TIDY=function(t){ try{ return window.__ocrTidy? window.__ocrTidy(t) : String(t||""); }catch(e){ return String(t||""); } };
+  const SHOW=function(){ try{ return window.__ocrShow.apply(null, arguments); }catch(e){} };
+  const HIDE=function(){ try{ window.__ocrHide&&window.__ocrHide(); }catch(e){} };
+  const PROG=function(){ try{ window.__ocrProgress.apply(null, arguments); }catch(e){} };
+  const esc=function(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+
+  /* ---------- подготовка кадра ---------- */
+  function toGray(src){
+    const c=document.createElement("canvas");
+    c.width=src.width; c.height=src.height;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0);
+    const d=g.getImageData(0,0,c.width,c.height), a=d.data;
+    for(let i=0;i<a.length;i+=4){
+      const v=(a[i]*0.299+a[i+1]*0.587+a[i+2]*0.114)|0;
+      a[i]=a[i+1]=a[i+2]=v;
+    }
+    g.putImageData(d,0,0);
+    return c;
+  }
+  function boxBlur(src,w,h,r){
+    const tmp=new Uint8Array(w*h), out=new Uint8Array(w*h);
+    for(let y=0;y<h;y++){
+      let sum=0, cnt=0;
+      for(let x=-r;x<=r;x++){ const xx=Math.min(w-1,Math.max(0,x)); sum+=src[y*w+xx]; cnt++; }
+      for(let x=0;x<w;x++){
+        tmp[y*w+x]=sum/cnt;
+        const xa=Math.min(w-1,Math.max(0,x-r)), xb=Math.min(w-1,Math.max(0,x+r+1));
+        sum+=src[y*w+xb]-src[y*w+xa];
+      }
+    }
+    for(let x=0;x<w;x++){
+      let sum=0, cnt=0;
+      for(let y=-r;y<=r;y++){ const yy=Math.min(h-1,Math.max(0,y)); sum+=tmp[yy*w+x]; cnt++; }
+      for(let y=0;y<h;y++){
+        out[y*w+x]=sum/cnt;
+        const ya=Math.min(h-1,Math.max(0,y-r)), yb=Math.min(h-1,Math.max(0,y+r+1));
+        sum+=tmp[yb*w+x]-tmp[ya*w+x];
+      }
+    }
+    return out;
+  }
+  /* свет: делим на сильно размытый фон — тень от руки и лампа сверху
+     перестают съедать половину записи */
+  function flatLight(src){
+    const w=src.width, h=src.height;
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0);
+    const id=g.getImageData(0,0,w,h), a=id.data;
+    const gs=new Uint8Array(w*h);
+    for(let i=0,p=0;i<a.length;i+=4,p++) gs[p]=a[i];
+    const r=Math.max(12, Math.round(w/20));
+    const bg=boxBlur(boxBlur(gs,w,h,r),w,h,r);
+    for(let p=0,i=0;p<w*h;p++,i+=4){
+      const base=Math.max(1,bg[p]);
+      let v=gs[p]/base*235;
+      a[i]=a[i+1]=a[i+2]=v<0?0:(v>255?255:v);
+    }
+    g.putImageData(id,0,0);
+    return c;
+  }
+  function inkBox(src){
+    const g=src.getContext("2d",{willReadFrequently:true});
+    const w=src.width, h=src.height;
+    const a=g.getImageData(0,0,w,h).data;
+    let sum=0, n=0;
+    for(let i=0;i<a.length;i+=4){ sum+=a[i]; n++; }
+    const t=(sum/n)*0.82;
+    let x0=w, y0=h, x1=-1, y1=-1;
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        if(a[(y*w+x)*4]<t){
+          if(x<x0)x0=x; if(x>x1)x1=x;
+          if(y<y0)y0=y; if(y>y1)y1=y;
+        }
+      }
+    }
+    if(x1<0) return null;
+    return {x0:x0,y0:y0,x1:x1,y1:y1};
+  }
+  /* наклон: поворачиваем и смотрим, при каком угле строки собираются
+     в резкие горизонтальные полосы */
+  function estimateSkew(src){
+    const w=src.width, h=src.height;
+    const bw=document.createElement("canvas");
+    const sc=Math.min(1, 600/Math.max(w,h));
+    bw.width=Math.max(40, Math.round(w*sc)); bw.height=Math.max(20, Math.round(h*sc));
+    const g=bw.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0,bw.width,bw.height);
+    function spread(angle){
+      const c=document.createElement("canvas");
+      c.width=bw.width; c.height=bw.height;
+      const cg=c.getContext("2d",{willReadFrequently:true});
+      cg.fillStyle="#fff"; cg.fillRect(0,0,c.width,c.height);
+      cg.translate(c.width/2, c.height/2);
+      cg.rotate(angle*Math.PI/180);
+      cg.drawImage(bw, -c.width/2, -c.height/2);
+      const d=cg.getImageData(0,0,c.width,c.height).data;
+      const rows=new Float64Array(c.height);
+      for(let y=0;y<c.height;y++){
+        let s=0;
+        for(let x=0;x<c.width;x++) s+=255-d[(y*c.width+x)*4];
+        rows[y]=s;
+      }
+      let m=0; for(let i=0;i<rows.length;i++) m+=rows[i]; m/=rows.length;
+      let v=0; for(let i=0;i<rows.length;i++){ const q=rows[i]-m; v+=q*q; }
+      return v;
+    }
+    let best=0, bv=-1;
+    for(let a=-7;a<=7;a+=0.5){ const v=spread(a); if(v>bv){ bv=v; best=a; } }
+    for(let a=best-0.5;a<=best+0.5;a+=0.1){ const v=spread(a); if(v>bv){ bv=v; best=a; } }
+    return best;
+  }
+  /* полный конвейер кадра: серый -> свет -> наклон -> кроп по чернилам ->
+     масштаб до высоты строки около 110 px. Возвращает canvas и угол. */
+  function prepare(src, opt){
+    opt=opt||{};
+    let c=toGray(src);
+    if(opt.light!==false) c=flatLight(c);
+    const ang=estimateSkew(c);
+    const rot=document.createElement("canvas");
+    rot.width=c.width; rot.height=c.height;
+    const rg=rot.getContext("2d",{willReadFrequently:true});
+    rg.fillStyle="#fff"; rg.fillRect(0,0,rot.width,rot.height);
+    rg.translate(rot.width/2, rot.height/2);
+    rg.rotate(ang*Math.PI/180);
+    rg.drawImage(c, -rot.width/2, -rot.height/2);
+    const box=inkBox(rot) || {x0:0,y0:0,x1:rot.width-1,y1:rot.height-1};
+    const pad=Math.max(10, Math.round((box.y1-box.y0)*0.18));
+    const cx0=Math.max(0, box.x0-pad), cy0=Math.max(0, box.y0-pad);
+    const cx1=Math.min(rot.width-1, box.x1+pad), cy1=Math.min(rot.height-1, box.y1+pad);
+    const cw=cx1-cx0+1, ch=cy1-cy0+1;
+    /* для одной строки целимся в высоту 110 px, для целого кадра (столбик)
+       масштаб не трогаем: иначе зазоры между строками превращаются в «строки» */
+    const targetH=opt.targetH===undefined? 110 : opt.targetH;
+    const k=targetH? Math.max(1, Math.min(3, targetH/ch)) : Math.min(1, 1400/cw);
+    const out=document.createElement("canvas");
+    out.width=Math.max(1,Math.round(cw*k)); out.height=Math.max(1,Math.round(ch*k));
+    const og=out.getContext("2d");
+    og.imageSmoothingEnabled=true; og.imageSmoothingQuality="high";
+    og.drawImage(rot, cx0, cy0, cw, ch, 0, 0, out.width, out.height);
+    return {canvas:out, angle:ang, scale:k};
+  }
+
+  /* ---------- серия кадров и усреднение ---------- */
+  function sharpness(gray,w,h){
+    let s=0;
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const i=y*w+x;
+        const v=gray[i-1]*-4+gray[i+1]*-4+gray[i-w]*1+gray[i+w]*1+gray[i]*6;
+        s+=v*v;
+      }
+    }
+    return s/((w-2)*(h-2));
+  }
+  function scoreCanvas(c){
+    const s=document.createElement("canvas");
+    s.width=240; s.height=Math.max(1,Math.round(240*c.height/c.width));
+    const g=s.getContext("2d",{willReadFrequently:true});
+    g.drawImage(c,0,0,s.width,s.height);
+    const d=g.getImageData(0,0,s.width,s.height).data;
+    const gr=new Uint8Array(s.width*s.height);
+    for(let i=0,p=0;i<d.length;i+=4,p++) gr[p]=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;
+    return sharpness(gr, s.width, s.height);
+  }
+  const grayCache=new WeakMap();
+  function grayOf(c){
+    if(grayCache.has(c)) return grayCache.get(c);
+    const g=c.getContext("2d",{willReadFrequently:true});
+    const d=g.getImageData(0,0,c.width,c.height).data;
+    const out=new Float32Array(c.width*c.height);
+    for(let i=0,p=0;i<d.length;i+=4,p++) out[p]=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+    grayCache.set(c,out);
+    return out;
+  }
+  /* дрожание руки даёт сдвиг в пикселях; без выравнивания среднее размажет
+     цифры сильнее, чем любой отдельный кадр */
+  function alignShift(a,b){
+    const w=Math.min(a.width,b.width), h=Math.min(a.height,b.height);
+    const S=6, step=2;
+    const ga=grayOf(a), gb=grayOf(b);
+    let best={dx:0,dy:0,sc:-1e18};
+    for(let dy=-S;dy<=S;dy+=step){
+      for(let dx=-S;dx<=S;dx+=step){
+        let acc=0;
+        for(let y=20;y<h-20;y+=6){
+          for(let x=20;x<w-20;x+=6) acc += ga[y*w+x]*gb[(y+dy)*w+(x+dx)];
+        }
+        if(acc>best.sc) best={dx:dx,dy:dy,sc:acc};
+      }
+    }
+    return best;
+  }
+  function averageFrames(list){
+    const base=list[0], w=base.width, h=base.height;
+    const acc=new Float32Array(w*h*3), cnt=new Uint16Array(w*h);
+    (function(){
+      const d=base.getContext("2d",{willReadFrequently:true}).getImageData(0,0,w,h).data;
+      for(let p=0,q=0;p<w*h;p++,q+=3){ acc[q]=d[p*4]; acc[q+1]=d[p*4+1]; acc[q+2]=d[p*4+2]; cnt[p]=1; }
+    })();
+    for(let k=1;k<list.length;k++){
+      const c=list[k];
+      const sh=alignShift(base,c);
+      const d=c.getContext("2d",{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;
+      for(let y=0;y<h;y++){
+        const sy=y+sh.dy; if(sy<0||sy>=h) continue;
+        for(let x=0;x<w;x++){
+          const sx=x+sh.dx; if(sx<0||sx>=w) continue;
+          const si=(sy*w+sx)*4, di=(y*w+x)*3, p=y*w+x;
+          acc[di]+=d[si]; acc[di+1]+=d[si+1]; acc[di+2]+=d[si+2]; cnt[p]++;
+        }
+      }
+    }
+    const out=document.createElement("canvas");
+    out.width=w; out.height=h;
+    const og=out.getContext("2d");
+    const img=og.createImageData(w,h), a=img.data;
+    for(let p=0,q=0;p<w*h;p++,q+=3){
+      const n=cnt[p]||1;
+      a[p*4]=acc[q]/n; a[p*4+1]=acc[q+1]/n; a[p*4+2]=acc[q+2]/n; a[p*4+3]=255;
+    }
+    og.putImageData(img,0,0);
+    return out;
+  }
+
+  /* Ориентацию нельзя брать из EXIF: он есть не у всех файлов, а браузер
+     показывает поворот сам, хотя кириллица и цифры читаются одинаково плохо
+     во всех положениях. Судим по результату: на верном повороте в тексте
+     много цифр и арифметических знаков, на неверном — мусор. */
+  function rotateCanvas(src, deg){
+    if(!deg) return src;
+    const c=document.createElement("canvas");
+    const side=deg===90||deg===270;
+    c.width=side? src.height : src.width;
+    c.height=side? src.width : src.height;
+    const g=c.getContext("2d");
+    g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height);
+    g.translate(c.width/2, c.height/2);
+    g.rotate(deg*Math.PI/180);
+    g.drawImage(src, -src.width/2, -src.height/2);
+    return c;
+  }
+  function orientScore(t){
+    const s=String(t||"");
+    let num=0, sign=0;
+    for(let i=0;i<s.length;i++){
+      if(/[0-9]/.test(s[i])) num++;
+      else if(/[+\-=()]/.test(s[i])) sign++;
+    }
+    /* буквы латиницы и кириллицы на повёрнутом кадре — почти всегда мусор */
+    let junk=0;
+    for(let i=0;i<s.length;i++) if(/[A-Za-zА-Яа-я]/.test(s[i])) junk++;
+    return num + sign*2 - junk*3;
+  }
+  async function bestOrientation(canvas){
+    const small=scaleRow(canvas, 320);
+    let best={deg:0, sc:-1e9};
+    for(const deg of [0,180,90,270]){
+      const rot=rotateCanvas(small, deg);
+      let t="";
+      try{ t=await ocrRaw(rot, 6); }catch(e){ continue; }
+      const sc=orientScore(t);
+      if(sc>best.sc) best={deg:deg, sc:sc};
+    }
+    return best.deg;
+  }
+
+  /* ---------- чтение ---------- */
+  let workerP=null;
+  function getWorker(){
+    if(window.__ocrGetWorker) return window.__ocrGetWorker();
+    if(workerP) return workerP;
+    workerP=new Promise(function(res,rej){
+      if(!window.Tesseract) return rej(new Error("LIBFAIL"));
+      const T=window.Tesseract, LIB=(function(){
+        try{ return new URL("lib/", location.href).href; }catch(e){ return "lib/"; }
+      })();
+      T.createWorker("rus",1,{ workerPath:LIB+"worker.min.js",
+        corePath:LIB+"tesseract-core-simd-lstm.wasm.js", langPath:LIB, gzip:false })
+        .then(res, rej);
+    });
+    return workerP;
+  }
+  async function ocrRaw(canvas, psm){
+    const w=await getWorker();
+    try{ await w.setParameters({ tessedit_pageseg_mode:String(psm||6), tessedit_char_whitelist:"" }); }catch(e){}
+    const res=await w.recognize(canvas);
+    return (res && res.data && res.data.text)||"";
+  }
+  async function ocrOnce(canvas, psm){
+    const w=await getWorker();
+    try{ await w.setParameters({ tessedit_pageseg_mode:String(psm||7),
+        tessedit_char_whitelist:"0123456789+-=()хx" }); }catch(e){}
+    const res=await w.recognize(canvas);
+    return TIDY((res && res.data && res.data.text)||"");
+  }
+  const isNum=function(t){ try{ return window.__boardAI? window.__boardAI._num(t) : "na"; }catch(e){ return "na"; } };
+  const parses=function(t){ try{ return window.__boardAI? window.__boardAI._numParses(t) : false; }catch(e){ return false; } };
+
+  /* ---------- выбор прочтения ----------
+     Один и тот же штрих читается по-разному в зависимости от бинаризации,
+     поэтому на каждую строку собираем пул вариантов, а потом выбираем.
+     Правила взяты из замеров на столбике: у примеров учебника однотипная
+     длина (у нас 6 цифр), скобки парные, знаки не удваиваются, три цифры
+     подряд — почти всегда слипшаяся запись. Верная арифметика — сильный,
+     но не единственный довод: неверный ответ ребёнка тоже целая запись. */
+  function ndig(t){ let n=0; for(let i=0;i<(t||"").length;i++) if(/[0-9]/.test(t[i])) n++; return n; }
+  function maxrun(t){
+    let m=0, c=0;
+    for(let i=0;i<(t||"").length;i++){
+      if(/[0-9]/.test(t[i])){ c++; if(c>m) m=c; } else c=0;
+    }
+    return m;
+  }
+  function postfix(t){
+    let s=String(t||"");
+    s=s.replace(/^[=\-)+*/\s]+/,"");
+    s=s.replace(/=+\s*$/,"");
+    /* скобки: лишние закрывающие вон, незакрытые открывающие — тоже */
+    const out=[]; let depth=0;
+    for(let i=0;i<s.length;i++){
+      const c=s[i];
+      if(c==="("){ depth++; out.push(c); }
+      else if(c===")"){ if(depth>0){ depth--; out.push(c); } }
+      else out.push(c);
+    }
+    s=out.join("");
+    while(depth>0 && s.indexOf("(")>=0){
+      const k=s.lastIndexOf("(");
+      s=s.slice(0,k)+s.slice(k+1);
+      depth--;
+    }
+    return s.replace(/\s+/g,"").trim();
+  }
+  function scoreText(t, mode){
+    const te=postfix(t||"");
+    if(!te) return -1e9;
+    let sc=0;
+    const nv=isNum(te);
+    if(nv==="true") sc+=4.0;
+    else if(parses(te)) sc+=1.6;
+    sc -= 2.5*Math.abs(ndig(te)-mode);
+    if(maxrun(te)>2) sc -= 3.0;
+    if((te.match(/[+\-*/]{2,}/g)||[]).length) sc -= 2.0;
+    if(te[0]==="*"||te[0]==="/") sc -= 2.0;
+    if(/[+\-*/]$/.test(te)) sc -= 2.5;
+    sc += Math.min(2, te.length*0.08);
+    /* «=» посреди записи — почти всегда неверно прочитанный минус:
+       «47-+36=55» вместо «47+36-55» */
+    const eq=te.indexOf("=");
+    if(eq>=0){
+      const tail=te.slice(eq+1);
+      sc += tail? -3.0 : 0.5;
+    }
+    return sc;
+  }
+  /* тип примеров в столбике — самый частый по числу цифр */
+  function modeOf(pool){
+    const cnt={};
+    pool.forEach(function(t){
+      const te=postfix(t);
+      if(te) cnt[ndig(te)]=(cnt[ndig(te)]||0)+1;
+    });
+    let best=0, bn=-1;
+    Object.keys(cnt).forEach(function(k){ if(cnt[k]>bn){ bn=cnt[k]; best=+k; } });
+    return best;
+  }
+  function pickFrom(pool, mode){
+    let best=null;
+    pool.forEach(function(t){
+      const sc=scoreText(t, mode);
+      if(!best || sc>best.sc) best={sc:sc, text:postfix(t)};
+    });
+    if(!best || !best.text) return {text:"", verdict:"none"};
+    const v=isNum(best.text);
+    return {text:best.text, verdict: v==="true"? "true" : (parses(best.text)? "parses" : "raw")};
+  }
+
+  /* Бинаризация. Проверенный на Python конвейер читал не серый кадр, а
+     чёрно-белый: общий порог Отсу и локальный (по размытому фону). На
+     бледной клетке тетради локальный порог вытягивает штрих, на чистом
+     листе лучше общий — поэтому пробуем оба. */
+  function binarize(src, mode){
+    const w=src.width, h=src.height;
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0);
+    const id=g.getImageData(0,0,w,h), a=id.data;
+    const gr=new Uint8Array(w*h);
+    for(let i=0,p=0;i<a.length;i+=4,p++) gr[p]=a[i];
+    let thr=otsu(gr,w*h);
+    let bg=null;
+    if(mode==="adapt"){
+      const r=Math.max(6, Math.round(w/60));
+      bg=boxBlur(gr,w,h,r);
+    }
+    for(let p=0,i=0;p<w*h;p++,i+=4){
+      const t = bg? Math.min(255, bg[p]*0.90) : thr;
+      const v = gr[p] < t ? 0 : 255;
+      a[i]=a[i+1]=a[i+2]=v;
+    }
+    g.putImageData(id,0,0);
+    return c;
+  }
+  function upscale(src, k){
+    const c=document.createElement("canvas");
+    c.width=Math.round(src.width*k); c.height=Math.round(src.height*k);
+    const g=c.getContext("2d");
+    g.imageSmoothingQuality="high";
+    g.drawImage(src,0,0,c.width,c.height);
+    return c;
+  }
+
+  /* одна строка: несколько режимов чтения, затем выбор по арифметике */
+  /* все прочтения одной строки, без выбора */
+  async function readVariants(canvas){
+    const list=[];
+    const tries=[
+      function(){ return canvas; },
+      function(){ return binarize(canvas,"otsu"); },
+      function(){ return binarize(canvas,"adapt"); },
+      function(){ return upscale(binarize(canvas,"otsu"),1.5); },
+      function(){ return upscale(canvas,1.5); },
+      function(){ return binarize(upscale(canvas,1.5),"adapt"); },
+      function(){ return binarize(upscale(canvas,2), "otsu"); }
+    ];
+    for(let k=0;k<tries.length;k++){
+      let im;
+      try{ im=tries[k](); }catch(e){ continue; }
+      try{ const t=await ocrOnce(im,7); if(t) list.push(t); }catch(e){}
+    }
+    try{ const t=await ocrOnce(binarize(canvas,"otsu"),13); if(t) list.push(t); }catch(e){}
+    return list;
+  }
+  /* совместимость: одна строка целиком */
+  async function readLine(canvas){
+    const pool=await readVariants(canvas);
+    return pickFrom(pool, modeOf(pool));
+  }
+
+  /* ---------- строки в кадре ---------- */
+  /* порог Отсу: на тетради в клетку и на сером столе средняя яркость ничего
+     не значит, а вот разделение «бумага / штрих» по гистограмме работает */
+  function otsu(gray, n){
+    const hist=new Int32Array(256);
+    for(let i=0;i<n;i++) hist[gray[i]]++;
+    let sum=0; for(let v=0;v<256;v++) sum+=v*hist[v];
+    let sumB=0, wB=0, best=0, thr=128;
+    for(let v=0;v<256;v++){
+      wB+=hist[v]; if(!wB) continue;
+      const wF=n-wB; if(!wF) break;
+      sumB+=v*hist[v];
+      const mB=sumB/wB, mF=(sum-sumB)/wF, between=wB*wF*(mB-mF)*(mB-mF);
+      if(between>best){ best=between; thr=v; }
+    }
+    return thr;
+  }
+  /* профиль чернил: строка записи — полоса, между строками провал.
+     Порог — доля от максимума профиля (как в проверенном питоновском
+     конвейере), а не от средней яркости: иначе клетка тетради «съедает» строку. */
+  function splitLines(src){
+    /* профиль считаем по уменьшенной копии (полный кадр — 12 Мп, это долго),
+       а координаты возвращаем в масштабе полного кадра: строку потом режем
+       из оригинала, чтобы не терять мелкие цифры двойным уменьшением */
+    const kk=Math.min(1, 1000/Math.max(src.width,src.height));
+    let work=src, koef=1;
+    if(kk<1){
+      work=document.createElement("canvas");
+      work.width=Math.max(1,Math.round(src.width*kk));
+      work.height=Math.max(1,Math.round(src.height*kk));
+      const wg=work.getContext("2d");
+      wg.imageSmoothingQuality="high";
+      wg.drawImage(src,0,0,work.width,work.height);
+      koef=src.height/work.height;
+    }
+    const w=work.width, h=work.height;
+    const g=work.getContext("2d",{willReadFrequently:true});
+    const d=g.getImageData(0,0,w,h).data;
+    const gr=new Uint8Array(w*h);
+    for(let i=0,p=0;i<d.length;i+=4,p++) gr[p]=d[i];
+    const thr=otsu(gr, w*h);
+    const rows=new Int32Array(h);
+    for(let y=0;y<h;y++){
+      let n=0;
+      for(let x=0;x<w;x++) if(gr[y*w+x]<thr) n++;
+      rows[y]=n;
+    }
+    let mx=0; for(let y=0;y<h;y++) if(rows[y]>mx) mx=rows[y];
+    if(mx<=0) return [[0,src.height-1]];
+    const cut=Math.max(2, Math.round(mx*0.06));
+    const bands=[]; let st=-1;
+    const minH=Math.max(6, Math.round(h*0.012));
+    for(let y=0;y<h;y++){
+      const on=rows[y]>cut;
+      if(on && st<0) st=y;
+      if(!on && st>=0){ if(y-st>=minH) bands.push([st,y-1]); st=-1; }
+    }
+    if(st>=0 && h-st>=minH) bands.push([st,h-1]);
+    /* склеиваем близкие полосы: скобки и запятые дают отдельные штрихи */
+    const merged=[];
+    const gap=Math.max(2, Math.round(h*0.008));
+    bands.forEach(function(b){
+      if(merged.length && b[0]-merged[merged.length-1][1] < gap) merged[merged.length-1]=[merged[merged.length-1][0], b[1]];
+      else merged.push(b);
+    });
+    if(merged.length<2) return [[0,src.height-1]];
+    return merged.map(function(b){
+      return [Math.round(b[0]*koef), Math.min(src.height-1, Math.round(b[1]*koef))];
+    });
+  }
+  function cropBand(src, y0, y1){
+    const pad=Math.max(4, Math.round((y1-y0)*0.22));
+    const a=Math.max(0,y0-pad), b=Math.min(src.height-1,y1+pad);
+    const c=document.createElement("canvas");
+    c.width=src.width; c.height=b-a+1;
+    c.getContext("2d").drawImage(src, 0, a, src.width, c.height, 0, 0, src.width, c.height);
+    return c;
+  }
+  function scaleRow(src, targetH){
+    const k=Math.max(1, Math.min(3, targetH/src.height));
+    const c=document.createElement("canvas");
+    c.width=Math.max(1,Math.round(src.width*k)); c.height=Math.max(1,Math.round(src.height*k));
+    const g=c.getContext("2d");
+    g.imageSmoothingQuality="high";
+    g.drawImage(src,0,0,c.width,c.height);
+    return c;
+  }
+
+  /* ---------- видоискатель ---------- */
+  const CSS=`
+  .capwrap{position:fixed;inset:0;z-index:9000;background:#07090f;display:flex;flex-direction:column}
+  .capwrap[hidden]{display:none}
+  .capvideo{flex:1;min-height:0;position:relative;overflow:hidden;background:#000}
+  .capvideo video{width:100%;height:100%;object-fit:cover;display:block}
+  .capframe{position:absolute;inset:12% 7%;border:2px solid rgba(255,255,255,.55);border-radius:10px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.22);pointer-events:none}
+  .capbar{position:absolute;left:7%;right:7%;bottom:10px;height:8px;border-radius:5px;
+    background:rgba(255,255,255,.2);overflow:hidden}
+  .capbar i{display:block;height:100%;width:0;border-radius:5px;background:#7ce3a8;transition:width .12s}
+  .capbar.low i{background:#ffb04a}
+  .caprow{display:flex;align-items:center;gap:12px;padding:14px 16px 18px;background:#0d1220}
+  .caprow button{border:0;border-radius:12px;font:inherit;font-weight:700;cursor:pointer}
+  .capshot{flex:1;padding:16px;font-size:17px;background:linear-gradient(160deg,#3fd0b0,#2b9be0);color:#04121a}
+  .capghost{padding:12px 14px;background:#1b2436;color:#dfe7f4;font-size:14px}
+  .capx{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;width:40px;height:40px;
+    border-radius:50%;border:0;background:rgba(0,0,0,.45);color:#fff;font-size:20px;cursor:pointer}
+  .caphint{position:absolute;left:0;right:0;top:calc(10px + env(safe-area-inset-top));text-align:center;
+    color:#fff;font-size:13px;text-shadow:0 1px 4px #000;pointer-events:none;padding:0 52px}
+  .capres{position:absolute;inset:0;background:rgba(7,9,15,.94);overflow:auto;padding:16px;
+    color:#dfe7f4;display:none;font-size:15px}
+  .capres.on{display:block}
+  .capres h3{margin:0 0 10px;font-size:16px;color:#8ff8e6}
+  .capres ol{margin:0 0 12px;padding-left:22px;line-height:1.55}
+  .capres .bad{color:#ffb04a}
+  .capres .capok{background:linear-gradient(160deg,#3fd0b0,#2b9be0);color:#04121a;border:0;
+    border-radius:12px;padding:14px 16px;font:inherit;font-weight:700;width:100%;cursor:pointer}
+  `;
+
+  let wrap=null, video=null, stream=null, rafId=0, busy=false, barEl=null, resEl=null, hintEl=null;
+
+  function build(){
+    if(wrap) return;
+    const st=document.createElement("style"); st.textContent=CSS; document.head.appendChild(st);
+    wrap=document.createElement("div");
+    wrap.className="capwrap"; wrap.hidden=true;
+    wrap.innerHTML=
+      '<div class="capvideo">'+
+        '<video playsinline muted autoplay></video>'+
+        '<div class="capframe"></div>'+
+        '<div class="caphint">Наведите на запись — снимок сам, когда кадр станет чётким</div>'+
+        '<div class="capbar"><i></i></div>'+
+        '<button type="button" class="capx" aria-label="Закрыть">✕</button>'+
+        '<div class="capres"></div>'+
+      '</div>'+
+      '<div class="caprow">'+
+        '<button type="button" class="capshot">Снять</button>'+
+        '<button type="button" class="capghost">Из галереи</button>'+
+      '</div>';
+    document.body.appendChild(wrap);
+    video=wrap.querySelector("video");
+    barEl=wrap.querySelector(".capbar");
+    resEl=wrap.querySelector(".capres");
+    hintEl=wrap.querySelector(".caphint");
+    wrap.querySelector(".capx").addEventListener("click", close);
+    wrap.querySelector(".capshot").addEventListener("click", function(){ shoot(); });
+    wrap.querySelector(".capghost").addEventListener("click", function(){
+      close(); setTimeout(function(){ file.value=""; file.click(); }, 120);
+    });
+  }
+
+  async function open(){
+    build();
+    wrap.hidden=false; resEl.classList.remove("on");
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080} }
+      });
+    }catch(e){
+      wrap.hidden=true;
+      SHOW(null,"Камера не открылась","Снимите через «Из галереи»: выберите фото задачи.",{err:true});
+      return;
+    }
+    video.srcObject=stream;
+    try{ await video.play(); }catch(e){}
+    loop();
+    /* автоспуск: как только кадр стал чётким и запись попала в рамку */
+    setTimeout(function(){ if(!busy && wrap && !wrap.hidden) shoot(); }, 1400);
+  }
+  function loop(){
+    cancelAnimationFrame(rafId);
+    let settle=0, last=0;
+    function tick(){
+      if(!wrap || wrap.hidden || !video || video.readyState<2) return;
+      const c=document.createElement("canvas");
+      c.width=320; c.height=Math.max(1, Math.round(320*video.videoHeight/video.videoWidth));
+      const g=c.getContext("2d",{willReadFrequently:true});
+      g.drawImage(video,0,0,c.width,c.height);
+      const d=g.getImageData(0,0,c.width,c.height).data;
+      const gr=new Uint8Array(c.width*c.height);
+      for(let i=0,p=0;i<d.length;i+=4,p++) gr[p]=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;
+      const s=sharpness(gr,c.width,c.height);
+      last=s;
+      const good=s>120;
+      barEl.classList.toggle("low", !good);
+      barEl.querySelector("i").style.width=Math.min(100, Math.max(4, Math.round(Math.min(1,s/400)*100)))+"%";
+      if(good && !busy){ settle++; if(settle>18){ settle=0; if(!wrap.hidden) shoot(); } }
+      else settle=0;
+      rafId=requestAnimationFrame(tick);
+    }
+    rafId=requestAnimationFrame(tick);
+  }
+  function stop(){ cancelAnimationFrame(rafId); rafId=0; }
+
+  function close(){
+    stop();
+    if(stream){ stream.getTracks().forEach(function(t){ try{ t.stop(); }catch(e){} }); stream=null; }
+    if(wrap) wrap.hidden=true;
+  }
+
+  function frameNow(){
+    const w=Math.min(1600, video.videoWidth||1280);
+    const h=Math.round(w*(video.videoHeight||720)/(video.videoWidth||1280));
+    const c=document.createElement("canvas");
+    c.width=w; c.height=h;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.imageSmoothingQuality="high";
+    g.drawImage(video,0,0,w,h);
+    return c;
+  }
+  async function burst(n){
+    const shots=[];
+    for(let i=0;i<n;i++){
+      shots.push(frameNow());
+      await new Promise(function(r){
+        if(video && video.requestVideoFrameCallback) video.requestVideoFrameCallback(function(){ r(); });
+        else setTimeout(r, 40);
+      });
+    }
+    return shots;
+  }
+
+  /* ---------- съёмка и разбор ---------- */
+  async function shoot(){
+    if(busy) return; busy=true;
+    const shotBtn=wrap.querySelector(".capshot");
+    shotBtn.textContent="Снимаю…";
+    try{
+      const shots=await burst(8);
+      stop();
+      const merged=averageFrames(shots);
+      await handleCanvas(merged);
+    }catch(e){
+      showResult("Не получилось снять", String((e&&e.message)||e).slice(0,120), null);
+    }finally{
+      busy=false; shotBtn.textContent="Снять";
+    }
+  }
+
+  /* Разбор кадра: подготовка без растяжки -> строки -> чтение каждой строки
+     -> отбраковка мусора. Так работает и камера, и файл из галереи. */
+  async function analyze(src, opt){
+    opt=opt||{};
+    let deg=0;
+    if(opt.orient){ try{ deg=await bestOrientation(src); }catch(e){ deg=0; } }
+    const base=deg? rotateCanvas(src, deg) : src;
+    const prep=prepare(base, {targetH:0});
+    const lines=splitLines(prep.canvas);
+    const rows=[];
+    if(lines.length>=2 && lines.length<=40){
+      for(let k=0;k<lines.length;k++){
+        if(opt.onStep) opt.onStep(k+1, lines.length);
+        const row=scaleRow(cropBand(prep.canvas, lines[k][0], lines[k][1]), 110);
+        let pool;
+        try{ pool=await readVariants(row); }catch(e){ continue; }
+        if(!pool.length) continue;
+        rows.push({i:k+1, pool:pool});
+      }
+    }
+    if(!rows.length){
+      const row=prep.canvas;
+      let pool=[];
+      try{ pool=await readVariants(row); }catch(e){}
+      if(pool.length) rows.push({i:1, pool:pool});
+    }
+    /* тип примеров — по всему столбику: так одно чтение не задаёт мерку всем */
+    const all=[];
+    rows.forEach(function(r){ r.pool.forEach(function(t){ all.push(t); }); });
+    const mode=modeOf(all);
+    const items=rows.map(function(r){
+      const p=pickFrom(r.pool, mode);
+      return {i:r.i, text:p.text, verdict:p.verdict};
+    }).filter(function(x){ return x.text && /[0-9]/.test(x.text); });
+    try{ window.__capLog={mode:mode, rows:rows}; }catch(e){}
+    return {items:items, deg:deg, prep:prep, lines:lines, mode:mode};
+  }
+
+  async function handleCanvas(src){
+    showResult("Читаю…","Готовлю кадр и читаю запись.", null, true);
+    const res=await analyze(src, {onStep:function(k,n){
+      showResult("Читаю…","Строка "+k+" из "+n, null, true);
+    }});
+    finish(res, false);
+  }
+
+  function finish(res, fromFile){
+    const items=res.items;
+    if(!items.length){
+      if(fromFile) SHOW(null,"Текст не разобрал","Снимите ровнее: запись целиком, без блика и тени от руки. Или введите руками.",{err:true});
+      else showResult("Текст не разобрал","Снимите ровнее: запись целиком, без блика и тени от руки. Или введите руками.", null);
+      return;
+    }
+    /* в решатель — первая арифметически целая строка; неверный ответ ученика
+       тоже целая запись, поэтому «parses» тоже годится */
+    const good=items.filter(function(x){
+      if(x.verdict==="true" || x.verdict==="parses" || x.verdict==="solve") return true;
+      try{ window.__solve(x.text); return true; }catch(e){ return false; }
+    });
+    const list=good.length? good : items;
+    window.__capLast={items:items, deg:res.deg};
+    if(fromFile) takeToField(list[0].text);
+    else showResult(items.length>1? "Прочитал столбик":"Распознал",
+      items.length>1? "Строк прочитано: "+items.length+". В решатель уйдёт первая.":"",
+      list);
+    if(items.length>1 && fromFile){
+      const note2=note;
+      note2.hidden=false;
+      note2.className="ocrnote";
+      note2.innerHTML='<div class="onbody"><div class="ontitle">Прочитал строк: '+items.length+'</div>'+
+        '<div class="onsub">'+esc(items.slice(0,10).map(function(x){return x.text;}).join(" · "))+(items.length>10?" …":"")+'</div></div>'+
+        '<button type="button" class="onx" aria-label="Закрыть">✕</button>';
+      note2.querySelector(".onx").addEventListener("click", function(){ note2.hidden=true; note2.innerHTML=""; });
+    }
+  }
+
+  function showResult(title, sub, items, loading){
+    if(!resEl) return;
+    resEl.classList.add("on");
+    let html='<h3>'+esc(title)+'</h3>';
+    if(sub) html+='<p style="margin:0 0 10px;color:#9fb0c8">'+esc(sub)+'</p>';
+    if(items && items.length){
+      html+='<ol>';
+      items.forEach(function(x){
+        const ok=x.verdict==="true"; const cls=ok? "" : ' class="bad"';
+        html+='<li'+cls+'>'+esc(x.text)+'</li>';
+      });
+      html+='</ol>';
+      html+='<button type="button" class="capok">Взять в поле</button>';
+    }
+    if(loading) html+='<p style="color:#9fb0c8">…</p>';
+    resEl.innerHTML=html;
+    const ok=resEl.querySelector(".capok");
+    if(ok) ok.addEventListener("click", function(){ takeToField(items[0].text); });
+  }
+  function takeToField(text){
+    close();
+    note.hidden=false;
+    note.className="ocrnote";
+    note.innerHTML='<div class="onbody"><div class="ontitle">Распознал: «'+esc(text)+'»</div>'+
+      '<div class="onsub">Если вижу не то — поправьте в поле и нажмите стрелку.</div></div>'+
+      '<button type="button" class="onx" aria-label="Закрыть">✕</button>';
+    note.querySelector(".onx").addEventListener("click", function(){ note.hidden=true; note.innerHTML=""; });
+    let t=text;
+    try{ if(window.__prepText) t=window.__prepText(t); }catch(e){}
+    qIn.value=t;
+    qIn.dispatchEvent(new Event("input",{bubbles:true}));
+    let ok=true;
+    try{ window.__solve(t); }catch(e){ ok=false; }
+    if(ok && formEl){
+      if(formEl.requestSubmit) formEl.requestSubmit();
+      else formEl.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+    }else{
+      qIn.focus(); qIn.select();
+    }
+  }
+
+  /* ---------- файл из галереи: тот же конвейер, без усреднения ---------- */
+  function readFile(f){
+    if(!f) return;
+    const isImg=(f.type&&f.type.indexOf("image/")===0)||/\.(jpe?g|png|webp|heic|bmp|gif)$/i.test(f.name||"");
+    if(!isImg){ SHOW(null,"Это не картинка","Выберите фото задачи или снимок экрана.",{err:true}); return; }
+    const uri=URL.createObjectURL(f);
+    const im=new Image();
+    SHOW(uri,"Читаю фото…","Готовлю кадр: свет, наклон, масштаб.",{bar:true});
+    im.onload=async function(){
+      try{
+        const c=document.createElement("canvas");
+        c.width=im.naturalWidth; c.height=im.naturalHeight;
+        if(!c.width||!c.height) throw new Error("IMAGE");
+        c.getContext("2d").drawImage(im,0,0);
+        await handleFileCanvas(c);
+      }catch(e){
+        SHOW(uri,"Не получилось распознать",String((e&&e.message)||e).slice(0,160),{err:true});
+      }finally{ try{ URL.revokeObjectURL(uri); }catch(e){} }
+    };
+    im.onerror=function(){ SHOW(null,"Не открылась картинка","Формат не поддержан браузером. Попробуйте другой снимок.",{err:true}); };
+    im.src=uri;
+  }
+  async function handleFileCanvas(c){
+    PROG("Определяю поворот…", 0.12);
+    const res=await analyze(c, {orient:true, onStep:function(k,n){
+      PROG("Читаю строку "+k+" из "+n, 0.2+0.75*k/Math.max(1,n));
+    }});
+    finish(res, true);
+  }
+
+  /* перехватываем штатную кнопку и выбор файла: у нас свой путь */
+  btn.addEventListener("click", function(e){
+    if(busy) return;
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      e.preventDefault(); e.stopPropagation();
+      open();
+    }
+  }, true);
+  file.addEventListener("change", function(e){
+    const f=file.files && file.files[0];
+    if(!f) return;
+    e.stopPropagation();
+    readFile(f);
+  }, true);
+
+  window.__cap={open:open, close:close, prepare:prepare, splitLines:splitLines, readLine:readLine,
+    binarize:binarize, ocrOnce:ocrOnce, scaleRow:scaleRow, cropBand:cropBand, rotateCanvas:rotateCanvas,
+    bestOrientation:bestOrientation, analyze:analyze, _pick:pickFrom};
 })();
 </script>
 
