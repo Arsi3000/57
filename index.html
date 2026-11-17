@@ -17617,11 +17617,15 @@ window.__LEARN={
     }
     /* в решатель — первая арифметически целая строка; неверный ответ ученика
        тоже целая запись, поэтому «parses» тоже годится */
-    const good=items.filter(function(x){
+    /* строка без единого знака действия — это номер задания или мусор;
+       в поле её ставить нельзя, даже если она первая в кадре */
+    const isTask=function(x){ return /[+*/]/.test(x.text) || /\d\s*-\s*\d/.test(x.text); };
+    const tasks=items.filter(isTask);
+    const good=tasks.filter(function(x){
       if(x.verdict==="true" || x.verdict==="parses" || x.verdict==="solve") return true;
       try{ window.__solve(x.text); return true; }catch(e){ return false; }
     });
-    const list=good.length? good : items;
+    const list=good.length? good : (tasks.length? tasks : items);
     window.__capLast={items:items, deg:res.deg};
     if(fromFile) takeToField(list[0].text);
     else showResult(items.length>1? "Прочитал столбик":"Распознал",
