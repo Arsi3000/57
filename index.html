@@ -3182,7 +3182,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.9";
+const APP_VERSION="5.7.10";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -16998,33 +16998,52 @@ window.__LEARN={
   }
   /* полный конвейер кадра: серый -> свет -> наклон -> кроп по чернилам ->
      масштаб до высоты строки около 110 px. Возвращает canvas и угол. */
+  function rotateBy(src, ang){
+    const c=document.createElement("canvas");
+    c.width=src.width; c.height=src.height;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.fillStyle="#fff"; g.fillRect(0,0,c.width,c.height);
+    if(ang){
+      g.translate(c.width/2, c.height/2);
+      g.rotate(ang*Math.PI/180);
+      g.drawImage(src, -src.width/2, -src.height/2);
+    }else g.drawImage(src,0,0);
+    return c;
+  }
+  /* Геометрию кадра (наклон строк и границы записи) считаем на уменьшенной
+     копии: на 12 Мп это 19 секунд, на 1400 px — доли секунды. Строки режутся
+     из полного кадра, поэтому резкость цифр не теряется: считаем грубо,
+     режем точно. */
+  function geometry(src){
+    const MAXG=1400;
+    const small=downscale(src, MAXG);
+    let c=toGray(small);
+    c=flatLight(c);
+    const ang=estimateSkew(c);
+    const rot=rotateBy(c, ang);
+    const box=inkBox(rot) || {x0:0,y0:0,x1:rot.width-1,y1:rot.height-1};
+    const kx=src.width/small.width, ky=src.height/small.height;
+    return {ang:ang, box:{x0:box.x0*kx, y0:box.y0*ky, x1:box.x1*kx, y1:box.y1*ky}};
+  }
   function prepare(src, opt){
     opt=opt||{};
-    let c=toGray(src);
-    if(opt.light!==false) c=flatLight(c);
-    const ang=estimateSkew(c);
-    const rot=document.createElement("canvas");
-    rot.width=c.width; rot.height=c.height;
-    const rg=rot.getContext("2d",{willReadFrequently:true});
-    rg.fillStyle="#fff"; rg.fillRect(0,0,rot.width,rot.height);
-    rg.translate(rot.width/2, rot.height/2);
-    rg.rotate(ang*Math.PI/180);
-    rg.drawImage(c, -rot.width/2, -rot.height/2);
-    const box=inkBox(rot) || {x0:0,y0:0,x1:rot.width-1,y1:rot.height-1};
+    const gg=opt.geom || geometry(src);
+    const rot=rotateBy(src, gg.ang);
+    const box=gg.box;
     const pad=Math.max(10, Math.round((box.y1-box.y0)*0.18));
-    const cx0=Math.max(0, box.x0-pad), cy0=Math.max(0, box.y0-pad);
-    const cx1=Math.min(rot.width-1, box.x1+pad), cy1=Math.min(rot.height-1, box.y1+pad);
+    const cx0=Math.max(0, Math.round(box.x0-pad)), cy0=Math.max(0, Math.round(box.y0-pad));
+    const cx1=Math.min(rot.width-1, Math.round(box.x1+pad)), cy1=Math.min(rot.height-1, Math.round(box.y1+pad));
     const cw=cx1-cx0+1, ch=cy1-cy0+1;
     /* для одной строки целимся в высоту 110 px, для целого кадра (столбик)
        масштаб не трогаем: иначе зазоры между строками превращаются в «строки» */
     const targetH=opt.targetH===undefined? 110 : opt.targetH;
-    const k=targetH? Math.max(1, Math.min(3, targetH/ch)) : Math.min(1, 1400/cw);
+    const k2=targetH? Math.max(1, Math.min(3, targetH/ch)) : Math.min(1, 1400/cw);
     const out=document.createElement("canvas");
-    out.width=Math.max(1,Math.round(cw*k)); out.height=Math.max(1,Math.round(ch*k));
+    out.width=Math.max(1,Math.round(cw*k2)); out.height=Math.max(1,Math.round(ch*k2));
     const og=out.getContext("2d");
     og.imageSmoothingEnabled=true; og.imageSmoothingQuality="high";
     og.drawImage(rot, cx0, cy0, cw, ch, 0, 0, out.width, out.height);
-    return {canvas:out, angle:ang, scale:k};
+    return {canvas:out, angle:gg.ang, scale:k2};
   }
 
   /* ---------- серия кадров и усреднение ---------- */
@@ -17139,44 +17158,70 @@ window.__LEARN={
     return num + sign*2 - junk*3;
   }
   async function bestOrientation(canvas){
-    /* 12 Мп в OCR четыре раза — это минута; для выбора поворота хватает
-       длинной стороны 900 px, цифры на таком кадре ещё видны */
-    const small=downscale(canvas, 900);
-    let best={deg:0, sc:-1e9};
-    for(const deg of [0,180,90,270]){
-      const rot=rotateCanvas(small, deg);
-      let t="";
-      try{ t=await ocrRaw(rot, 6); }catch(e){ continue; }
-      const sc=orientScore(t);
-      if(sc>best.sc) best={deg:deg, sc:sc};
+    /* Для выбора поворота хватает 700 px по длинной стороне: цифры видны,
+       а проход стоит вчетверо дешевле. Сначала проверяем два обычных
+       положения (0° и 180° — так приходит большинство снимков), и только
+       если оба дали мусор, пробуем боковые 90°/270°. */
+    const small=downscale(canvas, 700);
+    async function score(deg){
+      try{
+        const t=await ocrRaw(rotateCanvas(small, deg), 6);
+        return orientScore(t);
+      }catch(e){ return -1e9; }
+    }
+    let best={deg:0, sc:await score(0)};
+    const s180=await score(180);
+    if(s180>best.sc) best={deg:180, sc:s180};
+    if(best.sc < 6){
+      for(const deg of [90,270]){
+        const sc=await score(deg);
+        if(sc>best.sc) best={deg:deg, sc:sc};
+      }
     }
     return best.deg;
   }
 
   /* ---------- чтение ---------- */
-  let workerP=null;
-  function getWorker(){
-    if(window.__ocrGetWorker) return window.__ocrGetWorker();
-    if(workerP) return workerP;
-    workerP=new Promise(function(res,rej){
-      if(!window.Tesseract) return rej(new Error("LIBFAIL"));
-      const T=window.Tesseract, LIB=(function(){
-        try{ return new URL("lib/", location.href).href; }catch(e){ return "lib/"; }
-      })();
-      T.createWorker("rus",1,{ workerPath:LIB+"worker.min.js",
-        corePath:LIB+"tesseract-core-simd-lstm.wasm.js", langPath:LIB, gzip:false })
-        .then(res, rej);
-    });
-    return workerP;
+  /* Два распознавателя вместо одного: строки столбика независимы, и два
+     воркера дают почти двойную скорость. Второй создаём лениво и без падения:
+     не хватит памяти — работаем на одном. */
+  const pool=[];
+  function getWorker(idx){
+    const i=idx||0;
+    if(pool[i]) return pool[i];
+    if(i===0 && window.__ocrGetWorker){
+      pool[0]=window.__ocrGetWorker();
+      return pool[0];
+    }
+    pool[i]=new Promise(function(res,rej){
+      function make(){
+        if(!window.Tesseract) return rej(new Error("LIBFAIL"));
+        const T=window.Tesseract, LIB=(function(){
+          try{ return new URL("lib/", location.href).href; }catch(e){ return "lib/"; }
+        })();
+        T.createWorker("rus",1,{ workerPath:LIB+"worker.min.js",
+          corePath:LIB+"tesseract-core-simd-lstm.wasm.js", langPath:LIB, gzip:false })
+          .then(res, rej);
+      }
+      if(window.Tesseract) return make();
+      /* библиотека ещё не подтянута — дождёмся её через первый воркер */
+      if(window.__ocrGetWorker){
+        window.__ocrGetWorker().then(function(){ make(); }, rej);
+        return;
+      }
+      rej(new Error("LIBFAIL"));
+    }).catch(function(e){ pool[i]=null; throw e; });
+    return pool[i];
   }
-  async function ocrRaw(canvas, psm){
-    const w=await getWorker();
+
+  async function ocrRaw(canvas, psm, wi){
+    const w=await getWorker(wi||0);
     try{ await w.setParameters({ tessedit_pageseg_mode:String(psm||6), tessedit_char_whitelist:"" }); }catch(e){}
     const res=await w.recognize(canvas);
     return (res && res.data && res.data.text)||"";
   }
-  async function ocrOnce(canvas, psm){
-    const w=await getWorker();
+  async function ocrOnce(canvas, psm, wi){
+    const w=await getWorker(wi||0);
     try{ await w.setParameters({ tessedit_pageseg_mode:String(psm||7),
         tessedit_char_whitelist:"0123456789+-=()хx" }); }catch(e){}
     const res=await w.recognize(canvas);
@@ -17200,11 +17245,15 @@ window.__LEARN={
     }
     return m;
   }
+  /* «скелет» записи: цифры заменены на d, знаки остаются.
+     У примеров одного задания скелет одинаковый: «d+dd-dd», «(dd-dd)+dd». */
+  function opsig(t){
+    return String(t||"").replace(/[0-9]+/g,"d").replace(/[()]/g,"");
+  }
   function postfix(t){
     let s=String(t||"");
     s=s.replace(/^[=\-)+*/\s]+/,"");
     s=s.replace(/=+\s*$/,"");
-    /* скобки: лишние закрывающие вон, незакрытые открывающие — тоже */
     const out=[]; let depth=0;
     for(let i=0;i<s.length;i++){
       const c=s[i];
@@ -17220,6 +17269,9 @@ window.__LEARN={
     }
     return s.replace(/\s+/g,"").trim();
   }
+  /* mode = {digits: самая частая длина записи, sig: самый частый скелет}.
+     Оба признака считаются по ВСЕМУ столбику: одно неудачное чтение не
+     задаёт мерку остальным строкам. */
   function scoreText(t, mode){
     const te=postfix(t||"");
     if(!te) return -1e9;
@@ -17227,7 +17279,11 @@ window.__LEARN={
     const nv=isNum(te);
     if(nv==="true") sc+=4.0;
     else if(parses(te)) sc+=1.6;
-    sc -= 2.5*Math.abs(ndig(te)-mode);
+    sc -= 2.5*Math.abs(ndig(te)-mode.digits);
+    /* совпадение скелета с остальным столбиком — сильный довод: в одном
+       задании примеры однотипные, «(56+18)-45» рядом с «62-(38+18)» и
+       «82-(45+27)» выделяется именно скелетом */
+    if(mode.sig && opsig(te)===mode.sig) sc+=2.0;
     if(maxrun(te)>2) sc -= 3.0;
     if((te.match(/[+\-*/]{2,}/g)||[]).length) sc -= 2.0;
     if(te[0]==="*"||te[0]==="/") sc -= 2.0;
@@ -17242,16 +17298,20 @@ window.__LEARN={
     }
     return sc;
   }
-  /* тип примеров в столбике — самый частый по числу цифр */
   function modeOf(pool){
-    const cnt={};
+    const cd={}, cs={};
     pool.forEach(function(t){
       const te=postfix(t);
-      if(te) cnt[ndig(te)]=(cnt[ndig(te)]||0)+1;
+      if(!te) return;
+      cd[ndig(te)]=(cd[ndig(te)]||0)+1;
+      const sg=opsig(te);
+      if(sg) cs[sg]=(cs[sg]||0)+1;
     });
-    let best=0, bn=-1;
-    Object.keys(cnt).forEach(function(k){ if(cnt[k]>bn){ bn=cnt[k]; best=+k; } });
-    return best;
+    let digits=0, bn=-1, sig="";
+    Object.keys(cd).forEach(function(k){ if(cd[k]>bn){ bn=cd[k]; digits=+k; } });
+    bn=-1;
+    Object.keys(cs).forEach(function(k){ if(cs[k]>bn){ bn=cs[k]; sig=k; } });
+    return {digits:digits, sig:sig};
   }
   function pickFrom(pool, mode){
     let best=null;
@@ -17276,7 +17336,7 @@ window.__LEARN={
     const id=g.getImageData(0,0,w,h), a=id.data;
     const gr=new Uint8Array(w*h);
     for(let i=0,p=0;i<a.length;i+=4,p++) gr[p]=a[i];
-    let thr=otsu(gr,w*h);
+    const thr=otsu(gr,w*h);
     let bg=null;
     if(mode==="adapt"){
       const r=Math.max(6, Math.round(w/60));
@@ -17299,9 +17359,8 @@ window.__LEARN={
     return c;
   }
 
-  /* одна строка: несколько режимов чтения, затем выбор по арифметике */
   /* все прочтения одной строки, без выбора */
-  async function readVariants(canvas){
+  async function readVariants(canvas, wi){
     const list=[];
     const tries=[
       function(){ return canvas; },
@@ -17316,16 +17375,17 @@ window.__LEARN={
       let im;
       try{ im=tries[k](); }catch(e){ continue; }
       try{
-        const t=await ocrOnce(im,7);
+        const t=await ocrOnce(im,7,wi);
         if(t){
           list.push(t);
-          /* арифметика сошлась — дальше перебирать незачем: каждая
-             следующая попытка стоит 0,15–0,6 с, а результат уже верный */
-          if(isNum(postfix(t))==="true") return list;
+          /* запись уже целая и сходится — перебирать дальше незачем:
+             каждая следующая попытка стоит 0,15–0,6 с */
+          const pf=postfix(t);
+          if(isNum(pf)==="true") return list;
         }
       }catch(e){}
     }
-    try{ const t=await ocrOnce(binarize(canvas,"otsu"),13); if(t) list.push(t); }catch(e){}
+    try{ const t=await ocrOnce(binarize(canvas,"otsu"),13,wi); if(t) list.push(t); }catch(e){}
     return list;
   }
   /* совместимость: одна строка целиком */
@@ -17592,38 +17652,58 @@ window.__LEARN={
     let deg=0;
     if(opt.orient){ try{ deg=await bestOrientation(src); }catch(e){ deg=0; } }
     const base=deg? rotateCanvas(src, deg) : src;
-    /* Свет и наклон считаем на кадре до 2200 px: на 12 Мп это 20+ секунд
-       ради тех же углов. Строки при этом режутся из этого же кадра —
-       2200 px хватает, чтобы цифра после увеличения до 110 px была чистой
-       (проверено: 1600 px даёт то же чтение на 12 строках из 16). */
-    const prep=prepare(base, {targetH:0});
+    const geom=geometry(base);
+    const prep=prepare(base, {targetH:0, geom:geom});
     const lines=splitLines(prep.canvas);
+
+    /* Наряды: строки читаются в два потока. Второй распознаватель может не
+       подняться (память телефона) — тогда поток один, но всё работает. */
     const rows=[];
     if(lines.length>=2 && lines.length<=40){
       for(let k=0;k<lines.length;k++){
-        if(opt.onStep) opt.onStep(k+1, lines.length);
-        const row=scaleRow(cropBand(prep.canvas, lines[k][0], lines[k][1]), 110);
-        let pool;
-        try{ pool=await readVariants(row); }catch(e){ continue; }
-        if(!pool.length) continue;
-        rows.push({i:k+1, pool:pool});
+        rows.push({i:k+1, y0:lines[k][0], y1:lines[k][1]});
+      }
+    }else{
+      rows.push({i:1, whole:true});
+    }
+
+    let next=0, done=0;
+    const total=rows.length;
+    function step(){
+      if(opt.onStep) opt.onStep(Math.min(total, done+1), total);
+    }
+    async function lane(wi){
+      while(true){
+        const k=next++;
+        if(k>=rows.length) return;
+        const row=rows[k];
+        let img;
+        try{
+          img = row.whole? prepare(base,{geom:geom}).canvas
+              : scaleRow(cropBand(prep.canvas, row.y0, row.y1), 110);
+        }catch(e){ continue; }
+        let pool=[];
+        try{ pool=await readVariants(img, wi); }catch(e){ pool=[]; }
+        if(!pool.length && wi){
+          /* второй воркер умер — дочитываем на первом */
+          try{ pool=await readVariants(img, 0); }catch(e){ pool=[]; }
+        }
+        row.pool=pool;
+        done++;
+        step();
       }
     }
-    if(!rows.length){
-      const row=prep.canvas;
-      let pool=[];
-      try{ pool=await readVariants(row); }catch(e){}
-      if(pool.length) rows.push({i:1, pool:pool});
-    }
-    /* тип примеров — по всему столбику: так одно чтение не задаёт мерку всем */
+    step();
+    await Promise.all([lane(0), lane(1)]);
+    const filled=rows.filter(function(r){ return r.pool && r.pool.length; });
     const all=[];
-    rows.forEach(function(r){ r.pool.forEach(function(t){ all.push(t); }); });
+    filled.forEach(function(r){ r.pool.forEach(function(t){ all.push(t); }); });
     const mode=modeOf(all);
-    const items=rows.map(function(r){
+    const items=filled.map(function(r){
       const p=pickFrom(r.pool, mode);
       return {i:r.i, text:p.text, verdict:p.verdict};
     }).filter(function(x){ return x.text && /[0-9]/.test(x.text); });
-    try{ window.__capLog={mode:mode, rows:rows}; }catch(e){}
+    try{ window.__capLog={mode:mode, rows:filled}; }catch(e){}
     return {items:items, deg:deg, prep:prep, lines:lines, mode:mode};
   }
 
@@ -17653,7 +17733,7 @@ window.__LEARN={
       try{ window.__solve(x.text); return true; }catch(e){ return false; }
     });
     const list=good.length? good : (tasks.length? tasks : items);
-    window.__capLast={items:items, deg:res.deg};
+    window.__capLast={items:items, deg:res.deg, mode:res.mode};
     if(fromFile) takeToField(list[0].text);
     else showResult(items.length>1? "Прочитал столбик":"Распознал",
       items.length>1? "Строк прочитано: "+items.length+". В решатель уйдёт первая.":"",
