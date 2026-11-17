@@ -3182,7 +3182,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.8";
+const APP_VERSION="5.7.9";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17139,7 +17139,9 @@ window.__LEARN={
     return num + sign*2 - junk*3;
   }
   async function bestOrientation(canvas){
-    const small=scaleRow(canvas, 320);
+    /* 12 Мп в OCR четыре раза — это минута; для выбора поворота хватает
+       длинной стороны 900 px, цифры на таком кадре ещё видны */
+    const small=downscale(canvas, 900);
     let best={deg:0, sc:-1e9};
     for(const deg of [0,180,90,270]){
       const rot=rotateCanvas(small, deg);
@@ -17313,7 +17315,15 @@ window.__LEARN={
     for(let k=0;k<tries.length;k++){
       let im;
       try{ im=tries[k](); }catch(e){ continue; }
-      try{ const t=await ocrOnce(im,7); if(t) list.push(t); }catch(e){}
+      try{
+        const t=await ocrOnce(im,7);
+        if(t){
+          list.push(t);
+          /* арифметика сошлась — дальше перебирать незачем: каждая
+             следующая попытка стоит 0,15–0,6 с, а результат уже верный */
+          if(isNum(postfix(t))==="true") return list;
+        }
+      }catch(e){}
     }
     try{ const t=await ocrOnce(binarize(canvas,"otsu"),13); if(t) list.push(t); }catch(e){}
     return list;
@@ -17400,6 +17410,19 @@ window.__LEARN={
     const c=document.createElement("canvas");
     c.width=src.width; c.height=b-a+1;
     c.getContext("2d").drawImage(src, 0, a, src.width, c.height, 0, 0, src.width, c.height);
+    return c;
+  }
+  /* уменьшение для оценки (не чтения): отдельная функция, потому что
+     scaleRow намеренно не уменьшает строку — она готовит её к OCR */
+  function downscale(src, maxSide){
+    const k=Math.min(1, maxSide/Math.max(src.width, src.height));
+    if(k>=1) return src;
+    const c=document.createElement("canvas");
+    c.width=Math.max(1,Math.round(src.width*k));
+    c.height=Math.max(1,Math.round(src.height*k));
+    const g=c.getContext("2d");
+    g.imageSmoothingQuality="high";
+    g.drawImage(src,0,0,c.width,c.height);
     return c;
   }
   function scaleRow(src, targetH){
@@ -17569,6 +17592,10 @@ window.__LEARN={
     let deg=0;
     if(opt.orient){ try{ deg=await bestOrientation(src); }catch(e){ deg=0; } }
     const base=deg? rotateCanvas(src, deg) : src;
+    /* Свет и наклон считаем на кадре до 2200 px: на 12 Мп это 20+ секунд
+       ради тех же углов. Строки при этом режутся из этого же кадра —
+       2200 px хватает, чтобы цифра после увеличения до 110 px была чистой
+       (проверено: 1600 px даёт то же чтение на 12 строках из 16). */
     const prep=prepare(base, {targetH:0});
     const lines=splitLines(prep.canvas);
     const rows=[];
@@ -17730,7 +17757,7 @@ window.__LEARN={
 
   window.__cap={open:open, close:close, prepare:prepare, splitLines:splitLines, readLine:readLine,
     binarize:binarize, ocrOnce:ocrOnce, scaleRow:scaleRow, cropBand:cropBand, rotateCanvas:rotateCanvas,
-    bestOrientation:bestOrientation, analyze:analyze, _pick:pickFrom};
+    bestOrientation:bestOrientation, analyze:analyze, downscale:downscale, _pick:pickFrom};
 })();
 </script>
 
