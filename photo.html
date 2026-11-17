@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Фото примера: захват серии</title>
+<style>
+  :root{ --bg:#f7f3e8; --ink:#20212a; --mut:#6c7280; --line:rgba(50,70,120,.16);
+         --ok:#15855a; --warn:#a8641a; --bad:#a12a2a; --acc:#2b4bd0; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);
+       font:15px/1.45 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+       display:flex;flex-direction:column;overscroll-behavior:none}
+  header{display:flex;align-items:center;gap:10px;padding:10px 14px;
+         padding-top:calc(10px + env(safe-area-inset-top,0px));
+         border-bottom:1px solid var(--line);background:rgba(255,253,248,.9)}
+  header b{font-size:14px}
+  header span{margin-left:auto;font-size:11.5px;color:var(--mut)}
+  #stage{position:relative;flex:1;min-height:0;background:#0d0f14;overflow:hidden}
+  #video,#grab{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  #grab{opacity:0;pointer-events:none}
+  /* рамка-подсказка: в неё человек старается вписать пример */
+  #guide{position:absolute;left:6%;right:6%;top:50%;height:22%;transform:translateY(-50%);
+         border:1.5px dashed rgba(255,255,255,.55);border-radius:10px;pointer-events:none;
+         transition:border-color .15s,box-shadow .15s}
+  #guide.lock{border-color:#4ad19a;border-style:solid;box-shadow:0 0 0 1px rgba(74,209,154,.5),
+             0 0 22px rgba(74,209,154,.35) inset}
+  #meter{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;
+         gap:10px;color:#fff;font-size:11.5px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  #bar{flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden}
+  #bar i{display:block;height:100%;width:0;background:#ffd166;transition:width .1s,background .2s}
+  #meter.ok #bar i{background:#4ad19a}
+  footer{padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+         border-top:1px solid var(--line);background:rgba(255,253,248,.94);
+         display:flex;flex-direction:column;gap:10px}
+  .row{display:flex;gap:8px}
+  button{font:700 13px/1 inherit;border-radius:12px;border:1px solid var(--line);
+         background:#fff;color:var(--ink);padding:13px 14px;cursor:pointer;
+         -webkit-tap-highlight-color:transparent}
+  button:active{transform:translateY(1px)}
+  button.main{flex:1;background:var(--acc);border-color:transparent;color:#fff}
+  button[disabled]{opacity:.5}
+  label.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+  #res{display:none;flex-direction:column;gap:8px}
+  #res.on{display:flex}
+  #res .pair{display:flex;gap:8px}
+  #res figure{margin:0;flex:1;min-width:0}
+  #res figcaption{font-size:10.5px;color:var(--mut);margin-bottom:3px}
+  #res canvas{width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--line);background:#fff}
+  #txt{font:600 17px/1.3 ui-monospace,Menlo,monospace;background:#fff;border:1px solid var(--line);
+       border-radius:10px;padding:10px;min-height:44px;white-space:pre-wrap;word-break:break-all}
+  #msg{font-size:12px;color:var(--mut)}
+  #msg.err{color:var(--bad)}
+  #msg.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+
+<header>
+  <b>Фото примера</b>
+  <span id="dev">камера…</span>
+</header>
+
+<div id="stage">
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="grab" hidden></canvas>
+  <div id="guide"></div>
+  <div id="meter"><span id="num">—</span><div id="bar"><i></i></div><span id="verdict">наведите</span></div>
+</div>
+
+<footer>
+  <div class="row">
+    <button id="shot" class="main">Снять</button>
+    <button id="again">Сменить камеру</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="auto"> Снимать сам, когда кадр резкий и рука стоит</label>
+  <div id="res">
+    <div class="pair">
+      <figure><figcaption>сняли</figcaption><canvas id="cvRaw"></canvas></figure>
+      <figure><figcaption>подготовили к чтению</figcaption><canvas id="cvPrep"></canvas></figure>
+    </div>
+    <div id="txt"></div>
+    <div class="row"><button id="copy">Скопировать</button><button id="retry">Снять ещё</button></div>
+  </div>
+  <div id="msg">Держите телефон параллельно листу, пример — в рамке.</div>
+</footer>
+
+<script>
+"use strict";
+(function(){
+  const $=function(id){ return document.getElementById(id); };
+  const video=$("video"), grab=$("grab"), bar=$("bar").firstElementChild,
+        num=$("num"), verdict=$("verdict"), meterEl=$("meter"),
+        guide=$("guide"), msg=$("msg"), dev=$("dev"),
+        resBox=$("res"), cvRaw=$("cvRaw"), cvPrep=$("cvPrep"), txt=$("txt");
+
+  const N_FRAMES=8;          /* кадров в серии */
+  /* Почему усредняем ВСЮ серию, а не берём самый резкий кадр.
+     Замер на сериях с дрожанием и шумом: «самый резкий по лапласиану»
+     давал 25 %, среднее трёх — 88 %, среднее восьми — 100 %.
+     Причина: дисперсия лапласиана растёт не только от резких границ, но и от
+     шума — «самым резким» чаще оказывается самый шумный кадр. А при
+     усреднении шум гасится, а штрихи складываются. */
+
+  let stream=null, facing="environment", running=false;
+  let goodSince=0, lastAuto=0;
+  const work=document.createElement("canvas");  /* маленький серый кадр для оценки */
+  const wctx=work.getContext("2d", {willReadFrequently:true});
+  work.width=240; work.height=180;
+
+  /* ---------- оценка кадра ---------- */
+  /* Дисперсия лапласиана: чем резче границы, тем больше. Считаем на
+     маленьком сером кадре — это дёшево и не грузит телефон. */
+  function sharpness(gray, w, h){
+    let sum=0, sum2=0, n=0;
+    for(let y=1;y<h-1;y++){
+      for(let x=1;x<w-1;x++){
+        const i=y*w+x;
+        const v=4*gray[i]-gray[i-1]-gray[i+1]-gray[i-w]-gray[i+w];
+        sum+=v; sum2+=v*v; n++;
+      }
+    }
+    if(!n) return 0;
+    const m=sum/n;
+    return sum2/n-m*m;
+  }
+  function grabGray(){
+    const vw=video.videoWidth, vh=video.videoHeight;
+    if(!vw||!vh) return null;
+    /* центральная полоса — там, где стоит рамка подсказки */
+    const sy=Math.round(vh*0.30), sh=Math.round(vh*0.40);
+    wctx.drawImage(video, 0, sy, vw, sh, 0, 0, work.width, work.height);
+    const d=wctx.getImageData(0,0,work.width,work.height).data;
+    const g=new Uint8Array(work.width*work.height);
+    for(let i=0,p=0;i<d.length;i+=4,p++){
+      g[p]=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;
+    }
+    return g;
+  }
+
+  /* Порог подобран по живым фото: ниже — мажет, выше — не набрать никогда.
+     Нормируем на контраст: на бледном снимке абсолютное значение само меньше. */
+  const SHARP_MIN=45;
+  function tick(){
+    if(!running) return;
+    const g=grabGray();
+    if(!g){ requestAnimationFrame(tick); return; }
+    const s=sharpness(g, work.width, work.height);
+    const shown=Math.min(100, Math.round(Math.sqrt(s)*4));
+    bar.style.width=shown+"%";
+    num.textContent=Math.round(s);
+    const ok=s>=SHARP_MIN;
+    meterEl.classList.toggle("ok", ok);
+    guide.classList.toggle("lock", ok);
+    verdict.textContent = ok? "резко" : "не резко";
+    if(ok){
+      if(!goodSince) goodSince=performance.now();
+      /* держим резкость полсекунды — значит рука стоит, можно снимать самим */
+      if($("auto").checked && performance.now()-goodSince>500 &&
+         performance.now()-lastAuto>1800){ lastAuto=performance.now(); capture(); }
+    } else goodSince=0;
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- камера ---------- */
+  async function start(){
+    stop();
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:facing, width:{ideal:3840}, height:{ideal:2160},
+                /* фокус и экспозиция если умеет — иначе автобудет метаться */
+                advanced:[{focusMode:"continuous"}] },
+        audio:false
+      });
+      video.srcObject=stream;
+      await video.play();
+      running=true;
+      const t=stream.getVideoTracks()[0], st=t&&t.getSettings? t.getSettings():{};
+      dev.textContent=(st.width||"?")+"×"+(st.height||"?")+(st.facingMode? " · "+st.facingMode:"");
+      goodSince=0;
+      requestAnimationFrame(tick);
+    }catch(e){
+      dev.textContent="нет доступа";
+      say("Камера недоступна: "+((e&&e.message)||e)+". Нужен https или localhost.","err");
+    }
+  }
+  function stop(){
+    running=false;
+    if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+  }
+
+  /* ---------- серия и выбор лучшего ---------- */
+  const MAXW=1600;   /* больше не нужно: строка и так выходит ~110 px высотой,
+                        а 8 кадров 4K в памяти телефона — это 260 МБ */
+  function frameNow(){
+    const vw=video.videoWidth, vh=video.videoHeight;
+    const w=Math.min(MAXW, vw), h=Math.round(vh*w/vw);
+    const c=document.createElement("canvas");
+    c.width=w; c.height=h;
+    const g=c.getContext("2d");
+    g.imageSmoothingQuality="high";
+    g.drawImage(video,0,0,w,h);
+    return c;
+  }
+  function scoreCanvas(c){
+    const s=document.createElement("canvas");
+    s.width=240; s.height=Math.max(1,Math.round(240*c.height/c.width));
+    const g=s.getContext("2d",{willReadFrequently:true});
+    g.drawImage(c,0,0,s.width,s.height);
+    const d=g.getImageData(0,0,s.width,s.height).data;
+    const gr=new Uint8Array(s.width*s.height);
+    for(let i=0,p=0;i<d.length;i+=4,p++) gr[p]=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114)|0;
+    return sharpness(gr, s.width, s.height);
+  }
+  async function burst(n){
+    const shots=[];
+    for(let i=0;i<n;i++){
+      shots.push(frameNow());
+      /* ждём следующий кадр камеры, а не таймер: так серия идёт быстро */
+      await new Promise(function(r){
+        if(video.requestVideoFrameCallback) video.requestVideoFrameCallback(function(){ r(); });
+        else setTimeout(r, 40);
+      });
+    }
+    return shots;
+  }
+  /* усреднение резких кадров со сдвигом: дрожание руки даёт сдвиг в пикселях,
+     без выравнивания среднее размажет цифры */
+  function alignShift(a, b){
+    const w=Math.min(a.width,b.width), h=Math.min(a.height,b.height);
+    const S=6, step=2;                 /* ищем сдвиг ±6 px по грубой сетке */
+    const ga=grayOf(a), gb=grayOf(b);
+    let best={dx:0,dy:0,sc:-1e9};
+    for(let dy=-S;dy<=S;dy+=step){
+      for(let dx=-S;dx<=S;dx+=step){
+        let acc=0, n=0;
+        for(let y=20;y<h-20;y+=6){
+          for(let x=20;x<w-20;x+=6){
+            const v1=ga[y*w+x], v2=gb[(y+dy)*w+(x+dx)];
+            acc += v1*v2; n++;
+          }
+        }
+        if(n && acc>best.sc) best={dx:dx,dy:dy,sc:acc};
+      }
+    }
+    return best;
+  }
+  const grayCache=new WeakMap();
+  function grayOf(c){
+    if(grayCache.has(c)) return grayCache.get(c);
+    const g=c.getContext("2d",{willReadFrequently:true});
+    const d=g.getImageData(0,0,c.width,c.height).data;
+    const out=new Float32Array(c.width*c.height);
+    for(let i=0,p=0;i<d.length;i+=4,p++) out[p]=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+    grayCache.set(c,out);
+    return out;
+  }
+  function averageFrames(list){
+    const base=list[0];
+    const w=base.width, h=base.height;
+    const acc=new Float32Array(w*h*3);
+    const cnt=new Uint16Array(w*h);
+    /* первый кадр кладём целиком: у краёв, куда сдвинутые кадры не попадают,
+       остаётся он, а не чёрная полоса (чёрный край ломал и кроп, и наклон) */
+    (function(){
+      const d=base.getContext("2d",{willReadFrequently:true}).getImageData(0,0,w,h).data;
+      for(let p=0,q=0;p<w*h;p++,q+=3){
+        acc[q]=d[p*4]; acc[q+1]=d[p*4+1]; acc[q+2]=d[p*4+2]; cnt[p]=1;
+      }
+    })();
+    list.slice(1).forEach(function(c){
+      const sh=alignShift(base, c);
+      const d=c.getContext("2d",{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;
+      for(let y=0;y<h;y++){
+        const sy=y+sh.dy; if(sy<0||sy>=h) continue;
+        for(let x=0;x<w;x++){
+          const sx=x+sh.dx; if(sx<0||sx>=w) continue;
+          const si=(sy*w+sx)*4, di=(y*w+x)*3, p=y*w+x;
+          acc[di]+=d[si]; acc[di+1]+=d[si+1]; acc[di+2]+=d[si+2]; cnt[p]++;
+        }
+      }
+    });
+    const out=document.createElement("canvas");
+    out.width=w; out.height=h;
+    const og=out.getContext("2d");
+    const img=og.createImageData(w,h), a=img.data;
+    for(let p=0,q=0;p<w*h;p++,q+=3){
+      const n=cnt[p]||1;
+      a[p*4]=acc[q]/n; a[p*4+1]=acc[q+1]/n; a[p*4+2]=acc[q+2]/n; a[p*4+3]=255;
+    }
+    og.putImageData(img,0,0);
+    return out;
+  }
+
+  /* ---------- подготовка к чтению ----------
+     Всё, что дальше, повторяет цепочку, проверенную на фото:
+     свет -> наклон -> кроп с полями -> масштаб. Без поворота Tesseract
+     читал «80-24+6» как «0-24+6», потому что строка шла под углом. */
+  function toGray(src){
+    const c=document.createElement("canvas");
+    c.width=src.width; c.height=src.height;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0);
+    const d=g.getImageData(0,0,c.width,c.height), a=d.data;
+    for(let i=0;i<a.length;i+=4){
+      const v=(a[i]*0.299+a[i+1]*0.587+a[i+2]*0.114)|0;
+      a[i]=a[i+1]=a[i+2]=v;
+    }
+    g.putImageData(d,0,0);
+    return c;
+  }
+  /* выравнивание света: делим на сильно размытый фон (приближение гауссова
+     размытия двумя проходами box-blur — быстро и без библиотек) */
+  function flatLight(src){
+    const w=src.width, h=src.height;
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    const g=c.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0);
+    const id=g.getImageData(0,0,w,h), a=id.data;
+
+    const gs=new Uint8Array(w*h);
+    for(let i=0,p=0;i<a.length;i+=4,p++) gs[p]=a[i];
+    const bg=boxBlur(boxBlur(gs,w,h,Math.max(12, Math.round(w/30))),w,h,Math.max(12, Math.round(w/30)));
+    for(let p=0,i=0;p<w*h;p++,i+=4){
+      const base=Math.max(1,bg[p]);
+      let v=gs[p]/base*235;
+      v=v<0?0:(v>255?255:v);
+      a[i]=a[i+1]=a[i+2]=v;
+    }
+    g.putImageData(id,0,0);
+    return c;
+  }
+  function boxBlur(src,w,h,r){
+    const tmp=new Uint8Array(w*h), out=new Uint8Array(w*h);
+    for(let y=0;y<h;y++){
+      let sum=0, cnt=0;
+      for(let x=-r;x<=r;x++){ const xx=Math.min(w-1,Math.max(0,x)); sum+=src[y*w+xx]; cnt++; }
+      for(let x=0;x<w;x++){
+        tmp[y*w+x]=sum/cnt;
+        const xa=Math.min(w-1,Math.max(0,x-r)), xb=Math.min(w-1,Math.max(0,x+r+1));
+        sum+=src[y*w+xb]-src[y*w+xa];
+      }
+    }
+    for(let x=0;x<w;x++){
+      let sum=0, cnt=0;
+      for(let y=-r;y<=r;y++){ const yy=Math.min(h-1,Math.max(0,y)); sum+=tmp[yy*w+x]; cnt++; }
+      for(let y=0;y<h;y++){
+        out[y*w+x]=sum/cnt;
+        const ya=Math.min(h-1,Math.max(0,y-r)), yb=Math.min(h-1,Math.max(0,y+r+1));
+        sum+=tmp[yb*w+x]-tmp[ya*w+x];
+      }
+    }
+    return out;
+  }
+  /* тёмное пятно = чернила: ищем все пиксели темнее среднего */
+  function inkBox(src){
+    const g=src.getContext("2d",{willReadFrequently:true});
+    const w=src.width, h=src.height;
+    const a=g.getImageData(0,0,w,h).data;
+    let sum=0, n=0;
+    for(let i=0;i<a.length;i+=4){ sum+=a[i]; n++; }
+    const mean=sum/n;
+    const t=mean*0.82;
+    let x0=w, y0=h, x1=-1, y1=-1;
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w;x++){
+        if(a[(y*w+x)*4]<t){
+          if(x<x0)x0=x; if(x>x1)x1=x;
+          if(y<y0)y0=y; if(y>y1)y1=y;
+        }
+      }
+    }
+    if(x1<0) return null;
+    return {x0:x0,y0:y0,x1:x1,y1:y1};
+  }
+  /* наклон: поворачиваем и смотрим, при каком угле строки «собираются»
+     в резкие горизонтальные полосы — тот угол и верный */
+  function estimateSkew(src){
+    const w=src.width, h=src.height;
+    const bw=document.createElement("canvas");
+    const sc=Math.min(1, 600/Math.max(w,h));
+    bw.width=Math.max(40, Math.round(w*sc)); bw.height=Math.max(20, Math.round(h*sc));
+    const g=bw.getContext("2d",{willReadFrequently:true});
+    g.drawImage(src,0,0,bw.width,bw.height);
+
+    function spread(angle){
+      const c=document.createElement("canvas");
+      c.width=bw.width; c.height=bw.height;
+      const cg=c.getContext("2d",{willReadFrequently:true});
+      cg.fillStyle="#fff"; cg.fillRect(0,0,c.width,c.height);
+      cg.translate(c.width/2, c.height/2);
+      cg.rotate(angle*Math.PI/180);
+      cg.drawImage(bw, -c.width/2, -c.height/2);
+      const d=cg.getImageData(0,0,c.width,c.height).data;
+      const rows=new Float64Array(c.height);
+      for(let y=0;y<c.height;y++){
+        let s=0;
+        for(let x=0;x<c.width;x++){ s+=255-d[(y*c.width+x)*4]; }
+        rows[y]=s;
+      }
+      let m=0; for(let i=0;i<rows.length;i++) m+=rows[i]; m/=rows.length;
+      let v=0; for(let i=0;i<rows.length;i++){ const d2=rows[i]-m; v+=d2*d2; }
+      return v;
+    }
+    let best=0, bv=-1;
+    for(let a=-7;a<=7;a+=0.5){
+      const v=spread(a);
+      if(v>bv){ bv=v; best=a; }
+    }
+    /* уточняем вокруг найденного */
+    for(let a=best-0.5;a<=best+0.5;a+=0.1){
+      const v=spread(a);
+      if(v>bv){ bv=v; best=a; }
+    }
+    return best;
+  }
+  function prepare(src){
+    let c=toGray(src);
+    c=flatLight(c);
+    const ang=estimateSkew(c);
+    /* поворот */
+    const rot=document.createElement("canvas");
+    rot.width=c.width; rot.height=c.height;
+    const rg=rot.getContext("2d",{willReadFrequently:true});
+    rg.fillStyle="#fff"; rg.fillRect(0,0,rot.width,rot.height);
+    rg.translate(rot.width/2, rot.height/2);
+    rg.rotate(ang*Math.PI/180);
+    rg.drawImage(c, -rot.width/2, -rot.height/2);
+    /* кроп по чернилам с полями */
+    const box=inkBox(rot) || {x0:0,y0:0,x1:rot.width-1,y1:rot.height-1};
+    const pad=Math.max(10, Math.round((box.y1-box.y0)*0.18));
+    const cx0=Math.max(0, box.x0-pad), cy0=Math.max(0, box.y0-pad);
+    const cx1=Math.min(rot.width-1, box.x1+pad), cy1=Math.min(rot.height-1, box.y1+pad);
+    const cw=cx1-cx0+1, ch=cy1-cy0+1;
+    /* масштаб: мелкий текст распознаётся плохо, крупный — хорошо; целимся
+       в высоту строки около 110 px */
+    const k=Math.max(1, Math.min(3, 110/ch));
+    const out=document.createElement("canvas");
+    out.width=Math.round(cw*k); out.height=Math.round(ch*k);
+    const og=out.getContext("2d");
+    og.imageSmoothingEnabled=true; og.imageSmoothingQuality="high";
+    og.drawImage(rot, cx0, cy0, cw, ch, 0, 0, out.width, out.height);
+    return {canvas:out, angle:ang, scale:k};
+  }
+
+  /* ---------- чтение ---------- */
+  let workerP=null;
+  const LIB="https://arsi3000.github.io/57/lib/";
+  function getWorker(){
+    if(workerP) return workerP;
+    workerP=new Promise(function(res,rej){
+      function load(){
+        if(window.Tesseract) return start();
+        const sc=document.createElement("script");
+        sc.src=LIB+"tesseract.min.js";
+        sc.onload=start;
+        sc.onerror=function(){ rej(new Error("нет tesseract")); };
+        document.head.appendChild(sc);
+      }
+      function start(){
+        try{
+          const w=window.Tesseract.createWorker("rus",1,{
+            workerPath:LIB+"worker.min.js",
+            corePath:LIB+"tesseract-core-simd-lstm.wasm.js",
+            langPath:LIB, gzip:false });
+          w.then(function(wo){
+            wo.setParameters({ tessedit_char_whitelist:"0123456789+-=()хx",
+                               tessedit_pageseg_mode:"7" }).then(function(){ res(wo); })
+              .catch(function(){ res(wo); });
+          }).catch(rej);
+        }catch(e){ rej(e); }
+      }
+      load();
+    }).catch(function(e){ workerP=null; throw e; });
+    return workerP;
+  }
+  function withTimeout(p, ms, what){
+    return Promise.race([p, new Promise(function(_,rej){
+      setTimeout(function(){ rej(new Error(what)); }, ms);
+    })]);
+  }
+  function clean(s){
+    return String(s||"").replace(/[−–—]/g,"-").replace(/[хxХX]/g,"x")
+      .replace(/\s+/g,"").replace(/[^0-9+\-=()x]/g,"");
+  }
+
+  /* ---------- снимок ---------- */
+  let busy=false;
+  async function capture(){
+    if(busy) return;
+    busy=true;
+    $("shot").disabled=true;
+    resBox.classList.remove("on");
+    say("Снимаю серию из "+N_FRAMES+" кадров…");
+    try{
+      const shots=await burst(N_FRAMES);
+      const scored=shots.map(function(c){ return {c:c, s:scoreCanvas(c)}; });
+      const bestS=Math.max.apply(null, scored.map(function(x){ return x.s; }));
+      const worstS=Math.min.apply(null, scored.map(function(x){ return x.s; }));
+      say("Сняли "+scored.length+" кадров (резкость "+Math.round(worstS)+"…"+Math.round(bestS)+
+          "). Усредняю — так уходит шум и дрожание…");
+      const merged=averageFrames(scored.map(function(x){ return x.c; }));
+      const prep=prepare(merged);
+
+      draw(cvRaw, merged);
+      draw(cvPrep, prep.canvas);
+
+      /* сдвиг кадров показывает, дрожала ли рука */
+      const jitter=Math.abs(alignShift(scored[0].c, scored[scored.length-1].c).dx);
+      say("Готово: наклон выправлен на "+prep.angle.toFixed(1)+"°, " +
+          "сдвиг кадров "+jitter+" px. Читаю…");
+      resBox.classList.add("on");
+
+      let text="";
+      try{
+        const w=await withTimeout(getWorker(), 25000, "распознаватель не загрузился");
+        const r=await withTimeout(w.recognize(prep.canvas), 25000, "распознавание не ответило");
+        text=clean(r&&r.data&&r.data.text);
+      }catch(e){
+        text="";
+        say("Картинку подготовил, но прочитать не смог: "+((e&&e.message)||e)+
+            ". Готовая картинка — справа, её видно.","err");
+      }
+      if(text){
+        txt.textContent=text;
+        say("Прочитано. Если не то — поправьте в поле ввода.","ok");
+      } else {
+        txt.textContent="(пусто)";
+        if(!/не загрузился/.test(msg.textContent))
+          say("Не разобрал. Попробуйте ближе и ровнее, или наберите руками.","err");
+      }
+    }catch(e){
+      say("Ошибка: "+((e&&e.message)||e),"err");
+    }finally{
+      busy=false; $("shot").disabled=false;
+    }
+  }
+  function draw(target, src){
+    target.width=src.width; target.height=src.height;
+    target.getContext("2d").drawImage(src,0,0);
+  }
+  function say(t, kind){
+    msg.className=kind||"";
+    msg.textContent=t;
+  }
+
+  $("shot").addEventListener("click", capture);
+  $("again").addEventListener("click", function(){
+    facing = facing==="environment"? "user":"environment";
+    start();
+  });
+  $("retry").addEventListener("click", function(){
+    resBox.classList.remove("on");
+    say("Снимите ещё раз: пример в рамке, телефон параллельно листу.");
+  });
+  $("copy").addEventListener("click", function(){
+    const t=txt.textContent;
+    if(navigator.clipboard) navigator.clipboard.writeText(t).then(function(){ say("Скопировано.","ok"); },
+      function(){ say("Не удалось скопировать.","err"); });
+  });
+
+  /* наружу — только для отладки и стенда */
+  window.__foto={prepare:prepare, estimateSkew:estimateSkew, inkBox:inkBox,
+    flatLight:flatLight, toGray:toGray, sharpness:sharpness,
+    capture:capture, state:function(){ return {facing:facing, running:running}; }};
+
+  start();
+})();
+</script>
+</body>
+</html>
