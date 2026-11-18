@@ -439,12 +439,27 @@
 
   /* ---------- конвертер ---------- */
   .convpanel{animation:rise .28s cubic-bezier(.22,1,.36,1)}
-  .convcat{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
-  .catpill{font-family:inherit;font-size:14px;font-weight:600;color:var(--ink-soft);
-    background:var(--glass);border:1px solid var(--line);border-radius:var(--r-pill);
-    padding:8px 16px;cursor:pointer;transition:.16s;backdrop-filter:blur(10px)}
+  /* 5.8.12: категории — значки в ровной сетке. Пятнадцать штук ложатся
+     тремя рядами по пять, поэтому сетка симметрична на любой ширине. */
+  .convcat{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:8px;margin:0 0 16px;max-width:620px}
+  .catpill{font-family:inherit;font-size:10.5px;font-weight:650;color:var(--ink-soft);
+    background:var(--glass);border:1px solid var(--line);border-radius:14px;
+    padding:9px 3px 7px;cursor:pointer;transition:.16s;backdrop-filter:blur(10px);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    min-height:62px;min-width:0;overflow:hidden;-webkit-tap-highlight-color:transparent}
+  .catpill svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;
+    stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .catpill span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .catpill:hover{color:#dfe4ff;border-color:rgba(124,108,255,.45)}
   .catpill.on{color:#c8c2ff;border-color:rgba(124,108,255,.62);background:rgba(124,108,255,.16)}
+  .catpill:active{transform:scale(.96)}
+  @media (max-width:360px){
+    .convcat{gap:6px}
+    .catpill{min-height:58px;font-size:9.5px;padding:8px 2px 6px}
+    .catpill svg{width:20px;height:20px}
+  }
+  body.light .catpill.on{color:#4338ca;border-color:#b9b2f5;background:#eeebff}
 
   .convbox{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--r-lg);
     padding:24px 24px 20px;
@@ -2034,6 +2049,17 @@ body.exam-mode .hudbar{margin-top:12px}
 .wnmeta{margin-top:4px;font-size:13px;line-height:1.45;color:var(--ink-dim)}
 .wnitem{padding:12px 0;border-top:1px solid var(--line)}
 .wnitem:first-child{border-top:0;padding-top:2px}
+/* 5.8.12: свёрнутые версии — аккуратные строки, раскрытая — с текстом */
+.wnhead{display:flex;align-items:center;gap:10px;width:100%;padding:2px 0;
+  background:none;border:0;color:inherit;font:inherit;cursor:pointer;text-align:left;
+  -webkit-tap-highlight-color:transparent}
+.wnhead:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:8px}
+.wnitem .wnbody{display:none}
+.wnitem.open .wnbody{display:block}
+.wnchev{margin-left:auto;width:20px;height:20px;flex:none;color:var(--ink-dim);
+  transition:transform .18s ease}
+.wnitem.open .wnchev{transform:rotate(180deg)}
+.wnitem:not(.open) .wnv{margin-bottom:0}
 .wnitem .wnv{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:750;margin-bottom:6px}
 .wnitem .wnv i{font-style:normal;font-size:12px;font-weight:600;color:var(--ink-dim)}
 .wnitem ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
@@ -2242,6 +2268,7 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
    А фото, микрофон, клавиатура и шпаргалка собраны в одну капсулу внизу:
    до них дотягивается большой палец, и они не мешают читать поле. */
 .dockbar{
+  transition:opacity .18s ease;
   position:fixed;left:8px;right:8px;
   bottom:calc(62px + env(safe-area-inset-bottom,0px));
   z-index:939;display:flex;align-items:center;gap:8px;
@@ -2272,6 +2299,12 @@ body.light .dockb.on{background:#3366ff;color:#fff}
 /* под капсулу — место внизу страницы */
 body{padding-bottom:calc(126px + env(safe-area-inset-bottom,0px))}
 body.exam-mode .dockbar,body.set-on .dockbar,body.mode-other .dockbar{display:none !important}
+/* 5.8.12: пока палец ведёт по листу, капсула ввода почти не видна —
+   она закрывала нижнюю часть записи. Отпустил палец — вернулась. */
+.dockbar.nb-dim{opacity:.14;pointer-events:none}
+/* 5.8.12: в «Учиться» и «Конвертере» лист не нужен: там свои экраны,
+   а чернила от прошлой задачи торчали под карточками. */
+body.mode-other #noteBoard{display:none !important}
 body.mode-other{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 /* примеры и «как это работает» в шпаргалке */
 .cheat-extra{padding:14px 14px 6px;border-top:1px solid var(--line);margin-top:8px}
@@ -2847,22 +2880,42 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
   </div>
 
   <section class="convpanel" id="convpanel" hidden>
-    <div class="convcat" id="convcat">
-      <button type="button" class="catpill on" data-cat="length">Длина</button>
-      <button type="button" class="catpill" data-cat="mass">Масса</button>
-      <button type="button" class="catpill" data-cat="area">Площадь</button>
-      <button type="button" class="catpill" data-cat="volume">Объём</button>
-      <button type="button" class="catpill" data-cat="temp">Температура</button>
-      <button type="button" class="catpill" data-cat="pressure">Давление</button>
-      <button type="button" class="catpill" data-cat="energy">Энергия</button>
-      <button type="button" class="catpill" data-cat="power">Мощность</button>
-      <button type="button" class="catpill" data-cat="speed">Скорость</button>
-      <button type="button" class="catpill" data-cat="time">Время</button>
-      <button type="button" class="catpill" data-cat="angle">Углы</button>
-      <button type="button" class="catpill" data-cat="data">Данные</button>
-      <button type="button" class="catpill" data-cat="freq">Частота</button>
-      <button type="button" class="catpill" data-cat="currency">Валюта</button>
-      <button type="button" class="catpill" data-cat="crypto">Криптовалюта</button>
+    <!-- 5.8.12: категории конвертера — значки, а не длинный частокол
+         надписей. Пятнадцать категорий ложатся ровно в сетку 5×3:
+         три ряда по пять — симметрично на любом экране. -->
+    <svg class="cvicons" width="0" height="0" aria-hidden="true" focusable="false">
+      <symbol id="cv-length" viewBox="0 0 24 24"><path d="M3 15.5 15.5 3l5.5 5.5L8.5 21z"/><path d="M6.5 12.5l2 2M9.5 9.5l2 2M12.5 6.5l2 2"/></symbol>
+      <symbol id="cv-mass" viewBox="0 0 24 24"><path d="M8 9h8l2.2 11H5.8z"/><path d="M9.2 9V7.6a2.8 2.8 0 0 1 5.6 0V9"/></symbol>
+      <symbol id="cv-area" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.4"/><path d="M3.5 12h17M12 3.5v17"/></symbol>
+      <symbol id="cv-volume" viewBox="0 0 24 24"><path d="M9.5 3h5M10.5 3v5.2L5.6 17a2 2 0 0 0 1.8 3h9.2a2 2 0 0 0 1.8-3l-4.9-8.8V3"/><path d="M7.6 15.2h8.8"/></symbol>
+      <symbol id="cv-temp" viewBox="0 0 24 24"><path d="M14 14.4V5.2a2 2 0 1 0-4 0v9.2a4 4 0 1 0 4 0z"/><path d="M12 9.5v5.4"/></symbol>
+      <symbol id="cv-pressure" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2"/><path d="M12 12l3.6-3.6"/><path d="M12 3.8v1.6M20.2 12h-1.6M3.8 12h1.6"/></symbol>
+      <symbol id="cv-energy" viewBox="0 0 24 24"><path d="M12 3s5 4.6 5 9a5 5 0 0 1-10 0c0-2 1-3.6 2-4.6 0 2 1 3 2 3 0-3 1-5 1-7.4z"/></symbol>
+      <symbol id="cv-power" viewBox="0 0 24 24"><path d="M13.2 2.8 6 13.2h5.1L10.8 21l7.2-10.6h-5.2z"/></symbol>
+      <symbol id="cv-speed" viewBox="0 0 24 24"><path d="M4.4 18.6a9 9 0 1 1 15.2 0"/><path d="M12 18l5.4-6.8"/><circle cx="12" cy="18" r="1.3"/></symbol>
+      <symbol id="cv-time" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.4 2"/></symbol>
+      <symbol id="cv-angle" viewBox="0 0 24 24"><path d="M3 18h18"/><path d="M4.6 18a8.4 8.4 0 0 1 14.8 0"/><path d="M12 18l4.6-5.2"/></symbol>
+      <symbol id="cv-data" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12v6c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6v-6"/></symbol>
+      <symbol id="cv-freq" viewBox="0 0 24 24"><path d="M2.6 12c2.6 0 2.6-7 5.2-7s2.6 14 5.2 14 2.6-7 5.2-7 2.6 3.5 3.2 3.5"/></symbol>
+      <symbol id="cv-currency" viewBox="0 0 24 24"><path d="M9.4 20V4h4.2a4.2 4.2 0 0 1 0 8.4H9.4"/><path d="M7 15.6h9.4"/></symbol>
+      <symbol id="cv-crypto" viewBox="0 0 24 24"><path d="M9 4h5a3.4 3.4 0 0 1 0 6.8H9z"/><path d="M9 10.8h6a3.6 3.6 0 0 1 0 7.2H9z"/><path d="M9 4v14M11.4 2v2M11.4 18v2"/></symbol>
+    </svg>
+    <div class="convcat" id="convcat" role="group" aria-label="Что переводим">
+      <button type="button" class="catpill on" data-cat="length" title="Длина" aria-label="Длина"><svg aria-hidden="true"><use href="#cv-length"/></svg><span>Длина</span></button>
+      <button type="button" class="catpill" data-cat="mass" title="Масса" aria-label="Масса"><svg aria-hidden="true"><use href="#cv-mass"/></svg><span>Масса</span></button>
+      <button type="button" class="catpill" data-cat="area" title="Площадь" aria-label="Площадь"><svg aria-hidden="true"><use href="#cv-area"/></svg><span>Площадь</span></button>
+      <button type="button" class="catpill" data-cat="volume" title="Объём" aria-label="Объём"><svg aria-hidden="true"><use href="#cv-volume"/></svg><span>Объём</span></button>
+      <button type="button" class="catpill" data-cat="temp" title="Температура" aria-label="Температура"><svg aria-hidden="true"><use href="#cv-temp"/></svg><span>Темп.</span></button>
+      <button type="button" class="catpill" data-cat="pressure" title="Давление" aria-label="Давление"><svg aria-hidden="true"><use href="#cv-pressure"/></svg><span>Давление</span></button>
+      <button type="button" class="catpill" data-cat="energy" title="Энергия" aria-label="Энергия"><svg aria-hidden="true"><use href="#cv-energy"/></svg><span>Энергия</span></button>
+      <button type="button" class="catpill" data-cat="power" title="Мощность" aria-label="Мощность"><svg aria-hidden="true"><use href="#cv-power"/></svg><span>Мощность</span></button>
+      <button type="button" class="catpill" data-cat="speed" title="Скорость" aria-label="Скорость"><svg aria-hidden="true"><use href="#cv-speed"/></svg><span>Скорость</span></button>
+      <button type="button" class="catpill" data-cat="time" title="Время" aria-label="Время"><svg aria-hidden="true"><use href="#cv-time"/></svg><span>Время</span></button>
+      <button type="button" class="catpill" data-cat="angle" title="Углы" aria-label="Углы"><svg aria-hidden="true"><use href="#cv-angle"/></svg><span>Углы</span></button>
+      <button type="button" class="catpill" data-cat="data" title="Данные" aria-label="Данные"><svg aria-hidden="true"><use href="#cv-data"/></svg><span>Данные</span></button>
+      <button type="button" class="catpill" data-cat="freq" title="Частота" aria-label="Частота"><svg aria-hidden="true"><use href="#cv-freq"/></svg><span>Частота</span></button>
+      <button type="button" class="catpill" data-cat="currency" title="Валюта" aria-label="Валюта"><svg aria-hidden="true"><use href="#cv-currency"/></svg><span>Валюта</span></button>
+      <button type="button" class="catpill" data-cat="crypto" title="Криптовалюта" aria-label="Криптовалюта"><svg aria-hidden="true"><use href="#cv-crypto"/></svg><span>Крипта</span></button>
     </div>
 
     <!-- 4.9.1: курс валют вводится руками и запоминается; сеть не используется -->
@@ -2927,11 +2980,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
       <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
     </button>
     <input type="file" id="ocrFile" accept="image/*" hidden>
-    <!-- 5.6.0: язычок под полем — «разверни доску и пиши от руки» -->
-    <button type="button" class="boardtab" id="boardOpen"
-      title="Написать решение от руки" aria-label="Открыть доску: написать от руки" aria-expanded="false">
-      <svg class="ic" aria-hidden="true"><use href="#i-chev"/></svg>
-    </button>
+    <!-- 5.8.12: язычок старой доски убран. Писать от руки можно прямо
+         в тетради (доска под полем), и вторая, «выдвижная» доска только
+         путала: два разных места для одного и того же. -->
   </form>
   <!-- 5.2.0: живой предпросмотр. Пока ученик печатает, под полем появляется
        строка «понял как → ответ». Не надо нажимать стрелку, чтобы узнать,
@@ -3007,9 +3058,22 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-a svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .nb-a:active{background:rgba(51,102,255,.10)}
-.nb-a.go{padding:0 13px;background:linear-gradient(135deg,#3366ff,#4d7cff 58%,#2f6df0);
-  color:#fff;box-shadow:0 6px 14px -10px rgba(51,102,255,.9)}
+/* Кнопка проверки — круглая, как кнопка решения в капсуле ввода.
+   Раньше это была пилюля с подписью: на листе она занимала пол-строки. */
+.nb-a.go{width:46px;height:46px;min-width:46px;padding:0;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,#7c6cff,#5b74f2 55%,#1782b8);
+  color:#fff;box-shadow:0 10px 24px -12px rgba(95,125,255,.95),
+    inset 0 1px 0 rgba(255,255,255,.35)}
+.nb-a.go svg{width:22px;height:22px;stroke-width:2.5}
+.nb-a.go:active{transform:scale(.94)}
 .nb-a.go:disabled{opacity:.65;box-shadow:none}
+/* кнопка проверки живёт по теме, как кнопка решения */
+body.light .nb-a.go{background:linear-gradient(135deg,#6d5efc,#3f7bf0 55%,#1a8fc8)}
+body[data-theme="neon"] .nb-a.go{background:linear-gradient(135deg,#b45cff,#00ffe5);
+  box-shadow:0 0 24px -8px rgba(0,255,229,.85)}
+body[data-theme="retro"] .nb-a.go{background:#ffb000;color:#12142a;border-radius:14px;
+  box-shadow:3px 3px 0 #000}
 
 /* всплывающая подсказка у поля поиска */
 /* Подсказка — всплывающий пузырь над листом: не занимает место в потоке
@@ -3101,8 +3165,11 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
         <button type="button" class="nb-a" id="nbClear" title="Стереть всё" aria-label="Стереть всё">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>
         </button>
-        <button type="button" class="nb-a go" id="nbCheck">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Проверить
+        <!-- 5.8.12: кнопка проверки — круглая, как кнопка решения в капсуле
+             ввода. Подпись ушла в aria-label: на листе она занимала место,
+             а смысл значка «галочка» и так понятен. -->
+        <button type="button" class="nb-a go" id="nbCheck" title="Проверить" aria-label="Проверить">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
         </button>
       </div>
     </div>
@@ -3349,7 +3416,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.11";
+const APP_VERSION="5.8.12";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -8865,6 +8932,11 @@ function closeSettings(){
   el.hidden=true;
   document.body.classList.remove("set-on");
   document.body.style.overflow="";
+  /* пришли сюда из «О приложении» — «Готово» вернёт туда же */
+  if(window.__aboutReturn){
+    window.__aboutReturn=false;
+    if(window.__openWhatsNew) try{ window.__openWhatsNew(); }catch(e){}
+  }
 }
 window.__openSettings=openSettings;
 
@@ -9003,6 +9075,13 @@ function setMode(mode){
   document.body.classList.toggle("has-class", classMode);
   /* маскот живёт только в решателе: в других вкладках он закрывает карточки */
   document.body.classList.toggle("mode-other", other);
+  /* 5.8.12: ушли с решателя — лист чистый. Чернила от прошлой задачи
+     висели под карточками тренировки и в конвертере (снимок человека).
+     Возвращаемся в «Решить» — тоже с чистого листа: старый пример там
+     уже не нужен. */
+  if(window.__noteBoard && window.__noteBoard.clear){
+    try{ window.__noteBoard.clear(); }catch(e){}
+  }
   lsSet("mode", mode);
   if(window.__syncBottomNav) window.__syncBottomNav(mode);
 }
@@ -16616,7 +16695,15 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v": "5.6.0", "d": "14.11", "b": ["Тема переключается кружком в шапке: нажали — следующая, удержали — список всех пяти", "Новая тема «Тёплая бумага»: песочный фон, коричневая клетка, охристый акцент — для вечернего чтения", "Кнопка «Вставить» в капсуле ввода: скопировали задачу — и сразу решили, без ручной вставки", "Язычок под полем открывает доску: пишете решение от руки, «Готово» распознаёт и подставляет в поле", "Под разбором линейного уравнения — «Потрогать»: прямая y = kx + b с ползунками наклона и сдвига, корень виден точкой", "Под задачами на площадь — «Потрогать»: чертёж с ползунками сторон, площадь и периметр считаются на глазах", "На широком экране капсула ввода ушла в правое поле и больше не закрывает текст разбора"]},{"v":"5.1.2","d":"13.11","b":["Фото задания с кириллической «х» и «З» теперь решается верно: «у = -Зх - 7» даёт k = −3, b = −7","Задачи вида «постоянная часть + плата за единицу» решаются всегда — раньше часть из них не понималась («доставка 250 ₽, тетрадь 150 ₽ за штуку»)","Кириллическая «х» в формуле («2х + 5 = 13»), числа и знаки словами («два икс плюс пять равно тринадцати»)","В поле после фото — уже исправленная запись: без «! 1.» и с латинскими x, y, k, b","Номер задания не съедает знак: «-2^2» и «|−10| − |12|» больше не портятся","Кнопка решения контрастнее: белая стрелка видна на градиенте (3,62:1 вместо 2,89)","Поле ввода и круглые кнопки — 16 px и 44×44 на узких экранах; клавиатура открывается обычная, с буквами","Модальные окна держат фокус внутри по Tab; без JavaScript экран объясняет, что включить","Даты на листах работ — по-русски: «7 ноября 2026»","Распознавание фото под углом: кадр пробуется в поворотах 0°, 90° и 270°"]},{"v":"5.1.1","d":"12.11","b":["Знак суммы в логотипе снова белый — во всех темах.","Капсула уровня растянута от логотипа до настроек, сегменты делят ширину поровну.","На широком экране у сегментов есть подписи: уровень, серия, квесты, награды."]},{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
+  const CHANGES=[{"v":"5.8.12","d":"18.11","b":[
+    "Ответ пишется зелёным прямо на листе: в горизонтальном положении — сразу после «=» в строке примера, в вертикальном — строкой ниже записи. Наехать на знак он не может: ширина каждой цифры считается по её настоящим линиям",
+    "Дроби — как в тетради: целая часть, числитель сверху, черта, знаменатель снизу",
+    "Старая выдвижная доска с язычком у поля убрана: писать от руки можно прямо в тетради",
+    "Пока ведёшь пальцем по листу, капсула ввода тает и не мешает; отпустил — вернулась",
+    "Кнопка «Проверить» у доски стала круглой, как кнопка решения в капсуле ввода, и следует теме",
+    "При переходе в «Учиться» или «Конвертер» лист очищается — чернила от прошлой задачи больше не висят под карточками",
+    "Категории конвертера — значки в ровной сетке 5×3 вместо длинного ряда надписей"
+  ]},{"v": "5.6.0", "d": "14.11", "b": ["Тема переключается кружком в шапке: нажали — следующая, удержали — список всех пяти", "Новая тема «Тёплая бумага»: песочный фон, коричневая клетка, охристый акцент — для вечернего чтения", "Кнопка «Вставить» в капсуле ввода: скопировали задачу — и сразу решили, без ручной вставки", "Язычок под полем открывает доску: пишете решение от руки, «Готово» распознаёт и подставляет в поле", "Под разбором линейного уравнения — «Потрогать»: прямая y = kx + b с ползунками наклона и сдвига, корень виден точкой", "Под задачами на площадь — «Потрогать»: чертёж с ползунками сторон, площадь и периметр считаются на глазах", "На широком экране капсула ввода ушла в правое поле и больше не закрывает текст разбора"]},{"v":"5.1.2","d":"13.11","b":["Фото задания с кириллической «х» и «З» теперь решается верно: «у = -Зх - 7» даёт k = −3, b = −7","Задачи вида «постоянная часть + плата за единицу» решаются всегда — раньше часть из них не понималась («доставка 250 ₽, тетрадь 150 ₽ за штуку»)","Кириллическая «х» в формуле («2х + 5 = 13»), числа и знаки словами («два икс плюс пять равно тринадцати»)","В поле после фото — уже исправленная запись: без «! 1.» и с латинскими x, y, k, b","Номер задания не съедает знак: «-2^2» и «|−10| − |12|» больше не портятся","Кнопка решения контрастнее: белая стрелка видна на градиенте (3,62:1 вместо 2,89)","Поле ввода и круглые кнопки — 16 px и 44×44 на узких экранах; клавиатура открывается обычная, с буквами","Модальные окна держат фокус внутри по Tab; без JavaScript экран объясняет, что включить","Даты на листах работ — по-русски: «7 ноября 2026»","Распознавание фото под углом: кадр пробуется в поворотах 0°, 90° и 270°"]},{"v":"5.1.1","d":"12.11","b":["Знак суммы в логотипе снова белый — во всех темах.","Капсула уровня растянута от логотипа до настроек, сегменты делят ширину поровну.","На широком экране у сегментов есть подписи: уровень, серия, квесты, награды."]},{"v":"5.1.0","d":"12.11","b":["Логотип в шапке стал кнопкой: версия и что нового — одним нажатием.","Название словами убрано — на его месте капсула уровня: серия, квесты и награды.","Поле ввода — одна капсула с круглыми кнопками: фото, голос, круглая кнопка решения.","Распознавание задачи с фото — офлайн, прямо в приложении."]},{"v":"5.0.3","d":"12.11","b":["Правдоподобные числа в задачах на движение: скорость подбирается под героя — пешеход 3–6 км/ч, лыжник…"]},{"v":"5.0.2","d":"12.11","b":["В листах повторялись однотипные задания. Набор из восьми задач по теме «Работа» состоял из шести почти…","В одном листе не бывает двух заданий с одинаковым каркасом и одинаковым первым числом («6x + 12 = 48» и…","Падеж в заданиях на перевод единиц: было «3 часов в минуты» и «2 тонн в килограммы», стало «3 часа в минуты» и «2 тонны в килограммы»"]},{"v":"5.0.1","d":"12.11","b":["«Собрать» не принимала новые фильтры. После первой сборки в поле «код работы» оставался код, который положила туда сама программа","Повторное «Собрать» без изменений, наоборот, даёт ту же работу с тем же кодом — иначе учитель диктовал классу уже другой вариант","В листы попадали вырожденные задания: 4x + 3 = 3 → x = 0, 3/4 − 3/4 = 0, 1/2 + 1/2 = 1, x² = 0, «найдите коэффициент k» при k = 1","«Совместная работа» при равных временах выдавала одну и ту же фразу — в листах были двойники"]},{"v":"5.0.0","d":"12.11","b":["Навигация перестроена: три раздела вместо шести вкладок","Внутри «Учиться» — свои подтабы: Тренировка · Класс · Прогресс","Настройки — отдельный экран (шестерёнка в шапке): оформление (4 темы), чтение и ввод («сначала только…","«Дэш» стал «Прогрессом»: уровень, серия, квесты, награды и «мои данные» — без настроек"]},{"v":"4.12.0","d":"12.11","b":["Номер варианта прямо в коде работы. Код стал БАЗА-КЗВ-МММvК (14 знаков): к маске тем добавился знак варианта","Блок «Коды вариантов — раздайте по одному»","Решение прямо в приложении. У ученика переключатель «Решать здесь / На бумаге»: в первом режиме под…","Если в коде не указан вариант, а работа содержит несколько, ученик выбирает свой вариант одной кнопкой"]},{"v":"4.11.5","d":"12.11","b":["Отдельный экран для ученика в разделе «Класс»","Без кода приложение просит спросить его у учителя, а не показывает пустой конструктор","После сборки у ученика появляются «Печать», «⬇ PDF» и «Другой код»; внизу — тихая ссылка «Я учитель — собрать свою работу»","Поле кода обрезало полный код: maxlength=\"12\" при длине V43U-562-03R6 в 13 знаков"]},{"v":"4.11.4","d":"12.11","b":["Задачи про деньги: «абонемент» не считался постоянной частью","Одна и та же ставка складывалась сама с собой","В репозиторий добавлены документы: README.md, ARCHITECTURE.md, MATH.md, CHANGELOG.md, LICENSE, скриншоты в docs/screenshots"]},{"v":"4.11.3","d":"12.11","b":["Код работы стал самодостаточным. Раньше код был только зерном ГПСЧ: та же работа получалась лишь при совпадении класса, тем и числа заданий","Инструкция для учителя: раздел «Способ 4 — по коду работы» и переписанная шкала оценивания (проценты →…","Генераторы брали Math.random() мимо зерна — код работы не воспроизводил задания с функциями и половину дополнительных тем","Порядок тем влиял на задания: темы нормализуются к списку CLASS_TOPICS перед сборкой"]}];
   const scr=document.getElementById("whatsNew");
   if(!scr) return;
   const list=document.getElementById("wnList");
@@ -16624,15 +16711,32 @@ window.__LEARN={
   if(verEl && window.APP_VERSION) verEl.textContent="v"+window.APP_VERSION;
 
   function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  /* 5.8.12: последняя версия раскрыта — её и читают; остальные свёрнуты
+     в строку с версией и раскрываются нажатием. Раньше весь список разом
+     лежал простынёй на несколько экранов. */
   function render(){
     if(!list || list.getAttribute("data-done")) return;
     list.innerHTML=CHANGES.map(function(c,i){
-      return '<div class="wnitem">'+
-        '<div class="wnv">v'+esc(c.v)+' '+(i===0? '<span class="wnlatest">сейчас</span>':'')+
-          ' <i>'+esc(c.d)+'</i></div>'+
-        '<ul>'+c.b.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("")+'</ul>'+
+      const open=i===0;
+      return '<div class="wnitem'+(open?' open':'')+'">'+
+        '<button type="button" class="wnhead" aria-expanded="'+(open?'true':'false')+'">'+
+          '<span class="wnv">v'+esc(c.v)+(i===0? ' <span class="wnlatest">сейчас</span>':'')+
+            ' <i>'+esc(c.d)+'</i></span>'+
+          '<svg class="wnchev" viewBox="0 0 24 24" aria-hidden="true">'+
+            '<path d="M7 10l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" '+
+            'stroke-linecap="round" stroke-linejoin="round"/></svg>'+
+        '</button>'+
+        '<div class="wnbody"><ul>'+c.b.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join("")+'</ul></div>'+
       '</div>';
     }).join("");
+    list.addEventListener("click", function(e){
+      const h=e.target.closest(".wnhead");
+      if(!h) return;
+      const it=h.parentNode;
+      const on=!it.classList.contains("open");
+      it.classList.toggle("open", on);
+      h.setAttribute("aria-expanded", on? "true":"false");
+    });
     list.setAttribute("data-done","1");
   }
   function open(){
@@ -16672,8 +16776,14 @@ window.__LEARN={
   if(cl) cl.addEventListener("click", close);
   const wm=document.getElementById("wnMark");
   if(wm) wm.addEventListener("click", function(){ close(); goHome(); });
+  /* 5.8.12: из «О приложении» в настройки — и обратно. Раньше кнопка
+     «Настройки» уводила на экран, откуда в «О приложении» было не вернуться. */
   const st=document.getElementById("wnSettings");
-  if(st) st.addEventListener("click", function(){ close(); if(window.__openSettings) window.__openSettings(); });
+  if(st) st.addEventListener("click", function(){
+    close();
+    window.__aboutReturn=true;
+    if(window.__openSettings) window.__openSettings();
+  });
   document.addEventListener("keydown", function(e){
     if(e.key==="Escape" && !scr.hidden) close();
   });
@@ -18553,6 +18663,14 @@ window.__LEARN={
     if(!acts) return;
     acts.hidden = !(strokes.length>0);
   }
+  /* 5.8.12: пока палец ведёт по листу, капсула ввода (фото, микрофон,
+     клавиатура) тает — она закрывала нижнюю часть записи. Отпустил палец —
+     капсула возвращается как была. */
+  function dimDock(on){
+    const bar=document.getElementById("dockBar");
+    if(!bar) return;
+    bar.classList.toggle("nb-dim", !!on);
+  }
   function hideFly(save){
     if(fly && !fly.hidden) fly.hidden=true;
     if(save){ try{ localStorage.setItem("reshatel.nbHint","off"); }catch(e){} }
@@ -18573,6 +18691,7 @@ window.__LEARN={
        n:0, t0:(window.performance? performance.now(): Date.now()),
        touch:(e.pointerType!=="mouse")};
     try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    dimDock(true);
     mode="draw";
     last={ c:pen(), w:(e.pointerType==="pen"? 2.6 : 2.4), p:[pt] };
     strokes.push(last);
@@ -18626,6 +18745,7 @@ window.__LEARN={
       }
     }
     g=null; mode=null; last=null;
+    dimDock(false);
     refreshActs();
   };
   cv.addEventListener("pointerup", stop);
