@@ -18834,8 +18834,12 @@ window.__LEARN={
               g.lineTo(pts[j][0], pts[j][1]);
               drew=true;
             }else{
-              const over=(sl*part-(walked-seg))/(seg||1);
-              g.lineTo(pts[j-1][0]+dx*Math.max(0,over), pts[j-1][1]+dy*Math.max(0,over));
+              /* доля текущего отрезка, которую надо дорисовать: считается от
+                 уже пройденного, а не «минус отрезок». Со старым выражением
+                 линия дорисовывалась на лишний сегмент, то есть вдвое длиннее
+                 себя, и заезжала на соседний знак. */
+              const over=Math.min(1, Math.max(0, (sl*part-walked)/(seg||1)));
+              g.lineTo(pts[j-1][0]+dx*over, pts[j-1][1]+dy*over);
               drew=true;
               break;
             }
@@ -18917,9 +18921,9 @@ window.__LEARN={
       for(let j=1;j<pts.length;j++){
         const seg=Math.hypot(pts[j][0]-pts[j-1][0], pts[j][1]-pts[j-1][1]);
         if(walked+seg>=sl*part){
-          const over=(sl*part-(walked-seg))/(seg||1);
-          ovctx.lineTo(pts[j-1][0]+(pts[j][0]-pts[j-1][0])*Math.max(0,over),
-                       pts[j-1][1]+(pts[j][1]-pts[j-1][1])*Math.max(0,over));
+          const over=Math.min(1, Math.max(0, (sl*part-walked)/(seg||1)));
+          ovctx.lineTo(pts[j-1][0]+(pts[j][0]-pts[j-1][0])*over,
+                       pts[j-1][1]+(pts[j][1]-pts[j-1][1])*over);
           drew=true; break;
         }
         ovctx.lineTo(pts[j][0], pts[j][1]);
@@ -19002,9 +19006,11 @@ window.__LEARN={
     let ans=(built.answer!==undefined && built.answer!==null)? String(built.answer).trim():"";
     if(!ans) return [];
     if(isEq){
+      /* решатель для уравнения уже отдаёт ответ в виде «x = 1/10».
+         Раньше я приписывал «x =» второй раз и получалось «x = x = 1/10». */
+      if(ans.indexOf("=")>=0 || /[a-zа-яё]/i.test(ans)) return [ans.replace(/\s+/g," ").trim()];
       const v=(String(picked.left).match(/[a-z]/i)||["x"])[0];
-      ans=v+" = "+ans;
-      return [ans];
+      return [v+" = "+ans];
     }
     return eqDone(picked)? [ans] : ["=", ans];
   }
@@ -19024,7 +19030,9 @@ window.__LEARN={
       return w;
     };
     while(size>16 && need(size)>W-left-14) size-=1;
-    let y=hasInk? b.y1 + Math.round(hInk*0.52) : Math.round(size*1.4);
+    /* ответ — на полстроки ниже чернил, а не на пол-высоты почерка:
+       иначе при крупном письме он уезжает вниз страницы */
+    let y=hasInk? b.y1 + Math.round(size*0.62) : Math.round(size*1.4);
     if(y+size*1.15>H-4) y=Math.max(4, H-size*1.2);
     const out=[];
     let x=left;
@@ -19470,6 +19478,7 @@ window.__LEARN={
   }
 
   window.__noteBoard={check:check, getStrokes:function(){ return strokes; },
+    _strokeRun:strokeRun, _clearOv:clearOv, _metrics:runMetrics, _poly:toPolylines,
     clear:function(){ strokes=[]; redraw(); clearSol(); refreshActs(); },
     write:writeInto, _steps:buildSteps, _can:canHandwrite};
 })();
