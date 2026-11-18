@@ -18686,7 +18686,9 @@ window.__LEARN={
       const avail=Math.max(80, box.width-6);
       let size=opt.size||34;
       let pl=toPolylines(text, size, 0, 0);
-      while(pl.width>avail-4 && size>18){
+      /* запас 12 px: наклон и дрожание штриха выходят за расчётную ширину,
+         и последняя цифра упиралась в край листа */
+      while(pl.width>avail-14 && size>15){
         size-=2;
         pl=toPolylines(text, size, 0, 0);
       }
@@ -18769,6 +18771,23 @@ window.__LEARN={
     return {left:(p[0]||""), right:p.length>1? p.slice(1).join("="):""};
   }
 
+  /* Равенство на лист выводится только после проверки числом: решатель
+     иногда теряет скобки в итоговой строке («190 − 37 + 26 = 127»), и такая
+     строка на бумаге — прямая ошибка. Неверную строку не пишем. */
+  function normMath(t){
+    return String(t).replace(/\u2212/g,"-").replace(/[\u00b7\u00d7\u2715]/g,"*")
+      .replace(/\u00f7/g,"/").replace(/\s+/g,"");
+  }
+  function eqOk(t){
+    const ai=window.__boardAI;
+    if(!ai || !ai._num) return true;
+    const s=normMath(t);
+    if(s.split("=").length!==2) return true;
+    let v="na";
+    try{ v=ai._num(s); }catch(e){ return true; }
+    return v!=="false";       /* «false» — арифметика не сходится, не пишем */
+  }
+
   function buildSteps(expr){
     let r;
     try{ r=window.__solve(expr); }
@@ -18786,6 +18805,14 @@ window.__LEARN={
       if(/^Записываем/.test(dec(s.h)) && !lines.length) return;
       const prev=lines[lines.length-1];
       if(prev && prev.text===eq) return;            /* повторы не нужны */
+      if(!eqOk(eq)){
+        /* последнюю строку спасём: напишем исходный пример и ответ */
+        if(i===src.length-1 && r.answer){
+          const src2=String(expr).replace(/\s+/g,"");
+          lines.push({text:src2+" = "+dec(r.answer), cap:caption(s.h), last:true});
+        }
+        return;
+      }
       lines.push({text:eq, cap:caption(s.h), last:(i===src.length-1)});
     });
     if(!lines.length && r.answer){
