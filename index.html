@@ -3051,7 +3051,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-ink canvas{display:block;max-width:100%}
 /* .nb выступает за поля .app, а строка «прочитал: …» должна остаться в
    пределах экрана — иначе она обрезается слева */
-.nb-sol{max-width:100%;overflow-x:hidden;padding:0 16px}
+.nb-sol{max-width:100%;overflow-x:hidden;padding:0 16px;
+  /* последнюю строку решения не должно съедать нижнее меню */
+  margin-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .nb-cap{font-size:11px;line-height:1.25;color:var(--ink-dim);margin:-6px 0 7px;padding-left:3px;
   opacity:0;transform:translateY(-2px);transition:opacity .2s,transform .2s}
 .nb-cap.on{opacity:1;transform:none}
@@ -3347,7 +3349,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.10";
+const APP_VERSION="5.8.11";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18704,18 +18706,41 @@ window.__LEARN={
     return true;
   }
 
+  /* Границы знака берём из его же линий, а не из таблицы ADV: табличная
+     ширина не совпадала с нарисованным, и соседние знаки налезали друг на
+     друга («=» под цифрой, «/» под единицей). */
+  const GB={};
+  function gbox(ch){
+    if(GB[ch]) return GB[ch];
+    const g=G[ch];
+    if(!g) return {x0:0, x1:0.6, y0:0, y1:1};
+    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    g.forEach(function(st){
+      st.forEach(function(p){
+        if(p[0]<x0)x0=p[0]; if(p[0]>x1)x1=p[0];
+        if(p[1]<y0)y0=p[1]; if(p[1]>y1)y1=p[1];
+      });
+    });
+    GB[ch]={x0:x0, x1:x1, y0:y0, y1:y1};
+    return GB[ch];
+  }
+  const SPACE=0.30;      /* пробел в долях кегля */
+  const TRACK=0.09;      /* зазор между знаками */
+
   function layout(text, size){
     const parts=[];
     let x=0, seed=1;
     for(let i=0;i<text.length;i++){
       const ch=text[i];
-      if(ch===" "){ x+=ADV[" "]*size; continue; }
+      if(ch===" "){ x+=SPACE*size; continue; }
       const g=G[ch];
       if(!g) continue;
-      parts.push({ch:ch, g:g, x:x, size:size, seed:seed++});
-      x+=ADV[ch]*size;
+      const bx=gbox(ch);
+      /* знак ставим так, чтобы его левый край был ровно в курсоре */
+      parts.push({ch:ch, g:g, x:x-bx.x0*size, size:size, seed:seed++});
+      x+=(bx.x1-bx.x0+TRACK)*size;
     }
-    return {parts:parts, width:x};
+    return {parts:parts, width:Math.max(0,x-TRACK*size)};
   }
 
   /* превращаем разложенный текст в линии экрана, с наклоном и неровностью */
@@ -18851,15 +18876,17 @@ window.__LEARN={
      каждая отдельно — из-за этого зелёные шаги налезали друг на друга. */
   function runMetrics(text, size){
     const pl=toPolylines(text, size, 0, 0, {still:true});
-    let x1=0, y1=0, total=0;
+    let x0=1e9, x1=0, y1=0, total=0;
     pl.strokes.forEach(function(st){
       total+=strokeLen(st);
       st.forEach(function(p){
+        if(p[0]<x0) x0=p[0];
         if(p[0]>x1) x1=p[0];
         if(p[1]>y1) y1=p[1];
       });
     });
-    return {width:Math.max(1,x1), height:Math.max(1,y1), len:total||1};
+    if(!isFinite(x0)) x0=0;
+    return {left:x0, width:Math.max(1,x1-x0), right:x1, height:Math.max(1,y1), len:total||1};
   }
   function fitSize(text, size, maxW){
     let sz=Math.max(12, Math.round(size));
@@ -19369,7 +19396,7 @@ window.__LEARN={
 
     /* У уравнения по шагам видно, откуда взялся ответ; у примера шаги
        не нужны — ответ уже написан на листе. */
-    const lines=isEq? built.lines.slice(0, 8) : [];
+    const lines=isEq? built.lines.slice(0, 4) : [];
     for(const ln of lines){
       const row=document.createElement("div");
       row.className="nb-line"+(ln.last? " last":"");
@@ -19384,7 +19411,7 @@ window.__LEARN={
       row.appendChild(cap);
       sol.appendChild(row);
       if(canHandwrite(ln.text)){
-        await writeInto(cvl, ln.text, {size:ln.last? 36:33, still:true,
+        await writeInto(cvl, ln.text, {size:ln.last? 30:28, still:true,
                                        color:ln.last? answerPen() : ""});
       }else{
         cvl.style.display="none";
