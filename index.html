@@ -3043,8 +3043,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-chip{font:inherit;font-size:12px;font-weight:700;padding:5px 9px;border-radius:var(--r-pill);
   border:1px solid rgba(20,25,45,.14);background:rgba(255,255,255,.9);color:#3d4350;cursor:pointer}
 .nb-line{margin:0}
-.nb-ink{position:relative;margin:0 -2px}
-.nb-ink canvas{display:block;width:100%}
+.nb-ink{position:relative;margin:0;min-width:0;max-width:100%}
+.nb-ink canvas{display:block;max-width:100%}
+.nb-sol{max-width:100%;overflow-x:hidden}
 .nb-cap{font-size:11px;line-height:1.25;color:var(--ink-dim);margin:-6px 0 7px;padding-left:3px;
   opacity:0;transform:translateY(-2px);transition:opacity .2s,transform .2s}
 .nb-cap.on{opacity:1;transform:none}
