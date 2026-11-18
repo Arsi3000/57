@@ -2962,10 +2962,16 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
   .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:240px;max-height:760px}
 }
 @media (max-width:900px) and (orientation:landscape){
-  .nb-write{height:calc(100vh - 196px);height:calc(100dvh - 196px);min-height:170px;max-height:none}
+  /* в горизонтали экран низкий: доска забирает не всё, иначе ответ уходит
+     под капсулу «Проверить» — оставляем полосу под решение */
+  .nb-write{height:calc(100vh - 330px);height:calc(100dvh - 330px);min-height:110px;max-height:none}
 }
 #nbCanvas{display:block;width:100%;height:100%;background:transparent;
   touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
+/* Ответ, дописанный на той же строке после «=». Слой лежит поверх чернил
+   ученика, но касаний не ловит и в чтение не попадает. */
+#nbOver{position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;z-index:3}
 
 /* плавающие кнопки — только когда есть что проверять */
 .nb-acts{position:absolute;right:2px;bottom:4px;display:flex;align-items:center;gap:5px;
@@ -3076,6 +3082,9 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
     </div>
     <div class="nb-write" id="nbWrite">
       <canvas id="nbCanvas" aria-label="Пишите пример от руки прямо на листе"></canvas>
+      <!-- слой для ответа, дописанного прямо после «=»; отдельный от чернил
+           ученика, чтобы следующая проверка не прочитала наш ответ -->
+      <canvas id="nbOver" aria-hidden="true"></canvas>
       <div class="nb-acts" id="nbActs" hidden>
         <button type="button" class="nb-a" id="nbUndo" title="Отменить штрих" aria-label="Отменить штрих">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h6a4 4 0 0 1 0 8H8M8 4L5 7l3 3"/></svg>
@@ -3331,7 +3340,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.3";
+const APP_VERSION="5.8.4";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18483,6 +18492,10 @@ window.__LEARN={
 
   const cv=$("nbCanvas"), sol=$("nbSol"), fly=$("nbFly"), acts=$("nbActs");
   const ctx=cv.getContext("2d");
+  const ov=$("nbOver"), ovctx=ov? ov.getContext("2d") : null;
+  /* ответ, дописанный прямо на листе: {text,size,x,y} — перерисовывается
+     при изменении размера и стирается, как только человек пишет заново */
+  let outs=[];
   let strokes=[], mode=null, last=null, dpr=1, busy=false;
 
   /* ---------- перо ---------- */
@@ -18503,7 +18516,12 @@ window.__LEARN={
     dpr=Math.min(window.devicePixelRatio||1, 2);
     cv.width=Math.max(1,Math.round(r.width*dpr));
     cv.height=Math.max(1,Math.round(r.height*dpr));
+    if(ov){
+      ov.width=cv.width; ov.height=cv.height;
+      ov.style.width=r.width+"px"; ov.style.height=r.height+"px";
+    }
     redraw();
+    paintOuts();
   }
   function redraw(){
     ctx.setTransform(dpr,0,0,dpr,0,0);
@@ -18533,6 +18551,7 @@ window.__LEARN={
   function clearSol(){
     if(!sol) return;
     sol.hidden=true; sol.innerHTML="";
+    clearInkOut();
   }
 
   /* ---------- письмо + прокрутка одним пальцем ---------- */
@@ -18791,6 +18810,110 @@ window.__LEARN={
     });
   }
 
+  /* ================= ответ прямо на листе =================
+     Короткий пример и запись с открытым «=» не надо растягивать в столбик:
+     ответ дописывается там же, где человек писал, — сразу после «=» или
+     сразу за последним знаком. Чернила ученика при этом не трогаются:
+     вывод живёт на отдельном слое, и следующая проверка его не читает. */
+  function inkBox(list){
+    let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+    (list||[]).forEach(function(st){
+      st.p.forEach(function(p){
+        if(p[0]<x0)x0=p[0]; if(p[0]>x1)x1=p[0];
+        if(p[1]<y0)y0=p[1]; if(p[1]>y1)y1=p[1];
+      });
+    });
+    return {x0:x0,x1:x1,y0:y0,y1:y1};
+  }
+  function inkAt(text,size,x,y,animate){
+    if(!ovctx) return null;
+    const pl=toPolylines(text, size, 0, 0);
+    if(!pl || !pl.strokes.length) return null;
+    const total=pl.strokes.reduce(function(a,st){ return a+strokeLen(st); },0)||1;
+    function paint(k){
+      ovctx.setTransform(dpr,0,0,dpr,0,0);
+      ovctx.save();
+      ovctx.translate(x, y);
+      ovctx.lineCap="round"; ovctx.lineJoin="round";
+      ovctx.strokeStyle=pen(); ovctx.lineWidth=2.6;
+      let want=total*k, acc=0;
+      for(let i=0;i<pl.strokes.length;i++){
+        const pts=pl.strokes[i], sl=strokeLen(pts);
+        if(acc>=want) break;
+        const part=Math.min(1,(want-acc)/(sl||1));
+        ovctx.beginPath();
+        ovctx.moveTo(pts[0][0], pts[0][1]);
+        let walked=0, drew=false;
+        for(let j=1;j<pts.length;j++){
+          const seg=Math.hypot(pts[j][0]-pts[j-1][0], pts[j][1]-pts[j-1][1]);
+          if(walked+seg>=sl*part){
+            const over=(sl*part-(walked-seg))/(seg||1);
+            ovctx.lineTo(pts[j-1][0]+(pts[j][0]-pts[j-1][0])*Math.max(0,over),
+                         pts[j-1][1]+(pts[j][1]-pts[j-1][1])*Math.max(0,over));
+            drew=true; break;
+          }
+          ovctx.lineTo(pts[j][0], pts[j][1]);
+          walked+=seg;
+        }
+        if(!drew) ovctx.lineTo(pts[pts.length-1][0], pts[pts.length-1][1]);
+        ovctx.stroke();
+        acc+=sl;
+      }
+      ovctx.restore();
+    }
+    if(!animate){ paint(1); return {w:pl.width, h:size}; }
+    const dur=Math.min(1100, Math.max(260, total*1.0));
+    const t0=performance.now();
+    return new Promise(function(done){
+      function frame(now){
+        const k=Math.min(1,(now-t0)/dur);
+        ovctx.setTransform(dpr,0,0,dpr,0,0);
+        ovctx.clearRect(0,0,ov.width/dpr, ov.height/dpr);
+        outs.forEach(function(o,idx){ if(idx<outs.length-1) inkAt(o.text,o.size,o.x,o.y,false); });
+        paint(k);
+        if(k<1) requestAnimationFrame(frame); else done({w:pl.width,h:size});
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+  function paintOuts(){
+    if(!ovctx) return;
+    ovctx.setTransform(dpr,0,0,dpr,0,0);
+    ovctx.clearRect(0,0,ov.width/dpr, ov.height/dpr);
+    outs.forEach(function(o){ inkAt(o.text, o.size, o.x, o.y, false); });
+  }
+  function clearInkOut(){ outs=[]; paintOuts(); }
+
+  /* Куда ставить ответ: сразу после «=», если он написан, иначе сразу за
+     последним знаком записи. Кегль — по высоте чернил, чтобы ответ был
+     того же роста, что и почерк. */
+  function inkPlace(text, size){
+    const b=inkBox(strokes);
+    if(!isFinite(b.x0)) return null;
+    const marks=eqMarks(strokes).sort(function(a,c){ return c.cx-a.cx; });
+    const H=Math.max(18, Math.min(48, (b.y1-b.y0)*0.42));
+    let size0=Math.max(20, Math.min(46, H));
+    let x, y;
+    if(marks.length){
+      x=marks[0].right+10;
+      y=marks[0].y-size0*0.62;
+    }else{
+      x=b.x1+12;
+      y=(b.y0+b.y1)/2-size0*0.55;
+    }
+    const W=cv.width/dpr;
+    let pl=toPolylines(text, size0, 0, 0);
+    while(x+pl.width>W-6 && size0>16){
+      size0-=2;
+      pl=toPolylines(text, size0, 0, 0);
+    }
+    if(x+pl.width>W-4){
+      /* не влезает справа — пишем новой строкой под записью */
+      x=8; y=b.y1+8; size0=Math.max(20,size0);
+    }
+    return {x:x, y:y, size:size0};
+  }
+
   /* ================= шаги из решателя ================= */
   function dec(s){
     return String(s||"")
@@ -18813,9 +18936,11 @@ window.__LEARN={
      иначе решатель честно отвечает «в уравнении нет неизвестного» */
   function splitEq(t){
     let s=String(t||"").replace(/[\u0445\u0425]/g,"x").replace(/\s+/g,"").trim();
+    const hadEq=s.indexOf("=")>=0;
     s=s.replace(/=+$/,"");
     const p=s.split("=");
-    return {left:(p[0]||""), right:p.length>1? p.slice(1).join("="):""};
+    return {left:(p[0]||""), right:p.length>1? p.slice(1).join("="):"", hadEq:hadEq,
+            atEnd:/=$/.test(String(t||"").replace(/\s+/g,""))};
   }
 
   /* Равенство на лист выводится только после проверки числом: решатель
@@ -18906,7 +19031,8 @@ window.__LEARN={
         if(gap<3 || gap>Math.max(9, big*0.55)) continue;
         if(Math.abs(a.cx-b.cx)>Math.max(8, big*0.35)) continue;   /* разные места по x */
         if(Math.min(a.w,b.w) < big*0.5) continue;                 /* очень разной длины */
-        out.push((a.cx+b.cx)/2);
+        out.push({cx:(a.cx+b.cx)/2, y:(a.y+b.y)/2, w:big,
+                  right:Math.max(a.cx+a.w/2, b.cx+b.w/2)});
       }
     }
     return out;
@@ -18947,7 +19073,7 @@ window.__LEARN={
       cands.forEach(function(c){
         const frac=c.i/Math.max(1, s.length);
         marks.forEach(function(mx){
-          const d=Math.abs(frac-(mx-x0)/span);
+          const d=Math.abs(frac-(mx.cx-x0)/span);
           if(d<bd){ bd=d; best=c; }
         });
       });
@@ -19047,10 +19173,29 @@ window.__LEARN={
   async function render(built, variants, picked, verdict){
     sol.hidden=false;
     sol.innerHTML="";
+    outs=[];
+    if(ovctx){ ovctx.setTransform(dpr,0,0,dpr,0,0); ovctx.clearRect(0,0,ov.width/dpr,ov.height/dpr); }
+
+    /* Ответ пишем прямо на листе, когда растягивать нечего: короткий пример
+       (один шаг) или запись, где человек уже поставил «=». Столбик на восемь
+       строк ради «10 − 2 = 8» — это то, на что он и жаловался. */
+    const shortOne=(built.lines.length<=1) || (picked && picked.atEnd && !picked.right);
+    const answerText=(built.answer!==undefined && built.answer!=="")? String(built.answer): "";
+    let onBoard=false;
+    if(shortOne && answerText && !hasLetter(picked.left||"") && strokes.length){
+      const need=picked.atEnd? answerText : ("="+answerText);
+      const place=inkPlace(need, 0);
+      if(place){
+        outs.push({text:need, size:place.size, x:place.x, y:place.y});
+        await inkAt(need, place.size, place.x, place.y, true);
+        onBoard=true;
+      }
+    }
 
     const head=document.createElement("div");
     head.className="nb-head";
-    let hh='<span class="nb-read">прочитал: <b>'+esc(prettyEq(picked.left+(picked.right? "="+picked.right:"")))+'</b></span>';
+    const readTxt=picked.left+(picked.right? "="+picked.right : (picked.atEnd? "=" : ""));
+    let hh='<span class="nb-read">прочитал: <b>'+esc(prettyEq(readTxt))+'</b></span>';
     if(verdict) hh+='<span class="nb-verdict'+(verdict==="Верно"?" ok":" bad")+'">'+esc(verdict)+'</span>';
     head.innerHTML=hh;
     if(variants.length>1){
@@ -19077,7 +19222,7 @@ window.__LEARN={
     sol.appendChild(head);
     hideFly(true);
 
-    const lines=built.lines.slice(0, 8);
+    const lines=onBoard? [] : built.lines.slice(0, 8);
     for(const ln of lines){
       const row=document.createElement("div");
       row.className="nb-line"+(ln.last? " last":"");
@@ -19103,10 +19248,16 @@ window.__LEARN={
       cap.classList.add("on");
       if(ln!==lines[lines.length-1]) await new Promise(function(r){ setTimeout(r, 110); });
     }
-    /* последняя строка должна быть видна: лист мог уехать вниз */
+    /* В низком окне (телефон боком) решение уезжало под капсулу «Проверить»:
+       поднимаем лист так, чтобы первая строка ответа была выше неё. */
     try{
+      const h=window.innerHeight;
+      if(h<560){
+        const top=sol.getBoundingClientRect().top;
+        if(top>h*0.34) window.scrollBy({top:top-h*0.34, behavior:"smooth"});
+      }
       const r=lines.length? sol.lastElementChild.getBoundingClientRect() : null;
-      if(r && r.bottom > window.innerHeight-90) window.scrollBy({top:r.bottom-(window.innerHeight-90), behavior:"smooth"});
+      if(lines.length && r && r.bottom > h-90) window.scrollBy({top:r.bottom-(h-90), behavior:"smooth"});
     }catch(e){}
   }
 
