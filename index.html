@@ -3347,7 +3347,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.8";
+const APP_VERSION="5.8.9";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18942,51 +18942,59 @@ window.__LEARN={
     return r;
   }
 
-  /* Ответ короткого примера — на строке примера, с зазором 20 px от самой
-     правой точки чернил и никогда за краем листа. Если справа совсем тесно,
-     он идёт строкой ниже по левому краю примера, но не в угол. */
-  function answerAfterInk(text){
-    const b=inkBox(strokes);
-    if(!isFinite(b.x0)) return null;
-    const W=cv.width/dpr, H=cv.height/dpr;
-    const hInk=Math.max(22, b.y1-b.y0);
-    const base=Math.max(22, Math.min(34, hInk*0.5));
-    const xR=Math.max(b.x1, inkRight(strokes))+20;
-    let sz=fitSize(text, base, Math.max(30, W-xR-10));
-    if(sz>=19 && xR+runMetrics(text,sz).width<=W-8){
-      return {text:text, x:xR, y:(b.y0+b.y1)/2-sz*0.5, size:sz, color:answerPen()};
-    }
-    sz=fitSize(text, Math.min(30, base), Math.max(60, W-b.x0-24));
-    let y=b.y1+10;
-    if(y+sz*1.15>H-4) y=Math.max(4, H-sz*1.2);
-    return {text:text, x:Math.max(6,b.x0), y:y, size:sz, color:answerPen()};
+  /* ================= ОДНО ПРАВИЛО ДЛЯ ОТВЕТА =================
+     Договорились так:
+     • телефон вертикально — ответ пишется СТРОКОЙ НИЖЕ записи, слева под
+       началом примера. Если «=» у человека уже стоит — только число,
+       если нет — «= число».
+     • телефон горизонтально — справа в конце записи, на той же строке;
+       если там тесно, ответ сдвигается ниже, но не в угол.
+     Никакой другой раскладки нет: одно место, предсказуемое. */
+  function isLandscape(){
+    return cv.width > cv.height*1.15;
   }
-
-  /* Уравнение: шаги зелёным прямо под примером. Каждая строка подбирается
-     по ширине отдельно, а шаг между строками берётся двойной от её высоты —
-     поэтому строки не могут слипнуться. Больше трёх шагов на лист не лезет,
-     остальное показывает блок под доской. */
-  function stepsOnBoard(built){
+  /* «=» на листе: в конце записи, где-то в прочитанном или парой черт */
+  function eqOnBoard(picked){
+    try{
+      if(picked && (picked.atEnd || picked.hadEq)) return true;
+      return eqMarks(strokes).length>0;
+    }catch(e){ return false; }
+  }
+  function answerLine(picked, built){
+    const isEq=!!(picked && hasLetter(picked.left||""));
+    const ans=(built.answer!==undefined && built.answer!==null)? String(built.answer):"";
+    if(!ans) return "";
+    if(isEq){
+      /* у уравнения ответ — «x = 1», а не голое число */
+      if(/[a-zа-яё]/i.test(ans)) return ans.replace(/\s+/g," ").trim();
+      const v=(String(picked.left).match(/[a-z]/i)||["x"])[0];
+      return v+" = "+ans;
+    }
+    return (eqOnBoard(picked)? "" : "= ")+ans;
+  }
+  function placeAnswer(text, picked){
     const b=inkBox(strokes);
     const W=cv.width/dpr, H=cv.height/dpr;
-    const rows=(built.lines||[]).map(function(l){ return l.text; })
-                 .filter(Boolean).slice(0,3);
-    if(!rows.length) return [];
-    const hasInk=isFinite(b.y1);
-    const left=Math.max(6, Math.min(hasInk? b.x0 : 8, 24));
-    let size=Math.max(20, Math.min(28, hasInk? (b.y1-b.y0)*0.55 : 24));
-    const top=hasInk? b.y1+size*1.15 : size*1.6;
-    while(size>15 && top + rows.length*size*2.0 > H-6) size-=1;
-    const out=[];
-    let y=top;
-    for(let i=0;i<rows.length;i++){
-      const sz=fitSize(rows[i], size, W-left-16);
-      if(sz<13) break;
-      if(y+sz*1.2>H-2) break;
-      out.push({text:rows[i], size:sz, x:left, y:y, color:answerPen()});
-      y+=sz*2.0;
+    const hasInk=isFinite(b.x0);
+    const hInk=hasInk? Math.max(24, b.y1-b.y0) : 34;
+    let size=Math.max(22, Math.min(36, hInk*0.5));
+    const left=hasInk? Math.max(6, b.x0) : 10;
+
+    if(isLandscape() && hasInk){
+      /* горизонтально: в конце записи, на её строке */
+      const xR=Math.max(b.x1, inkRight(strokes))+18;
+      let sz=fitSize(text, size, Math.max(40, W-xR-10));
+      if(sz>=18 && xR+runMetrics(text,sz).width<=W-8){
+        return [{text:text, x:xR, y:(b.y0+b.y1)/2-sz*0.5, size:sz, color:answerPen()}];
+      }
     }
-    return out;
+
+    /* вертикально (и запасной случай): строкой ниже записи, слева */
+    let sz=fitSize(text, size, W-left-16);
+    if(sz<18){ sz=fitSize(text, Math.max(20,size*0.8), W-left-16); }
+    let y=hasInk? b.y1+Math.round(hInk*0.55) : Math.round(size*1.5);
+    if(y+sz*1.2>H-4) y=Math.max(4, H-sz*1.25);
+    return [{text:text, x:left, y:y, size:sz, color:answerPen()}];
   }
 
   /* ================= шаги из решателя ================= */
@@ -19267,30 +19275,18 @@ window.__LEARN={
     const hasOp=/[+\-\u2212*\u00d7\u00f7:\/]/.test(picked.left||"");
     const answerText=(built.answer!==undefined && built.answer!=="")? String(built.answer): "";
     let onBoard=false;
-    if(!strokes.length){
-      onBoard=false;
-    }else if(isEq){
-      const placed=stepsOnBoard(built);
-      if(placed.length){
-        outs=placed;
-        for(let i=0;i<outs.length;i++) await animOut(outs[i]);
-        onBoard=true;
-      }
-    }else if(!hasOp){
+    if(strokes.length && !isEq && !hasOp){
       /* В записи нет ни одного знака действия — дописывать «ответ» к одному
          числу бессмысленно: видно, что распознавание потеряло знаки. */
       say("Вижу только одно число. Напишите знак и второе число крупнее — или наберите пример в поле сверху.","err");
       return;
-    }else if(answerText){
-      /* «=» уже стоит на листе — второй раз его не пишем. Признаков три:
-         знак в конце записи, знак вообще был в прочитанном, или на листе
-         нашлась пара горизонтальных черт. */
-      const eqOnBoard=(eqMarks(strokes).length>0);
-      const need=(picked.atEnd || picked.hadEq || eqOnBoard)? answerText : ("="+answerText);
-      const place=answerAfterInk(need);
-      if(place){
-        outs.push(place);
-        await animOut(place);
+    }
+    const line=answerLine(picked, built);
+    if(strokes.length && line){
+      const placed=placeAnswer(line, picked);
+      if(placed && placed.length){
+        outs=placed;
+        for(let i=0;i<outs.length;i++) await animOut(outs[i]);
         onBoard=true;
       }
     }
@@ -19325,10 +19321,9 @@ window.__LEARN={
     sol.appendChild(head);
     hideFly(true);
 
-    let lines=onBoard? [] : built.lines.slice(0, 8);
-    if(onBoard && isEq && built.lines.length>outs.length){
-      lines=built.lines.slice(outs.length, outs.length+5);
-    }
+    /* У уравнения по шагам видно, откуда взялся ответ; у примера шаги
+       не нужны — ответ уже написан на листе. */
+    const lines=isEq? built.lines.slice(0, 8) : [];
     for(const ln of lines){
       const row=document.createElement("div");
       row.className="nb-line"+(ln.last? " last":"");
