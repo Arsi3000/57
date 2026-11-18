@@ -2947,11 +2947,21 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
    с поиском и мешал писать — при вертикальном свайпе страница ехала вместе
    с рамкой. Теперь холст прозрачный и лежит поверх клетки листа: границ нет,
    видно только чернила. */
-.nb{position:relative;max-width:560px;margin:0 auto;width:100%;padding:0 2px}
+/* Доска — на всю ширину листа, без полей по краям: раньше справа и слева
+   оставалась узкая полоса, и запись у края выглядела обрезанной. */
+.nb{position:relative;max-width:none;margin:0;width:100%;padding:0}
 .nb-write{position:relative;height:186px;margin-top:2px}
+/* И на всю высоту экрана, которая остаётся между полем поиска и капсулой:
+   фиксированные 158 px обрезали столбик из нескольких строк. */
+@media (max-width:900px){
+  /* vh — запасной для старых браузеров, dvh — точный (без адресной строки) */
+  .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:240px;max-height:760px}
+}
+@media (max-width:900px) and (orientation:landscape){
+  .nb-write{height:calc(100vh - 196px);height:calc(100dvh - 196px);min-height:170px;max-height:none}
+}
 #nbCanvas{display:block;width:100%;height:100%;background:transparent;
   touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
-@media(max-width:420px){ .nb-write{height:158px} }
 
 /* плавающие кнопки — только когда есть что проверять */
 .nb-acts{position:absolute;right:2px;bottom:4px;display:flex;align-items:center;gap:5px;
@@ -2963,13 +2973,17 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-acts[hidden]{display:none}
 /* Портрет: капсула уходит вниз, к ряду способов ввода. На листе она
    стояла посреди страницы и закрывала место для письма. */
-@media (max-width:640px) and (orientation:portrait){
+@media (max-width:900px){
   .nb-acts{position:fixed;left:auto;right:10px;
     bottom:calc(132px + env(safe-area-inset-bottom,0px));z-index:942;
     padding:5px;border-radius:16px;
     box-shadow:0 12px 26px -14px rgba(20,25,45,.55)}
   .nb-a{height:38px;min-width:36px}
   .nb-a.go{padding:0 15px;font-size:13px}
+}
+/* в горизонтальном положении экран низкий: капсула жмётся к ряду ввода вплотную */
+@media (max-width:900px) and (orientation:landscape){
+  .nb-acts{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
 }
 @keyframes nbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .nb-a{display:inline-flex;align-items:center;gap:6px;height:32px;min-width:32px;
@@ -3313,7 +3327,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.2";
+const APP_VERSION="5.8.3";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18861,7 +18875,87 @@ window.__LEARN={
     });
   }
 
+  /* ================= знак «=» =================
+     На доске «=» выходит двумя длинными чертами, и движок нередко читает
+     его как два минуса: «2x-4-0». Без «=» уравнение не решается вовсе —
+     человек видит «нет знака =» и не понимает, что не так. Пару черт
+     ищем геометрически и ставим «=» туда, где он стоял по ширине записи. */
+  function eqMarks(list){
+    const hs=[];
+    (list||[]).forEach(function(st){
+      let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+      st.p.forEach(function(p){
+        if(p[0]<x0)x0=p[0]; if(p[0]>x1)x1=p[0];
+        if(p[1]<y0)y0=p[1]; if(p[1]>y1)y1=p[1];
+      });
+      const w=x1-x0, h=y1-y0;
+      if(w<9) return;
+      if(h>Math.max(6, w*0.45)) return;      /* не горизонтальная черта */
+      hs.push({cx:(x0+x1)/2, y:(y0+y1)/2, w:w});
+    });
+    hs.sort(function(a,b){ return a.y-b.y; });
+    const out=[];
+    for(let i=0;i<hs.length;i++){
+      for(let j=i+1;j<hs.length;j++){
+        const a=hs[i], b=hs[j];
+        const gap=b.y-a.y, big=Math.max(a.w,b.w);
+        if(gap<3 || gap>Math.max(9, big*0.55)) continue;
+        if(Math.abs(a.cx-b.cx)>Math.max(8, big*0.35)) continue;   /* разные места по x */
+        if(Math.min(a.w,b.w) < big*0.5) continue;                 /* очень разной длины */
+        out.push((a.cx+b.cx)/2);
+      }
+    }
+    return out;
+  }
+
+  function hasLetter(t){ return /[a-zа-яё]/i.test(String(t||"")); }
+
+  /* Вставляем «=» во все места и оставляем те, что решаются как уравнение.
+     Слева буква обязана быть, справа — нет: иначе «2=x-4-0» тоже «решается». */
+  function repairEq(t){
+    const s=String(t||"");
+    if(!s || s.indexOf("=")>=0 || !hasLetter(s)) return null;
+    const cands=[];
+    for(let i=1;i<s.length;i++){
+      const v=s.slice(0,i)+"="+s.slice(i);
+      const parts=v.split("=");
+      if(!hasLetter(parts[0]) || hasLetter(parts[1])) continue;
+      let ans="";
+      try{ const r=window.__solve(v); ans=(r && r.answer!=null)? String(r.answer): ""; }
+      catch(e){ ans=""; }
+      if(ans!=="") cands.push({v:v, i:i});
+    }
+    if(!cands.length){
+      for(let i=1;i<s.length;i++){
+        const v=s.slice(0,i)+"="+s.slice(i);
+        try{ const r=window.__solve(v); if(r && r.answer!=null && String(r.answer)!=="") cands.push({v:v, i:i}); }
+        catch(e){}
+      }
+    }
+    if(!cands.length) return null;
+    const marks=eqMarks(strokes);
+    if(marks.length){
+      let x0=1e9,x1=-1e9;
+      strokes.forEach(function(st){ st.p.forEach(function(p){
+        if(p[0]<x0)x0=p[0]; if(p[0]>x1)x1=p[0]; }); });
+      const span=Math.max(1, x1-x0);
+      let best=cands[0], bd=1e9;
+      cands.forEach(function(c){
+        const frac=c.i/Math.max(1, s.length);
+        marks.forEach(function(mx){
+          const d=Math.abs(frac-(mx-x0)/span);
+          if(d<bd){ bd=d; best=c; }
+        });
+      });
+      return best.v;
+    }
+    return cands[0].v;
+  }
+
   /* ================= проверка ================= */
+    function prettyEq(t){
+    return String(t||"").replace(/(\d)\s*-\s*(?=[\d(x])/g,"$1 \u2212 ").replace(/\s+/g," ").trim();
+  }
   function esc(t){
     return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
@@ -18892,6 +18986,14 @@ window.__LEARN={
         }
         variants=(r.variants||[]).map(function(v){ return v.text; });
         if(!variants.length){ say("Не разобрал написанное. Напишите крупнее или наберите в поле.","err"); return; }
+        /* движок потерял «=» — ставим его обратно по чертам на листе */
+        const fixed=[];
+        variants.forEach(function(t){
+          let rep=null;
+          try{ rep=repairEq(t); }catch(e){}
+          if(rep && fixed.indexOf(rep)<0 && variants.indexOf(rep)<0) fixed.push(rep);
+        });
+        if(fixed.length) variants=fixed.concat(variants);
       }else if(typed){
         variants=[typed];
       }else{
@@ -18903,7 +19005,11 @@ window.__LEARN={
       for(let i=0;i<variants.length;i++){
         const parts=splitEq(variants[i]);
         if(!parts.left) continue;
-        const b=buildSteps(parts.left);
+        /* Уравнение решается целиком: если слева буква, отдаём решателю всю
+           запись с «=», иначе он честно отвечает «в уравнении нет
+           неизвестного» — из-за этого уравнения и не решались вовсе. */
+        const whole=(parts.right && hasLetter(parts.left))? (parts.left+"="+parts.right) : parts.left;
+        const b=buildSteps(whole);
         if(b && !b.err && b.lines && b.lines.length){
           /* ответ ученика сверяем только там, где он его правда написал */
           picked=parts; built=b; break;
@@ -18911,14 +19017,18 @@ window.__LEARN={
         if(!built) built=b;
       }
       if(!built || built.err || !built.lines || !built.lines.length){
-        say((built&&built.err)? ("Не понял пример: "+built.err+
-            ". Попробуйте записать иначе — например 3+12.") :
-            "Не получилось разобрать пример.","err");
+        const why=String((built&&built.err)||"").replace(/\.+$/,"");
+        if(/знака\s*«?=»?/i.test(why)){
+          say("Не разобрал знак «=». Напишите его двумя чёрточками пошире — или наберите пример в поле сверху.","err");
+        }else{
+          say((why? "Не понял пример: "+why+". " : "")+
+              "Попробуйте написать крупнее или наберите в поле сверху.","err");
+        }
         return;
       }
 
       let verdict="";
-      if(picked && picked.right && window.__boardAI && window.__boardAI._num){
+      if(picked && picked.right && !hasLetter(picked.left) && window.__boardAI && window.__boardAI._num){
         const v=window.__boardAI._num(picked.left+"="+picked.right);
         if(v==="true") verdict="Верно";
         else if(v==="false") verdict="Ответ неверный";
@@ -18936,7 +19046,7 @@ window.__LEARN={
 
     const head=document.createElement("div");
     head.className="nb-head";
-    let hh='<span class="nb-read">прочитал: <b>'+esc(picked.left+(picked.right? "="+picked.right:""))+'</b></span>';
+    let hh='<span class="nb-read">прочитал: <b>'+esc(prettyEq(picked.left+(picked.right? "="+picked.right:"")))+'</b></span>';
     if(verdict) hh+='<span class="nb-verdict'+(verdict==="Верно"?" ok":" bad")+'">'+esc(verdict)+'</span>';
     head.innerHTML=hh;
     if(variants.length>1){
