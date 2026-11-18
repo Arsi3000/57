@@ -2964,7 +2964,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 @media (max-width:900px) and (orientation:landscape){
   /* в горизонтали экран низкий: доска забирает не всё, иначе ответ уходит
      под капсулу «Проверить» — оставляем полосу под решение */
-  .nb-write{height:calc(100vh - 330px);height:calc(100dvh - 330px);min-height:110px;max-height:none}
+  /* доска в горизонтали — примерно треть низкого экрана, остальное уходит
+     под ответ и ряд способов ввода */
+  .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:150px;max-height:none}
 }
 #nbCanvas{display:block;width:100%;height:100%;background:transparent;
   touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
@@ -3341,7 +3343,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.4";
+const APP_VERSION="5.8.5";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
