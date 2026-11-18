@@ -18901,6 +18901,27 @@ window.__LEARN={
 
   /* рисуем строку с начала до доли k — так она «пишется».
      y — верх строки (знаки занимают ровно size по высоте). */
+  function strokeBar(x1, x2, y, thick, k, color){
+    if(!ovctx) return;
+    const len=Math.max(1, x2-x1), part=Math.max(0,Math.min(1,k));
+    ovctx.save();
+    ovctx.lineCap="round";
+    ovctx.strokeStyle=color||answerPen();
+    ovctx.lineWidth=thick||2;
+    ovctx.beginPath();
+    ovctx.moveTo(x1, y);
+    ovctx.lineTo(x1+len*part, y);
+    ovctx.stroke();
+    ovctx.restore();
+  }
+  function strokeSeg(o, k){
+    if(o.bar) strokeBar(o.x1, o.x2, o.y, o.thick, k, o.color);
+    else strokeRun(o.text, o.size, o.x, o.y, k, o.color);
+  }
+  function segLen(o){
+    if(o.bar) return Math.max(1, (o.x2-o.x1));
+    return runMetrics(o.text, o.size).len;
+  }
   function strokeRun(text, size, x, y, k, color){
     if(!ovctx) return;
     const pl=toPolylines(text, size, 0, 0, {still:true});
@@ -18943,7 +18964,7 @@ window.__LEARN={
   function paintOuts(){
     if(!ovctx) return;
     clearOv();
-    outs.forEach(function(o){ strokeRun(o.text,o.size,o.x,o.y,1,o.color); });
+    outs.forEach(function(o){ strokeSeg(o, 1); });
   }
   function clearInkOut(){ outs=[]; paintOuts(); }
 
@@ -18951,7 +18972,7 @@ window.__LEARN={
      уже написанные стоят. Сегменты — отдельные куски строки («=» и число
      раздельно), чтобы зазор между ними был настоящим, а не расчётным. */
   function animRun(list){
-    const lens=list.map(function(o){ return runMetrics(o.text,o.size).len; });
+    const lens=list.map(segLen);
     const total=lens.reduce(function(a,b){ return a+b; },0)||1;
     const dur=Math.min(1100, Math.max(240, total*0.9));
     const t0=performance.now();
@@ -18963,7 +18984,7 @@ window.__LEARN={
         for(let i=0;i<list.length;i++){
           const o=list[i];
           const part=Math.max(0, Math.min(1,(total*k-acc)/(lens[i]||1)));
-          if(part>0) strokeRun(o.text,o.size,o.x,o.y,part,o.color);
+          if(part>0) strokeSeg(o, part);
           acc+=lens[i];
           if(acc>total*k) break;
         }
@@ -18984,13 +19005,14 @@ window.__LEARN={
   }
 
   /* ================= ОДНО ПРАВИЛО ДЛЯ ОТВЕТА =================
-     Договорились:
-     • телефон вертикально — ответ СТРОКОЙ НИЖЕ записи, слева под началом
-       примера; «=» уже стоит у человека — пишем только число, нет — «= число»;
-     • телефон горизонтально — в конце записи на её строке, а если тесно —
-       тоже строкой ниже.
-     Части ответа («=» и число) ставятся по фактической ширине нарисованного,
-     а не по расчётной: поэтому наехать друг на друга они не могут. */
+     Место ответа задано человеком и не меняется:
+     • вертикально — строкой ниже записи, слева под началом примера;
+     • горизонтально — в конце записи на её строке.
+     «=» пишем только если его нет у человека.
+
+     Дроби выводятся настоящей дробью: целая часть, числитель сверху,
+     черта, знаменатель снизу. Раньше «2 3/10» писалось косой чертой в
+     строку — в тетради так не пишут. */
   function isLandscape(){
     return cv.width > cv.height*1.15;
   }
@@ -19000,82 +19022,104 @@ window.__LEARN={
       return eqMarks(strokes).length>0;
     }catch(e){ return false; }
   }
-  /* части ответа: «=» отдельно, число отдельно */
+  function spaceW(size){ return Math.round(size*0.30); }
+
+  /* Собираем ответ в блок: обычный текст + настоящие вертикальные дроби.
+     Числитель сверху, черта, знаменатель снизу — как пишут в тетради.
+     Высоты берутся по фактическим размерам цифр, а черта рисуется линией:
+     иначе она попадала внутрь знаменателя. */
+  function composeAnswer(text, size){
+    const parts=[];
+    const re=/(\d+)\s*\/\s*(\d+)/g;
+    const fs=Math.max(13, Math.round(size*0.66));
+    const z=Math.max(2, Math.round(size*0.11));   /* воздух вокруг черты */
+    let x=0, m, last=0, hasFrac=false, maxY=size;
+    const widthOf=function(t,sz){ return runMetrics(t,sz).width; };
+    const heightOf=function(t,sz){ return runMetrics(t,sz).height; };
+    function pushText(t, yTop){
+      if(!t) return;
+      t.split(" ").forEach(function(word,k){
+        if(k) x+=spaceW(size);
+        if(!word) return;
+        parts.push({text:word, size:size, x:x, y:yTop, kind:"t"});
+        x+=widthOf(word,size);
+      });
+    }
+    while((m=re.exec(text))!==null){
+      pushText(text.slice(last, m.index), 0);
+      const num=m[1], den=m[2];
+      const wNum=widthOf(num,fs), wDen=widthOf(den,fs);
+      const hNum=heightOf(num,fs), hDen=heightOf(den,fs);
+      const w=Math.max(wNum,wDen, Math.round(size*0.9));
+      const yBar=Math.round(hNum+z+1);
+      parts.push({text:num, size:fs, x:x+(w-wNum)/2, y:0, kind:"f"});
+      parts.push({bar:true, x1:x, x2:x+w, y:yBar, size:Math.max(2, size*0.07)});
+      parts.push({text:den, size:fs, x:x+(w-wDen)/2, y:yBar+2+z+1, kind:"f"});
+      maxY=Math.max(maxY, yBar+2+z+1+hDen);
+      x+=w; hasFrac=true; last=re.lastIndex;
+      if(last<text.length) x+=Math.round(spaceW(size)*0.7);
+    }
+    pushText(text.slice(last), 0);
+    const height=Math.round(maxY);
+    /* обычный текст — по центру дроби, иначе «=» висит наверху */
+    const shift=hasFrac? Math.round((height-size)/2) : 0;
+    parts.forEach(function(p){
+      if(p.kind==="t") p.y=shift;
+    });
+    return {parts:parts, width:Math.max(1,Math.round(x)), height:height};
+  }
+
+  /* Части ответа: «=» отдельно от числа, чтобы «=» не прилипал к цифре. */
   function answerSegs(picked, built){
     const isEq=!!(picked && hasLetter(picked.left||""));
     let ans=(built.answer!==undefined && built.answer!==null)? String(built.answer).trim():"";
-    if(!ans) return [];
+    if(!ans) return "";
     if(isEq){
-      /* решатель для уравнения уже отдаёт ответ в виде «x = 1/10».
-         Раньше я приписывал «x =» второй раз и получалось «x = x = 1/10». */
-      if(ans.indexOf("=")>=0 || /[a-zа-яё]/i.test(ans)) return [ans.replace(/\s+/g," ").trim()];
+      /* решатель для уравнения уже отдаёт «x = 1/10»: второй «x =» не нужен */
+      if(ans.indexOf("=")>=0 || /[a-zа-яё]/i.test(ans)) return ans.replace(/\s+/g," ").trim();
       const v=(String(picked.left).match(/[a-z]/i)||["x"])[0];
-      return [v+" = "+ans];
+      return v+" = "+ans;
     }
-    return eqDone(picked)? [ans] : ["=", ans];
+    return (eqDone(picked)? "" : "= ")+ans;
   }
-  /* вертикально: строка ниже записи, слева */
-  function belowInk(picked, segs){
+
+  /* Сдвигаем готовый блок в нужное место листа. */
+  function placeAnswer(picked, text){
     const b=inkBox(strokes);
     const W=cv.width/dpr, H=cv.height/dpr;
     const hasInk=isFinite(b.x0);
     const hInk=hasInk? Math.max(26, b.y1-b.y0) : 36;
     let size=Math.max(22, Math.min(34, hInk*0.46));
     const left=hasInk? Math.max(8, b.x0) : 12;
-    const gap=Math.round(size*0.34);
-    /* сначала подбираем кегль по суммарной ширине */
-    const need=function(sz){
-      let w=0;
-      segs.forEach(function(t,i){ w+=runMetrics(t,sz).width + (i? gap:0); });
-      return w;
+    const place=function(blk, ox, oy){
+      return blk.parts.map(function(p){
+        if(p.bar) return {bar:true, x1:p.x1+ox, x2:p.x2+ox, y:p.y+oy,
+                          thick:p.size, color:answerPen()};
+        return {text:p.text, size:p.size, x:p.x+ox, y:p.y+oy, color:answerPen()};
+      });
     };
-    while(size>16 && need(size)>W-left-14) size-=1;
-    /* ответ — на полстроки ниже чернил, а не на пол-высоты почерка:
-       иначе при крупном письме он уезжает вниз страницы */
-    let y=hasInk? b.y1 + Math.round(size*0.62) : Math.round(size*1.4);
-    if(y+size*1.15>H-4) y=Math.max(4, H-size*1.2);
-    const out=[];
-    let x=left;
-    segs.forEach(function(t){
-      const w=runMetrics(t,size).width;
-      out.push({text:t, size:size, x:x, y:y, color:answerPen()});
-      x+=w+gap;
-    });
-    return out;
-  }
-  /* горизонтально: сразу после последнего знака на его строке */
-  function afterInk(picked, segs){
-    const b=inkBox(strokes);
-    const W=cv.width/dpr, H=cv.height/dpr;
-    const hasInk=isFinite(b.x0);
-    const hInk=hasInk? Math.max(26, b.y1-b.y0) : 36;
-    let size=Math.max(22, Math.min(34, hInk*0.46));
-    const gap=Math.round(size*0.34);
-    const xR=(hasInk? Math.max(b.x1, inkRight(strokes)) : 12) + Math.round(hInk*0.35) + 10;
-    const need=function(sz){
-      let w=0;
-      segs.forEach(function(t,i){ w+=runMetrics(t,sz).width + (i? gap:0); });
-      return w;
-    };
-    while(size>16 && xR+need(size)>W-8) size-=1;
-    if(xR+need(size)>W-8) return null;      /* не влезает — уйдём строкой ниже */
-    const y=(hasInk? (b.y0+b.y1)/2 : size*1.2) - size*0.5;
-    const out=[];
-    let x=xR;
-    segs.forEach(function(t){
-      const w=runMetrics(t,size).width;
-      out.push({text:t, size:size, x:x, y:y, color:answerPen()});
-      x+=w+gap;
-    });
-    return out;
-  }
-  function placeAnswer(picked, segs){
-    if(!segs.length) return [];
-    if(isLandscape()){
-      const a=afterInk(picked, segs);
-      if(a) return a;
+
+    /* горизонтально: блок встаёт в конце записи, по её центру */
+    if(isLandscape() && hasInk){
+      let sz=size, blk;
+      const xR=Math.max(b.x1, inkRight(strokes))+Math.round(hInk*0.35)+8;
+      for(;;){
+        blk=composeAnswer(text,sz);
+        if(xR+blk.width<=W-8 || sz<=17) break;
+        sz-=1;
+      }
+      if(xR+blk.width<=W-8){
+        const y=Math.max(2, (b.y0+b.y1)/2-blk.height/2);
+        return place(blk, xR, y);
+      }
     }
-    return belowInk(picked, segs);
+
+    /* вертикально (и запасной случай): строкой ниже записи, слева */
+    let sz=size, blk=composeAnswer(text,sz);
+    while(sz>16 && blk.width>W-left-14){ sz-=1; blk=composeAnswer(text,sz); }
+    let y=hasInk? b.y1+Math.round(sz*0.62) : Math.round(sz*1.2);
+    if(y+blk.height>H-4) y=Math.max(4, H-blk.height-4);
+    return place(blk, left, y);
   }
 
   /* ================= шаги из решателя ================= */
@@ -19363,7 +19407,7 @@ window.__LEARN={
       return;
     }
     const segs=answerSegs(picked, built);
-    if(strokes.length && segs.length){
+    if(strokes.length && segs){
       const placed=placeAnswer(picked, segs);
       if(placed && placed.length){
         outs=placed;
