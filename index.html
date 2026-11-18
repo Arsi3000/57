@@ -2951,7 +2951,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
    оставалась узкая полоса, и запись у края выглядела обрезанной. */
 .nb{position:relative;max-width:none;margin:0;width:auto;padding:0;
   /* выходим из боковых полей .app (16 px): лист идёт от края до края */
-  margin-left:-16px;margin-right:-16px}
+  margin-left:-16px;margin-right:-16px;
+  /* 2 px съедает округление transform-фона: подстраховка от горизонтальной прокрутки */
+  max-width:calc(100% + 32px)}
 .nb-write{position:relative;height:186px;margin-top:2px}
 /* И на всю высоту экрана, которая остаётся между полем поиска и капсулой:
    фиксированные 158 px обрезали столбик из нескольких строк. */
