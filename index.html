@@ -19184,7 +19184,9 @@ window.__LEARN={
     const answerText=(built.answer!==undefined && built.answer!=="")? String(built.answer): "";
     let onBoard=false;
     if(shortOne && answerText && !hasLetter(picked.left||"") && strokes.length){
-      const need=picked.atEnd? answerText : ("="+answerText);
+      /* «=» уже стоит на листе — второй раз его не пишем */
+      const eqOnBoard=(eqMarks(strokes).length>0);
+      const need=(picked.atEnd || eqOnBoard)? answerText : ("="+answerText);
       const place=inkPlace(need, 0);
       if(place){
         outs.push({text:need, size:place.size, x:place.x, y:place.y});
