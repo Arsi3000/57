@@ -3347,7 +3347,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.7";
+const APP_VERSION="5.8.8";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18846,22 +18846,30 @@ window.__LEARN={
   }
   function answerPen(){ return isLight()? "#0f9d58" : "#41dd9b"; }
 
-  /* длина всех штрихов строки — по ней считается время анимации */
-  function runLen(text,size){
-    let pl=toPolylines(text,size,0,0,{still:true});
-    return pl.strokes.reduce(function(a,st){ return a+strokeLen(st); },0)||1;
+  /* Настоящие размеры строки: ширина и высота знаков. Раньше шаг между
+     строками считался от номинального кегля, а строки подгонялись по ширине
+     каждая отдельно — из-за этого зелёные шаги налезали друг на друга. */
+  function runMetrics(text, size){
+    const pl=toPolylines(text, size, 0, 0, {still:true});
+    let x1=0, y1=0, total=0;
+    pl.strokes.forEach(function(st){
+      total+=strokeLen(st);
+      st.forEach(function(p){
+        if(p[0]>x1) x1=p[0];
+        if(p[1]>y1) y1=p[1];
+      });
+    });
+    return {width:Math.max(1,x1), height:Math.max(1,y1), len:total||1};
   }
-  /* подбор кегля: строка должна уложиться в maxW */
-  function fitRun(text, size, maxW){
-    let sz=Math.max(8, size);
-    let pl=toPolylines(text, sz, 0, 0, {still:true});
-    while(pl.width>maxW && sz>12){
-      sz-=1;
-      pl=toPolylines(text, sz, 0, 0, {still:true});
-    }
-    return {size:sz, width:pl.width};
+  function fitSize(text, size, maxW){
+    let sz=Math.max(12, Math.round(size));
+    let guard=0;
+    while(sz>12 && runMetrics(text,sz).width>maxW && guard++<80) sz-=1;
+    return sz;
   }
-  /* рисуем строку с начала до доли k — так она «пишется» */
+
+  /* рисуем строку с начала до доли k — так она «пишется».
+     y — верх строки (знаки занимают ровно size по высоте). */
   function strokeRun(text, size, x, y, k, color){
     if(!ovctx) return;
     const pl=toPolylines(text, size, 0, 0, {still:true});
@@ -18907,9 +18915,10 @@ window.__LEARN={
     outs.forEach(function(o){ strokeRun(o.text,o.size,o.x,o.y,1,o.color); });
   }
   function clearInkOut(){ outs=[]; paintOuts(); }
+
   /* «написать» одну строку с анимацией, остальные уже стоят */
   function animOut(o){
-    const total=runLen(o.text,o.size);
+    const total=runMetrics(o.text,o.size).len;
     const dur=Math.min(900, Math.max(220, total*0.9));
     const t0=performance.now();
     return new Promise(function(done){
@@ -18924,7 +18933,7 @@ window.__LEARN={
     });
   }
 
-  /* Прайм-край чернил: правее этой точки ничего не написано. */
+  /* правая граница чернил: правее этой точки ничего не написано */
   function inkRight(list){
     let r=-1e9;
     (list||[]).forEach(function(st){
@@ -18933,50 +18942,49 @@ window.__LEARN={
     return r;
   }
 
-  /* Ответ короткого примера: на строке примера, строго правее последнего
-     знака, с зазором. Если справа тесно — не падаем в угол, а пишем
-     строкой ниже по левому краю примера: ответ остаётся рядом с записью. */
+  /* Ответ короткого примера — на строке примера, с зазором 20 px от самой
+     правой точки чернил и никогда за краем листа. Если справа совсем тесно,
+     он идёт строкой ниже по левому краю примера, но не в угол. */
   function answerAfterInk(text){
     const b=inkBox(strokes);
     if(!isFinite(b.x0)) return null;
-    const W=cv.width/dpr, H=cv.height/dpr, GAP=16;
-    let size=Math.max(20, Math.min(36, (b.y1-b.y0)*0.42));
-    const xR=Math.max(b.x1, inkRight(strokes))+GAP;
-    let fit=fitRun(text, size, Math.max(40, W-xR-8));
-    if(fit.size>=17 && xR+fit.width<=W-8){
-      return {text:text, x:xR, y:(b.y0+b.y1)/2-fit.size*0.5,
-              size:fit.size, color:answerPen()};
+    const W=cv.width/dpr, H=cv.height/dpr;
+    const hInk=Math.max(22, b.y1-b.y0);
+    const base=Math.max(22, Math.min(34, hInk*0.5));
+    const xR=Math.max(b.x1, inkRight(strokes))+20;
+    let sz=fitSize(text, base, Math.max(30, W-xR-10));
+    if(sz>=19 && xR+runMetrics(text,sz).width<=W-8){
+      return {text:text, x:xR, y:(b.y0+b.y1)/2-sz*0.5, size:sz, color:answerPen()};
     }
-    size=Math.max(18, Math.min(30, size));
-    fit=fitRun(text, size, W-b.x0-20);
-    let y=b.y1+12;
-    if(y+fit.size*1.35>H) y=Math.max(6, H-fit.size*1.4);
-    return {text:text, x:Math.max(6,b.x0), y:y, size:fit.size, color:answerPen()};
+    sz=fitSize(text, Math.min(30, base), Math.max(60, W-b.x0-24));
+    let y=b.y1+10;
+    if(y+sz*1.15>H-4) y=Math.max(4, H-sz*1.2);
+    return {text:text, x:Math.max(6,b.x0), y:y, size:sz, color:answerPen()};
   }
 
-  /* Уравнение: шаги зелёным под примером, ровными строками с запасом по
-     высоте. Раньше шаг строки был меньше роста знака, и строки наезжали
-     друг на друга — читать было нельзя. */
+  /* Уравнение: шаги зелёным прямо под примером. Каждая строка подбирается
+     по ширине отдельно, а шаг между строками берётся двойной от её высоты —
+     поэтому строки не могут слипнуться. Больше трёх шагов на лист не лезет,
+     остальное показывает блок под доской. */
   function stepsOnBoard(built){
     const b=inkBox(strokes);
     const W=cv.width/dpr, H=cv.height/dpr;
     const rows=(built.lines||[]).map(function(l){ return l.text; })
-                 .filter(Boolean).slice(0,4);
+                 .filter(Boolean).slice(0,3);
     if(!rows.length) return [];
     const hasInk=isFinite(b.y1);
-    const top=Math.min(Math.max(16, H-40), hasInk? b.y1+20 : 24);
-    let size=Math.max(18, Math.min(30, hasInk? (b.y1-b.y0)*0.40 : 26));
-    const STEP=1.95;
-    while(size>14 && top + rows.length*size*STEP > H-6) size-=1;
-    const left=Math.max(6, Math.min(hasInk? b.x0 : 8, 28));
+    const left=Math.max(6, Math.min(hasInk? b.x0 : 8, 24));
+    let size=Math.max(20, Math.min(28, hasInk? (b.y1-b.y0)*0.55 : 24));
+    const top=hasInk? b.y1+size*1.15 : size*1.6;
+    while(size>15 && top + rows.length*size*2.0 > H-6) size-=1;
     const out=[];
     let y=top;
     for(let i=0;i<rows.length;i++){
-      const fit=fitRun(rows[i], size, W-left-14);
-      if(fit.size<12) break;
-      if(y+fit.size*STEP>H+2) break;
-      out.push({text:rows[i], size:fit.size, x:left, y:y, color:answerPen()});
-      y+=Math.max(fit.size,size)*STEP;
+      const sz=fitSize(rows[i], size, W-left-16);
+      if(sz<13) break;
+      if(y+sz*1.2>H-2) break;
+      out.push({text:rows[i], size:sz, x:left, y:y, color:answerPen()});
+      y+=sz*2.0;
     }
     return out;
   }
@@ -19198,6 +19206,15 @@ window.__LEARN={
         return;
       }
 
+      /* Сначала пробуем варианты, в которых есть знак действия или «=»:
+         обрывок из одного числа решается сам собой и выдаёт «ответ»,
+         к которому человек не писал примера. */
+      variants=variants.slice().sort(function(a,b){
+        const ra=/[+\-\u2212*\u00d7\u00f7:\/=]/.test(a)?0:1;
+        const rb=/[+\-\u2212*\u00d7\u00f7:\/=]/.test(b)?0:1;
+        return ra-rb;
+      });
+
       let picked=null, built=null;
       for(let i=0;i<variants.length;i++){
         const parts=splitEq(variants[i]);
@@ -19247,16 +19264,23 @@ window.__LEARN={
        же строке после «=», шаги уравнения — строками ниже записи. Внизу
        страницы остаётся только строка «прочитал: …» и кнопка «не то?». */
     const isEq=!!(picked && hasLetter(picked.left||""));
+    const hasOp=/[+\-\u2212*\u00d7\u00f7:\/]/.test(picked.left||"");
     const answerText=(built.answer!==undefined && built.answer!=="")? String(built.answer): "";
     let onBoard=false;
-    if(!strokes.length) onBoard=false;
-    else if(isEq){
+    if(!strokes.length){
+      onBoard=false;
+    }else if(isEq){
       const placed=stepsOnBoard(built);
       if(placed.length){
         outs=placed;
         for(let i=0;i<outs.length;i++) await animOut(outs[i]);
         onBoard=true;
       }
+    }else if(!hasOp){
+      /* В записи нет ни одного знака действия — дописывать «ответ» к одному
+         числу бессмысленно: видно, что распознавание потеряло знаки. */
+      say("Вижу только одно число. Напишите знак и второе число крупнее — или наберите пример в поле сверху.","err");
+      return;
     }else if(answerText){
       /* «=» уже стоит на листе — второй раз его не пишем. Признаков три:
          знак в конце записи, знак вообще был в прочитанном, или на листе
@@ -19301,7 +19325,10 @@ window.__LEARN={
     sol.appendChild(head);
     hideFly(true);
 
-    const lines=onBoard? [] : built.lines.slice(0, 8);
+    let lines=onBoard? [] : built.lines.slice(0, 8);
+    if(onBoard && isEq && built.lines.length>outs.length){
+      lines=built.lines.slice(outs.length, outs.length+5);
+    }
     for(const ln of lines){
       const row=document.createElement("div");
       row.className="nb-line"+(ln.last? " last":"");
