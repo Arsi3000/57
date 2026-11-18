@@ -2966,7 +2966,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
      под капсулу «Проверить» — оставляем полосу под решение */
   /* доска в горизонтали — примерно треть низкого экрана, остальное уходит
      под ответ и ряд способов ввода */
-  .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:150px;max-height:none}
+  .nb-write{height:calc(100vh - 280px);height:calc(100dvh - 280px);min-height:170px;max-height:none}
 }
 #nbCanvas{display:block;width:100%;height:100%;background:transparent;
   touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
@@ -3047,7 +3047,9 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-line{margin:0}
 .nb-ink{position:relative;margin:0;min-width:0;max-width:100%}
 .nb-ink canvas{display:block;max-width:100%}
-.nb-sol{max-width:100%;overflow-x:hidden}
+/* .nb выступает за поля .app, а строка «прочитал: …» должна остаться в
+   пределах экрана — иначе она обрезается слева */
+.nb-sol{max-width:100%;overflow-x:hidden;padding:0 16px}
 .nb-cap{font-size:11px;line-height:1.25;color:var(--ink-dim);margin:-6px 0 7px;padding-left:3px;
   opacity:0;transform:translateY(-2px);transition:opacity .2s,transform .2s}
 .nb-cap.on{opacity:1;transform:none}
@@ -3343,7 +3345,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.5";
+const APP_VERSION="5.8.6";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18715,13 +18717,19 @@ window.__LEARN={
   }
 
   /* превращаем разложенный текст в линии экрана, с наклоном и неровностью */
-  function toPolylines(text, size, ox, oy){
+  function toPolylines(text, size, ox, oy, opt){
     const lay=layout(text, size);
     const res=[];
+    const still=!!(opt && opt.still);
+    /* Ровный режим: цифры ответа не должны «плясать». Наклон почти нулевой,
+       дрожание в четыре раза слабее, базовая линия у всех знаков общая. */
+    const tiltMax=still? 0.30 : 1.7;
+    const jit=still? 0.004 : 0.018;
+    const baseJit=still? 0.004 : 0.03;
     lay.parts.forEach(function(p){
       const r=rnd(p.seed*7919);
-      const tilt=(r()*1.7)*Math.PI/180;
-      const bx=p.x+ox, by=oy+r()*size*0.03;
+      const tilt=(r()*tiltMax)*Math.PI/180;
+      const bx=p.x+ox, by=oy+r()*size*baseJit;
       p.g.forEach(function(stroke){
         const pts=[];
         for(let i=0;i<stroke.length;i++){
@@ -18729,7 +18737,7 @@ window.__LEARN={
           const cx=u-p.size*0.5, cy=v-p.size*0.5;
           const rx=cx*Math.cos(tilt)-cy*Math.sin(tilt);
           const ry=cx*Math.sin(tilt)+cy*Math.cos(tilt);
-          pts.push([bx+rx+p.size*0.5+r()*p.size*0.018, by+ry+p.size*0.5+r()*p.size*0.018]);
+          pts.push([bx+rx+p.size*0.5+r()*p.size*jit, by+ry+p.size*0.5+r()*p.size*jit]);
         }
         res.push(pts);
       });
@@ -18754,12 +18762,12 @@ window.__LEARN={
       const box=canvas.parentNode.getBoundingClientRect();
       const avail=Math.max(80, box.width-6);
       let size=opt.size||34;
-      let pl=toPolylines(text, size, 0, 0);
+      let pl=toPolylines(text, size, 0, 0, opt);
       /* запас 12 px: наклон и дрожание штриха выходят за расчётную ширину,
          и последняя цифра упиралась в край листа */
       while(pl.width>avail-14 && size>15){
         size-=2;
-        pl=toPolylines(text, size, 0, 0);
+        pl=toPolylines(text, size, 0, 0, opt);
       }
       const h=Math.round(size*1.55);
       const d=Math.min(window.devicePixelRatio||1, 2);
@@ -18767,7 +18775,7 @@ window.__LEARN={
       canvas.width=Math.round(avail*d); canvas.height=Math.round(h*d);
       canvas.style.width=avail+"px";
       const oy=Math.round(size*0.22);
-      pl=toPolylines(text, size, 0, oy);
+      pl=toPolylines(text, size, 0, oy, opt);
       g.setTransform(d,0,0,d,0,0);
       g.clearRect(0,0,avail,h);
       g.lineCap="round"; g.lineJoin="round";
@@ -18813,11 +18821,12 @@ window.__LEARN={
     });
   }
 
-  /* ================= ответ прямо на листе =================
-     Короткий пример и запись с открытым «=» не надо растягивать в столбик:
-     ответ дописывается там же, где человек писал, — сразу после «=» или
-     сразу за последним знаком. Чернила ученика при этом не трогаются:
-     вывод живёт на отдельном слое, и следующая проверка его не читает. */
+  /* ================= ответ и решение прямо на листе =================
+     Короткий пример и уравнение не надо растягивать в столбик внизу
+     страницы: ответ и шаги пишутся там же, где человек писал, — сразу
+     после «=» или строкой ниже записи, но на том же листе. Чернила ученика
+     не трогаются: вывод живёт на отдельном слое, и следующая проверка его
+     не читает. Цвет — зелёный, чтобы свой ответ не путать с почерком. */
   function inkBox(list){
     let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
     (list||[]).forEach(function(st){
@@ -18828,93 +18837,136 @@ window.__LEARN={
     });
     return {x0:x0,x1:x1,y0:y0,y1:y1};
   }
-  function inkAt(text,size,x,y,animate){
-    if(!ovctx) return null;
-    const pl=toPolylines(text, size, 0, 0);
-    if(!pl || !pl.strokes.length) return null;
-    const total=pl.strokes.reduce(function(a,st){ return a+strokeLen(st); },0)||1;
-    function paint(k){
-      ovctx.setTransform(dpr,0,0,dpr,0,0);
-      ovctx.save();
-      ovctx.translate(x, y);
-      ovctx.lineCap="round"; ovctx.lineJoin="round";
-      ovctx.strokeStyle=pen(); ovctx.lineWidth=2.6;
-      let want=total*k, acc=0;
-      for(let i=0;i<pl.strokes.length;i++){
-        const pts=pl.strokes[i], sl=strokeLen(pts);
-        if(acc>=want) break;
-        const part=Math.min(1,(want-acc)/(sl||1));
-        ovctx.beginPath();
-        ovctx.moveTo(pts[0][0], pts[0][1]);
-        let walked=0, drew=false;
-        for(let j=1;j<pts.length;j++){
-          const seg=Math.hypot(pts[j][0]-pts[j-1][0], pts[j][1]-pts[j-1][1]);
-          if(walked+seg>=sl*part){
-            const over=(sl*part-(walked-seg))/(seg||1);
-            ovctx.lineTo(pts[j-1][0]+(pts[j][0]-pts[j-1][0])*Math.max(0,over),
-                         pts[j-1][1]+(pts[j][1]-pts[j-1][1])*Math.max(0,over));
-            drew=true; break;
-          }
-          ovctx.lineTo(pts[j][0], pts[j][1]);
-          walked+=seg;
-        }
-        if(!drew) ovctx.lineTo(pts[pts.length-1][0], pts[pts.length-1][1]);
-        ovctx.stroke();
-        acc+=sl;
-      }
-      ovctx.restore();
+  function isLight(){
+    return document.body.classList.contains("light")||document.body.classList.contains("warm");
+  }
+  function answerPen(){ return isLight()? "#0f9d58" : "#41dd9b"; }
+
+  /* длина всех штрихов строки — по ней считается время анимации */
+  function runLen(text,size){
+    let pl=toPolylines(text,size,0,0,{still:true});
+    return pl.strokes.reduce(function(a,st){ return a+strokeLen(st); },0)||1;
+  }
+  /* подбор кегля: строка должна уложиться в maxW */
+  function fitRun(text, size, maxW){
+    let sz=Math.max(8, size);
+    let pl=toPolylines(text, sz, 0, 0, {still:true});
+    while(pl.width>maxW && sz>12){
+      sz-=1;
+      pl=toPolylines(text, sz, 0, 0, {still:true});
     }
-    if(!animate){ paint(1); return {w:pl.width, h:size}; }
-    const dur=Math.min(1100, Math.max(260, total*1.0));
+    return {size:sz, width:pl.width};
+  }
+  /* рисуем строку с начала до доли k — так она «пишется» */
+  function strokeRun(text, size, x, y, k, color){
+    if(!ovctx) return;
+    const pl=toPolylines(text, size, 0, 0, {still:true});
+    const total=pl.strokes.reduce(function(a,st){ return a+strokeLen(st); },0)||1;
+    const want=total*k;
+    ovctx.save();
+    ovctx.translate(x,y);
+    ovctx.lineCap="round"; ovctx.lineJoin="round";
+    ovctx.strokeStyle=color||answerPen(); ovctx.lineWidth=2.6;
+    let acc=0;
+    for(let i=0;i<pl.strokes.length;i++){
+      const pts=pl.strokes[i], sl=strokeLen(pts);
+      if(acc>=want) break;
+      const part=Math.min(1,(want-acc)/(sl||1));
+      ovctx.beginPath();
+      ovctx.moveTo(pts[0][0], pts[0][1]);
+      let walked=0, drew=false;
+      for(let j=1;j<pts.length;j++){
+        const seg=Math.hypot(pts[j][0]-pts[j-1][0], pts[j][1]-pts[j-1][1]);
+        if(walked+seg>=sl*part){
+          const over=(sl*part-(walked-seg))/(seg||1);
+          ovctx.lineTo(pts[j-1][0]+(pts[j][0]-pts[j-1][0])*Math.max(0,over),
+                       pts[j-1][1]+(pts[j][1]-pts[j-1][1])*Math.max(0,over));
+          drew=true; break;
+        }
+        ovctx.lineTo(pts[j][0], pts[j][1]);
+        walked+=seg;
+      }
+      if(!drew) ovctx.lineTo(pts[pts.length-1][0], pts[pts.length-1][1]);
+      ovctx.stroke();
+      acc+=sl;
+    }
+    ovctx.restore();
+  }
+  function clearOv(){
+    if(!ovctx) return;
+    ovctx.setTransform(dpr,0,0,dpr,0,0);
+    ovctx.clearRect(0,0,ov.width/dpr, ov.height/dpr);
+  }
+  function paintOuts(){
+    if(!ovctx) return;
+    clearOv();
+    outs.forEach(function(o){ strokeRun(o.text,o.size,o.x,o.y,1,o.color); });
+  }
+  function clearInkOut(){ outs=[]; paintOuts(); }
+  /* «написать» одну строку с анимацией, остальные уже стоят */
+  function animOut(o){
+    const total=runLen(o.text,o.size);
+    const dur=Math.min(900, Math.max(220, total*0.9));
     const t0=performance.now();
     return new Promise(function(done){
       function frame(now){
         const k=Math.min(1,(now-t0)/dur);
-        ovctx.setTransform(dpr,0,0,dpr,0,0);
-        ovctx.clearRect(0,0,ov.width/dpr, ov.height/dpr);
-        outs.forEach(function(o,idx){ if(idx<outs.length-1) inkAt(o.text,o.size,o.x,o.y,false); });
-        paint(k);
-        if(k<1) requestAnimationFrame(frame); else done({w:pl.width,h:size});
+        clearOv();
+        outs.forEach(function(x){ if(x!==o) strokeRun(x.text,x.size,x.x,x.y,1,x.color); });
+        strokeRun(o.text,o.size,o.x,o.y,k,o.color);
+        if(k<1) requestAnimationFrame(frame); else done();
       }
       requestAnimationFrame(frame);
     });
   }
-  function paintOuts(){
-    if(!ovctx) return;
-    ovctx.setTransform(dpr,0,0,dpr,0,0);
-    ovctx.clearRect(0,0,ov.width/dpr, ov.height/dpr);
-    outs.forEach(function(o){ inkAt(o.text, o.size, o.x, o.y, false); });
-  }
-  function clearInkOut(){ outs=[]; paintOuts(); }
 
-  /* Куда ставить ответ: сразу после «=», если он написан, иначе сразу за
-     последним знаком записи. Кегль — по высоте чернил, чтобы ответ был
-     того же роста, что и почерк. */
-  function inkPlace(text, size){
+  /* Ответ сразу после записи — на ТОЙ ЖЕ строке, что и пример, и всегда
+     слева от правого края. Раньше, если справа не хватало места, ответ
+     уезжал вниз к левому краю — это и выглядело как «ответ едет». */
+  function answerAfterInk(text){
     const b=inkBox(strokes);
     if(!isFinite(b.x0)) return null;
-    const marks=eqMarks(strokes).sort(function(a,c){ return c.cx-a.cx; });
-    const H=Math.max(18, Math.min(48, (b.y1-b.y0)*0.42));
-    let size0=Math.max(20, Math.min(46, H));
-    let x, y;
-    if(marks.length){
-      x=marks[0].right+10;
-      y=marks[0].y-size0*0.62;
-    }else{
-      x=b.x1+12;
-      y=(b.y0+b.y1)/2-size0*0.55;
-    }
     const W=cv.width/dpr;
-    let pl=toPolylines(text, size0, 0, 0);
-    while(x+pl.width>W-6 && size0>16){
-      size0-=2;
-      pl=toPolylines(text, size0, 0, 0);
+    const marks=eqMarks(strokes).sort(function(a,c){ return c.cx-a.cx; });
+    const hInk=Math.max(16, b.y1-b.y0);
+    const base=Math.max(20, Math.min(44, hInk*0.55));
+    let cy, x;
+    if(marks.length){ cy=marks[0].y; x=marks[0].right+10; }
+    else{ cy=(b.y0+b.y1)/2; x=b.x1+10; }
+    let fit=fitRun(text, base, W-x-6);
+    if(fit.size<16){
+      /* справа тесно — прижимаем к правому краю той же строки */
+      fit=fitRun(text, base, W-14);
+      x=W-6-fit.width;
     }
-    if(x+pl.width>W-4){
-      /* не влезает справа — пишем новой строкой под записью */
-      x=8; y=b.y1+8; size0=Math.max(20,size0);
+    x=Math.max(4, Math.min(x, W-6-fit.width));
+    const y=cy-fit.size*0.5;
+    return {x:x, y:y, size:fit.size, color:answerPen()};
+  }
+
+  /* Уравнение: шаги пишутся зелёным прямо под записью на том же листе,
+     а не отдельным блоком у нижнего края экрана. */
+  function stepsOnBoard(built){
+    const b=inkBox(strokes);
+    const W=cv.width/dpr, H=cv.height/dpr;
+    const rows=(built.lines||[]).map(function(l){ return l.text; }).filter(Boolean).slice(0,6);
+    if(!rows.length) return [];
+    const top=isFinite(b.y1)? (b.y1+16) : 24;
+    let size=Math.max(20, Math.min(40, (isFinite(b.y0)? (b.y1-b.y0) : 40)*0.55));
+    const avail=H-top-8;
+    /* все строки должны уложиться в лист: иначе шаги уходят под капсулу */
+    while(size>14 && rows.length*size*1.55>avail) size-=2;
+    let x=Math.max(4, Math.min(isFinite(b.x0)? b.x0 : 8, 28));
+    const placed=[];
+    let y=top;
+    for(let i=0;i<rows.length;i++){
+      const fit=fitRun(rows[i], size, W-x-6);
+      if(fit.size<13) break;
+      placed.push({text:rows[i], size:fit.size, x:x, y:y, color:answerPen()});
+      y+=fit.size*1.55;
+      if(y>H-4) break;
     }
-    return {x:x, y:y, size:size0};
+    return placed;
   }
 
   /* ================= шаги из решателя ================= */
@@ -19179,20 +19231,28 @@ window.__LEARN={
     outs=[];
     if(ovctx){ ovctx.setTransform(dpr,0,0,dpr,0,0); ovctx.clearRect(0,0,ov.width/dpr,ov.height/dpr); }
 
-    /* Ответ пишем прямо на листе, когда растягивать нечего: короткий пример
-       (один шаг) или запись, где человек уже поставил «=». Столбик на восемь
-       строк ради «10 − 2 = 8» — это то, на что он и жаловался. */
-    const shortOne=(built.lines.length<=1) || (picked && picked.atEnd && !picked.right);
+    /* Всё, что можно, пишем прямо на листе: ответ короткого примера — на той
+       же строке после «=», шаги уравнения — строками ниже записи. Внизу
+       страницы остаётся только строка «прочитал: …» и кнопка «не то?». */
+    const isEq=!!(picked && hasLetter(picked.left||""));
     const answerText=(built.answer!==undefined && built.answer!=="")? String(built.answer): "";
     let onBoard=false;
-    if(shortOne && answerText && !hasLetter(picked.left||"") && strokes.length){
-      /* «=» уже стоит на листе — второй раз его не пишем */
+    if(!strokes.length) onBoard=false;
+    else if(isEq){
+      const placed=stepsOnBoard(built);
+      if(placed.length){
+        outs=placed;
+        for(let i=0;i<outs.length;i++) await animOut(outs[i]);
+        onBoard=true;
+      }
+    }else if(answerText){
       const eqOnBoard=(eqMarks(strokes).length>0);
+      /* «=» уже стоит на листе — второй раз его не пишем */
       const need=(picked.atEnd || eqOnBoard)? answerText : ("="+answerText);
-      const place=inkPlace(need, 0);
+      const place=answerAfterInk(need);
       if(place){
-        outs.push({text:need, size:place.size, x:place.x, y:place.y});
-        await inkAt(need, place.size, place.x, place.y, true);
+        outs.push(place);
+        await animOut(place);
         onBoard=true;
       }
     }
@@ -19242,7 +19302,8 @@ window.__LEARN={
       row.appendChild(cap);
       sol.appendChild(row);
       if(canHandwrite(ln.text)){
-        await writeInto(cvl, ln.text, {size:ln.last? 36:33});
+        await writeInto(cvl, ln.text, {size:ln.last? 36:33, still:true,
+                                       color:ln.last? answerPen() : ""});
       }else{
         cvl.style.display="none";
         const pr=document.createElement("div");
