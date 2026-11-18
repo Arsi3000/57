@@ -2941,6 +2941,107 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
   <div class="keyboard" id="keyboard" hidden></div>
   <!-- плашка распознавания: превью, прогресс и что вышло -->
   <div class="ocrnote" id="ocrNote" hidden role="status" aria-live="polite"></div>
+<style>
+/* ===== 5.8.0: доска под поиском ===== */
+.nb{
+  margin:10px auto 2px;max-width:560px;width:100%;
+  padding:9px 11px 11px;border-radius:var(--r);
+  background:var(--surface-1);border:1px solid var(--line);
+  box-shadow:var(--lift,none);
+}
+.nb-top{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.nb-title{font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ink)}
+.nb-hint{font-size:11.5px;color:var(--ink-dim);margin-left:auto;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
+.nb-mini{flex:0 0 auto;width:26px;height:26px;padding:0;display:grid;place-items:center;
+  border:1px solid var(--line);border-radius:9px;background:var(--surface-2);
+  color:var(--ink-soft);cursor:pointer}
+.nb-mini svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.nb-mini:hover{border-color:var(--focus);color:var(--ink)}
+
+.nb-write{position:relative;border-radius:11px;overflow:hidden;
+  border:1px solid var(--line);
+  background-color:var(--surface-2);
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size:24px 24px;
+  background-position:-1px -1px;
+}
+#nbCanvas{display:block;width:100%;height:150px;touch-action:pan-y;cursor:crosshair}
+
+.nb-row{display:flex;align-items:center;gap:7px;margin-top:8px}
+.nb-b{display:inline-flex;align-items:center;gap:6px;padding:8px 11px;font:inherit;
+  font-size:13px;font-weight:700;border-radius:var(--r-sm);
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);
+  cursor:pointer;line-height:1}
+.nb-b svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+.nb-b.wide{flex:1;justify-content:center;
+  background:linear-gradient(160deg,var(--vio),var(--cyan));color:#06111c;border-color:transparent}
+.nb-b:disabled{opacity:.6;cursor:default}
+.nb-b.wide:disabled{filter:saturate(.5)}
+
+.nb-out{margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+.nb-msg{font-size:12.5px;color:var(--ink-soft);line-height:1.45}
+.nb-msg.err{color:var(--error)}
+.nb-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.nb-read{font-size:12px;color:var(--ink-dim)}
+.nb-read b{color:var(--ink);font-size:12.5px}
+.nb-verdict{font-size:11px;font-weight:800;padding:3px 8px;border-radius:var(--r-pill)}
+.nb-verdict.ok{background:rgba(64,217,160,.16);color:var(--mint)}
+.nb-verdict.bad{background:rgba(255,107,107,.16);color:var(--error)}
+.nb-more{margin-left:auto;font:inherit;font-size:11.5px;font-weight:700;color:var(--vio);
+  background:none;border:0;padding:2px 4px;cursor:pointer}
+.nb-vars{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px}
+.nb-chip{font:inherit;font-size:12px;font-weight:700;padding:5px 9px;border-radius:var(--r-pill);
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);cursor:pointer}
+.nb-chip:hover{border-color:var(--focus);color:var(--ink)}
+
+.nb-line{margin:0 0 2px}
+.nb-line.last .nb-cap{color:var(--mint);font-weight:800}
+.nb-ink{position:relative}
+.nb-ink canvas{display:block;width:100%}
+.nb-cap{font-size:11px;line-height:1.3;color:var(--ink-dim);margin:-2px 0 6px;
+  opacity:0;transform:translateY(-2px);transition:opacity .22s,transform .22s}
+.nb-cap.on{opacity:1;transform:none}
+.nb-print{font-size:22px;font-weight:600;color:var(--ink);padding:2px 0 4px;
+  font-variant-numeric:tabular-nums}
+@media(max-width:420px){
+  #nbCanvas{height:128px}
+  .nb{padding:8px 9px 10px}
+  .nb-hint{font-size:11px}
+}
+body.neon .nb-b.wide{color:#001018}
+</style>
+  <!-- 5.8.0: доска переехала на главный экран, под поиск.
+       Ученик пишет пример, решатель дописывает решение НИЖЕ — тем же пером,
+       своими штрихами, с короткой подписью под каждой строкой. -->
+  <section class="nb" id="noteBoard">
+    <div class="nb-top">
+      <span class="nb-title">Доска</span>
+      <span class="nb-hint" id="nbHint">пишите пример прямо здесь</span>
+      <button type="button" class="nb-mini" id="nbFull" title="На весь экран" aria-label="Открыть на весь экран">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg>
+      </button>
+    </div>
+    <div class="nb-write" id="nbWrite">
+      <canvas id="nbCanvas" aria-label="Пишите пример от руки"></canvas>
+    </div>
+    <div class="nb-row">
+      <button type="button" class="nb-b" id="nbUndo" title="Отменить штрих" aria-label="Отменить штрих">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7H15a4 4 0 0 1 0 8H8M8 4L5 7l3 3"/></svg>
+      </button>
+      <button type="button" class="nb-b" id="nbClear" title="Стереть всё" aria-label="Стереть всё">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>
+      </button>
+      <button type="button" class="nb-b wide" id="nbCheck">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Проверить
+      </button>
+    </div>
+    <div class="nb-out" id="nbOut" hidden></div>
+  </section>
 
   <!-- прежний .toolrow оставлен пустым якорем: на него ссылается переключение режимов -->
   <div class="toolrow" hidden></div>
@@ -3182,7 +3283,7 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.7.10";
+const APP_VERSION="5.8.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18300,6 +18401,500 @@ window.__LEARN={
       engine:function(){ return {ok:eng.ok, err:eng.err}; },
       retryEngine:function(){ checkEngine(true); }};
   }
+})();
+</script>
+
+<script>
+/* ===== 5.8.0: доска на главном экране, под поиском =====
+   Что здесь происходит и почему именно так.
+
+   Ученик пишет пример рукой на доске. Решатель не просто отвечает числом —
+   он ДОПИСЫВАЕТ решение ниже, тем же пером и теми же штрихами, с короткой
+   подписью под каждой строкой. Отсюда два следствия, которые и были целью:
+   решение выглядит как продолжение тетради, а не как чужая карточка;
+   и вторая запись живёт в отдельном слое, поэтому следующий разбор кадра
+   не читает наш собственный ответ как часть примера.
+
+   Штрихи не шрифт: у каждого знака свой набор линий в квадрате 1×1, которые
+   выводятся постепенно, с лёгким наклоном и дрожанием. Почерк получается
+   настоящий ещё и потому, что это правда линии, а не имитация. */
+(function(){
+  const $=function(id){ return document.getElementById(id); };
+  const wrap=$("noteBoard");
+  if(!wrap || wrap.dataset.on) return;
+  wrap.dataset.on="1";
+
+  const cv=$("nbCanvas"), out=$("nbOut"), hint=$("nbHint"), writeBox=$("nbWrite");
+  const ctx=cv.getContext("2d");
+  let strokes=[], mode=null, last=null, dpr=1, busy=false;
+
+  /* ---------- перо ---------- */
+  const PENS={light:"#1f43b8", dark:"#9dc0ff", neon:"#7ef0ff", retro:"#2f6b4f", warm:"#243f8f"};
+  function theme(){
+    const b=document.body;
+    if(b.classList.contains("dark")) return "dark";
+    if(b.classList.contains("neon")) return "neon";
+    if(b.classList.contains("retro")) return "retro";
+    if(b.classList.contains("warm")) return "warm";
+    return "light";
+  }
+  function pen(){ return PENS[theme()]||PENS.light; }
+
+  /* ---------- холст рукописи ---------- */
+  function sizeCanvas(){
+    const r=cv.getBoundingClientRect();
+    dpr=Math.min(window.devicePixelRatio||1, 2);
+    cv.width=Math.max(1,Math.round(r.width*dpr));
+    cv.height=Math.max(1,Math.round(r.height*dpr));
+    redraw();
+  }
+  function redraw(){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const w=cv.width/dpr, h=cv.height/dpr;
+    ctx.clearRect(0,0,w,h);
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    strokes.forEach(function(st){
+      ctx.strokeStyle=st.c; ctx.lineWidth=st.w;
+      ctx.beginPath();
+      st.p.forEach(function(pt,i){ i? ctx.lineTo(pt[0],pt[1]) : ctx.moveTo(pt[0],pt[1]); });
+      if(st.p.length===1) ctx.lineTo(st.p[0][0]+0.1, st.p[0][1]+0.1);
+      ctx.stroke();
+    });
+  }
+  function pos(e){
+    const r=cv.getBoundingClientRect();
+    return [e.clientX-r.left, e.clientY-r.top];
+  }
+  /* touch-action у холста — pan-y: вертикальный жест остаётся прокрутке
+     страницы, иначе доска посреди экрана запирает прокрутку целиком */
+  cv.addEventListener("pointerdown", function(e){
+    if(busy) return;
+    cv.setPointerCapture(e.pointerId);
+    mode="draw";
+    last={ c:pen(), w:(e.pointerType==="pen"? 2.6 : 2.4), p:[pos(e)] };
+    strokes.push(last);
+    redraw();
+  });
+  cv.addEventListener("pointermove", function(e){
+    if(mode!=="draw"||!last) return;
+    last.p.push(pos(e));
+    redraw();
+  });
+  const stop=function(){ mode=null; last=null; if(hint) hint.textContent="пишите пример прямо здесь"; };
+  cv.addEventListener("pointerup", stop);
+  cv.addEventListener("pointercancel", stop);
+  cv.addEventListener("pointerleave", function(e){ if(mode==="draw"&&e.buttons===0) stop(); });
+
+  $("nbUndo").addEventListener("click", function(){
+    if(busy) return;
+    strokes.pop(); redraw(); clearOut();
+  });
+  $("nbClear").addEventListener("click", function(){
+    if(busy) return;
+    strokes=[]; redraw(); clearOut();
+  });
+  $("nbFull").addEventListener("click", function(){
+    /* полноэкранная доска остаётся для распознавания с выбором вариантов */
+    if(window.__board && window.__board.open) window.__board.open();
+  });
+
+  function clearOut(){ if(out){ out.hidden=true; out.innerHTML=""; } }
+
+  /* ================= рукописный вывод =================
+     Знак — набор линий в квадрате 1×1 (y вниз). Никаких шрифтов и лицензий. */
+  function A(cx,cy,rx,ry,a0,a1,n){
+    const o=[];
+    for(let i=0;i<=n;i++){
+      const a=(a0+(a1-a0)*i/n)*Math.PI/180;
+      o.push([cx+rx*Math.cos(a), cy+ry*Math.sin(a)]);
+    }
+    return o;
+  }
+  function L(x1,y1,x2,y2){ return [[x1,y1],[x2,y2]]; }
+
+  const G={
+    "0": [A(0.50,0.50,0.26,0.45,-70,290,24)],
+    "1": [[[0.26,0.30],[0.52,0.06],[0.50,0.94]]],
+    "2": [[[0.18,0.24],[0.30,0.09],[0.52,0.05],[0.73,0.14],[0.76,0.33],[0.62,0.53],[0.20,0.92],[0.86,0.94]]],
+    "3": [[[0.17,0.15],[0.44,0.05],[0.71,0.13],[0.66,0.35],[0.44,0.45],[0.68,0.55],[0.77,0.77],[0.58,0.94],[0.29,0.94],[0.15,0.85]]],
+    "4": [L(0.62,0.06,0.13,0.66), L(0.10,0.66,0.90,0.66), L(0.62,0.34,0.60,0.96)],
+    "5": [[[0.79,0.07],[0.29,0.07],[0.24,0.44],[0.50,0.37],[0.75,0.48],[0.79,0.72],[0.58,0.92],[0.29,0.92],[0.15,0.84]]],
+    "6": [[[0.71,0.07],[0.43,0.14],[0.24,0.42],[0.22,0.70],[0.37,0.93],[0.60,0.94],[0.75,0.75],[0.62,0.55],[0.37,0.55],[0.23,0.72]]],
+    "7": [[[0.15,0.09],[0.85,0.09],[0.46,0.94]]],
+    "8": [[[0.50,0.47],[0.28,0.33],[0.31,0.13],[0.50,0.05],[0.70,0.13],[0.72,0.33],[0.50,0.47],[0.50,0.47],[0.26,0.66],[0.28,0.86],[0.50,0.94],[0.73,0.86],[0.74,0.66],[0.50,0.47]]],
+    "9": [[[0.73,0.46],[0.50,0.53],[0.30,0.40],[0.30,0.17],[0.50,0.05],[0.71,0.16],[0.73,0.40],[0.66,0.72],[0.52,0.94]]],
+    "+": [L(0.50,0.20,0.50,0.80), L(0.18,0.50,0.82,0.50)],
+    "\u2212": [L(0.12,0.50,0.88,0.50)],
+    "-": [L(0.14,0.50,0.86,0.50)],
+    "=": [L(0.14,0.38,0.86,0.38), L(0.14,0.62,0.86,0.62)],
+    "\u00d7": [L(0.22,0.24,0.78,0.76), L(0.78,0.24,0.22,0.76)],
+    "*": [L(0.22,0.24,0.78,0.76), L(0.78,0.24,0.22,0.76)],
+    "\u00f7": [L(0.14,0.50,0.86,0.50), L(0.50,0.22,0.50,0.26), L(0.50,0.74,0.50,0.78)],
+    ":": [L(0.50,0.30,0.50,0.34), L(0.50,0.66,0.50,0.70)],
+    "/": [L(0.72,0.06,0.28,0.94)],
+    "(": [[[0.66,0.03],[0.47,0.24],[0.41,0.50],[0.47,0.76],[0.66,0.97]]],
+    ")": [[[0.34,0.03],[0.53,0.24],[0.59,0.50],[0.53,0.76],[0.34,0.97]]],
+    ".": [L(0.48,0.90,0.52,0.92)],
+    ",": [[[0.52,0.80],[0.48,0.92],[0.36,1.00]]],
+    "x": [L(0.20,0.24,0.80,0.76), L(0.80,0.24,0.20,0.76)],
+    "y": [[[0.18,0.22],[0.50,0.64]], [[0.82,0.22],[0.40,0.92],[0.28,1.00]]],
+    "\u00b2": [[[0.18,0.24],[0.30,0.09],[0.52,0.05],[0.73,0.14],[0.76,0.33],[0.62,0.53],[0.20,0.92],[0.86,0.94]]],
+    "\u00b3": [[[0.17,0.15],[0.44,0.05],[0.71,0.13],[0.66,0.35],[0.44,0.45],[0.68,0.55],[0.77,0.77],[0.58,0.94],[0.29,0.94],[0.15,0.85]]]
+  };
+
+  const ADV={"0":0.62,"1":0.52,"2":0.62,"3":0.62,"4":0.66,"5":0.62,"6":0.62,"7":0.60,"8":0.64,"9":0.62,
+    "+":0.82,"\u2212":0.82,"-":0.82,"=":0.86,"\u00d7":0.78,"*":0.78,"\u00f7":0.80,":":0.44,
+    "/":0.64,"(":0.44,")":0.44,".":0.32,",":0.34,"x":0.62,"y":0.62," ":0.34,"\u00b2":0.36,"\u00b3":0.36};
+
+  /* детерминированный «случай»: штрихи не должны дрожать при перерисовке */
+  function rnd(seed){
+    let s=seed|0;
+    return function(){ s=(s*1664525+1013904223)&0x7fffffff; return s/0x7fffffff*2-1; };
+  }
+
+  function canHandwrite(t){
+    const s=String(t||"");
+    if(!s) return false;
+    if(/[\\{}^]/.test(s)) return false;             /* LaTeX и степени-крышки — печатью */
+    for(let i=0;i<s.length;i++){
+      if(ADV[s[i]]===undefined) return false;
+    }
+    return true;
+  }
+
+  function layout(text, size){
+    const parts=[];
+    let x=0, seed=1;
+    for(let i=0;i<text.length;i++){
+      const ch=text[i];
+      if(ch===" "){ x+=ADV[" "]*size; continue; }
+      const g=G[ch];
+      if(!g) continue;
+      parts.push({ch:ch, g:g, x:x, size:size, seed:seed++});
+      x+=ADV[ch]*size;
+    }
+    return {parts:parts, width:x};
+  }
+
+  /* превращаем разложенный текст в линии экрана, с наклоном и неровностью */
+  function toPolylines(text, size, ox, oy){
+    const lay=layout(text, size);
+    const res=[];
+    lay.parts.forEach(function(p){
+      const r=rnd(p.seed*7919);
+      const tilt=(r()*1.7)*Math.PI/180;
+      const bx=p.x+ox, by=oy+r()*size*0.03;
+      p.g.forEach(function(stroke){
+        const pts=[];
+        for(let i=0;i<stroke.length;i++){
+          const u=stroke[i][0]*p.size, v=stroke[i][1]*p.size;
+          const cx=u-p.size*0.5, cy=v-p.size*0.5;
+          const rx=cx*Math.cos(tilt)-cy*Math.sin(tilt);
+          const ry=cx*Math.sin(tilt)+cy*Math.cos(tilt);
+          pts.push([bx+rx+p.size*0.5+r()*p.size*0.018, by+ry+p.size*0.5+r()*p.size*0.018]);
+        }
+        res.push(pts);
+      });
+    });
+    return {strokes:res, width:lay.width};
+  }
+
+  function strokeLen(pts){
+    let L2=0;
+    for(let i=1;i<pts.length;i++){
+      const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1];
+      L2+=Math.sqrt(dx*dx+dy*dy);
+    }
+    return L2;
+  }
+
+  /* пишем линию: линии проявляются одна за другой, как пером */
+  function writeInto(canvas, text, opt){
+    opt=opt||{};
+    return new Promise(function(done){
+      const g=canvas.getContext("2d");
+      const box=canvas.parentNode.getBoundingClientRect();
+      const avail=Math.max(80, box.width-6);
+      let size=opt.size||34;
+      let pl=toPolylines(text, size, 0, 0);
+      while(pl.width>avail-4 && size>18){
+        size-=2;
+        pl=toPolylines(text, size, 0, 0);
+      }
+      const h=Math.round(size*1.55);
+      const d=Math.min(window.devicePixelRatio||1, 2);
+      canvas.style.height=h+"px";
+      canvas.width=Math.round(avail*d); canvas.height=Math.round(h*d);
+      canvas.style.width=avail+"px";
+      const oy=Math.round(size*0.22);
+      pl=toPolylines(text, size, 0, oy);
+      g.setTransform(d,0,0,d,0,0);
+      g.clearRect(0,0,avail,h);
+      g.lineCap="round"; g.lineJoin="round";
+      g.strokeStyle=opt.color||pen(); g.lineWidth=opt.width||2.6;
+
+      const total=pl.strokes.reduce(function(a,s){ return a+strokeLen(s); },0)||1;
+      const dur=Math.min(1800, Math.max(320, total*1.05));
+      const t0=performance.now();
+      function frame(now){
+        const k=Math.min(1,(now-t0)/dur);
+        const want=total*k;
+        let acc=0;
+        g.clearRect(0,0,avail,h);
+        g.strokeStyle=opt.color||pen(); g.lineWidth=opt.width||2.6;
+        for(let i=0;i<pl.strokes.length;i++){
+          const pts=pl.strokes[i], sl=strokeLen(pts);
+          if(acc>=want) break;
+          const part=Math.min(1,(want-acc)/(sl||1));
+          g.beginPath();
+          g.moveTo(pts[0][0], pts[0][1]);
+          let walked=0, drew=false;
+          for(let j=1;j<pts.length;j++){
+            const dx=pts[j][0]-pts[j-1][0], dy=pts[j][1]-pts[j-1][1];
+            const seg=Math.sqrt(dx*dx+dy*dy);
+            walked+=seg;
+            if(walked<=sl*part){
+              g.lineTo(pts[j][0], pts[j][1]);
+              drew=true;
+            }else{
+              const over=(sl*part-(walked-seg))/(seg||1);
+              g.lineTo(pts[j-1][0]+dx*Math.max(0,over), pts[j-1][1]+dy*Math.max(0,over));
+              drew=true;
+              break;
+            }
+          }
+          g.stroke();
+          acc+=sl;
+        }
+        if(k<1) requestAnimationFrame(frame);
+        else done();
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  /* ================= шаги из решателя ================= */
+  function dec(s){
+    return String(s||"")
+      .replace(/&minus;/g,"\u2212").replace(/&times;/g,"\u00d7").replace(/&divide;/g,"\u00f7")
+      .replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
+      .replace(/&laquo;/g,"\u00ab").replace(/&raquo;/g,"\u00bb").replace(/&radic;/g,"\u221a")
+      .replace(/<[^>]+>/g,"").replace(/\s+/g," ").trim();
+  }
+  function stepEq(b){
+    const m=/class="eq[^"]*"\s*>([\s\S]*?)<\/div>/.exec(String(b||""));
+    return m? dec(m[1]) : "";
+  }
+  function caption(h){
+    let s=dec(h);
+    s=s.replace(/^Шаг\s*\d+(\s*из\s*\d+)?\.\s*/,"");
+    s=s.replace(/\.$/,"");
+    return s;
+  }
+  /* «3+12=» — это запись на доске, а не уравнение: хвостовое «=» отрезаем,
+     иначе решатель честно отвечает «в уравнении нет неизвестного» */
+  function splitEq(t){
+    let s=String(t||"").replace(/[\u0445\u0425]/g,"x").replace(/\s+/g,"").trim();
+    s=s.replace(/=+$/,"");
+    const p=s.split("=");
+    return {left:(p[0]||""), right:p.length>1? p.slice(1).join("="):""};
+  }
+
+  function buildSteps(expr){
+    let r;
+    try{ r=window.__solve(expr); }
+    catch(e){ return {err:String((e&&e.message)||e)}; }
+    const lines=[];
+    const src=(r.steps||[]);
+    const input=String(expr).replace(/\s+/g,"");
+    src.forEach(function(s,i){
+      const eq=stepEq(s.b);
+      if(!eq) return;
+      const flat=eq.replace(/\s+/g,"");
+      if(!flat) return;
+      /* то, что ученик уже написал сам, второй раз не пишем */
+      if(flat===input && !lines.length) return;
+      if(/^Записываем/.test(dec(s.h)) && !lines.length) return;
+      const prev=lines[lines.length-1];
+      if(prev && prev.text===eq) return;            /* повторы не нужны */
+      lines.push({text:eq, cap:caption(s.h), last:(i===src.length-1)});
+    });
+    if(!lines.length && r.answer){
+      lines.push({text:String(expr)+" = "+dec(r.answer), cap:"Ответ", last:true});
+    }
+    if(lines.length) lines[lines.length-1].last=true;
+    return {lines:lines, answer:r.answer? dec(r.answer):""};
+  }
+
+  /* ================= чтение штрихов ================= */
+  function readInk(){
+    if(!window.__boardAI) return Promise.reject(new Error("нет распознавателя"));
+    return window.__boardAI.preflight().then(function(pf){
+      if(!pf || !pf.ok) throw new Error((pf&&pf.err)||"распознаватель не загрузился");
+      return window.__boardAI.recognize(strokes, function(stage){
+        if(hint && stage) hint.textContent=stage;
+      });
+    });
+  }
+
+  /* ================= проверка ================= */
+  async function check(){
+    if(busy) return;
+    const typed=($("q")&&$("q").value||"").trim();
+    let variants=[];
+    clearOut();
+    busy=true;
+    $("nbCheck").disabled=true;
+    try{
+      if(strokes.length){
+        if(hint) hint.textContent="читаю написанное…";
+        let r;
+        try{ r=await readInk(); }
+        catch(e){
+          if(hint) hint.textContent="пишите пример прямо здесь";
+          say("Распознавание недоступно: "+String((e&&e.message)||e).slice(0,90)+
+              ". Пример можно набрать в поле — решение допишу так же.", "err");
+          busy=false; $("nbCheck").disabled=false;
+          return;
+        }
+        variants=(r.variants||[]).map(function(v){ return v.text; });
+        if(!variants.length){
+          if(hint) hint.textContent="пишите пример прямо здесь";
+          say("Не разобрал написанное. Напишите крупнее или наберите в поле.","err");
+          busy=false; $("nbCheck").disabled=false;
+          return;
+        }
+      }else if(typed){
+        variants=[typed];
+      }else{
+        if(hint) hint.textContent="пишите пример прямо здесь";
+        say("Напишите пример на доске или введите его в поле сверху.","err");
+        busy=false; $("nbCheck").disabled=false;
+        return;
+      }
+
+      if(hint) hint.textContent="считаю…";
+      /* из вариантов берём первый, который решатель вообще понимает */
+      let picked=null, built=null;
+      for(let i=0;i<variants.length;i++){
+        const parts=splitEq(variants[i]);
+        if(!parts.left) continue;
+        const b=buildSteps(parts.left);
+        if(b && !b.err && b.lines && b.lines.length){ picked=parts; built=b; break; }
+        if(!built) built=b;
+      }
+      if(!built || built.err || !built.lines || !built.lines.length){
+        if(hint) hint.textContent="пишите пример прямо здесь";
+        say((built&&built.err)? ("Не понял пример: "+built.err+
+            ". Попробуйте записать иначе — например 3+12.") :
+            "Не получилось разобрать пример.","err");
+        busy=false; $("nbCheck").disabled=false;
+        return;
+      }
+
+      /* сверка ответа ученика, если он написал «=…» */
+      let verdict="";
+      if(picked && picked.right && window.__boardAI && window.__boardAI._num){
+        const full=picked.left+"="+picked.right;
+        const v=window.__boardAI._num(full);
+        if(v==="true") verdict="Верно";
+        else if(v==="false") verdict="Ответ неверный";
+      }
+
+      await render(built, variants, picked, verdict);
+      if(hint) hint.textContent="готово — решение ниже";
+    }finally{
+      busy=false;
+      $("nbCheck").disabled=false;
+    }
+  }
+
+  function say(txt, kind){
+    out.hidden=false;
+    out.innerHTML='<div class="nb-msg'+(kind==="err"?" err":"")+'">'+esc(txt)+'</div>';
+  }
+  function esc(t){
+    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  async function render(built, variants, picked, verdict){
+    out.hidden=false;
+    out.innerHTML="";
+
+    /* что прочитано — видно сразу и правится одним касанием */
+    const head=document.createElement("div");
+    head.className="nb-head";
+    let hh='<span class="nb-read">прочитал: <b>'+esc(picked.left+(picked.right? "="+picked.right:""))+'</b></span>';
+    if(verdict) hh+='<span class="nb-verdict'+(verdict==="Верно"?" ok":" bad")+'">'+esc(verdict)+'</span>';
+    head.innerHTML=hh;
+    if(variants.length>1){
+      const more=document.createElement("button");
+      more.type="button"; more.className="nb-more";
+      more.textContent="не то?";
+      more.addEventListener("click", function(){
+        const box=document.createElement("div");
+        box.className="nb-vars";
+        variants.forEach(function(v){
+          const b=document.createElement("button");
+          b.type="button"; b.className="nb-chip"; b.textContent=v;
+          b.addEventListener("click", function(){
+            const q=$("q");
+            if(q){ q.value=v; q.dispatchEvent(new Event("input",{bubbles:true})); }
+            strokes=[]; redraw();
+            check();
+          });
+          box.appendChild(b);
+        });
+        head.appendChild(box);
+      });
+      head.appendChild(more);
+    }
+    out.appendChild(head);
+
+    /* строки решения: рукописная строка + короткая подпись под ней */
+    const lines=built.lines.slice(0, 8);
+    for(const ln of lines){
+      const row=document.createElement("div");
+      row.className="nb-line"+(ln.last? " last":"");
+      const holder=document.createElement("div");
+      holder.className="nb-ink";
+      const cvl=document.createElement("canvas");
+      holder.appendChild(cvl);
+      row.appendChild(holder);
+      const cap=document.createElement("div");
+      cap.className="nb-cap";
+      cap.textContent=ln.cap||"";
+      row.appendChild(cap);
+      out.appendChild(row);
+      /* LaTeX и степени-крышкой пишем печатью: врать «рукописным» не будем */
+      if(canHandwrite(ln.text)){
+        await writeInto(cvl, ln.text, {size:ln.last? 36:33});
+      }else{
+        cvl.style.display="none";
+        const pr=document.createElement("div");
+        pr.className="nb-print";
+        pr.textContent=ln.text;
+        holder.appendChild(pr);
+      }
+      cap.classList.add("on");
+      if(ln!==lines[lines.length-1]) await new Promise(function(r){ setTimeout(r, 110); });
+    }
+  }
+
+  $("nbCheck").addEventListener("click", check);
+
+  /* размеры и тема */
+  sizeCanvas();
+  window.addEventListener("resize", sizeCanvas);
+  if(window.MutationObserver){
+    new MutationObserver(function(){ redraw(); }).observe(document.body,{attributes:true,attributeFilter:["class"]});
+  }
+  /* первый показ доски — без штрихов, только подсказка */
+  if(hint) hint.textContent="пишите пример прямо здесь";
+
+  window.__noteBoard={check:check, getStrokes:function(){ return strokes; },
+    clear:function(){ strokes=[]; redraw(); clearOut(); },
+    write:writeInto, _steps:buildSteps, _can:canHandwrite};
 })();
 </script>
 
