@@ -2958,15 +2958,17 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 /* И на всю высоту экрана, которая остаётся между полем поиска и капсулой:
    фиксированные 158 px обрезали столбик из нескольких строк. */
 @media (max-width:900px){
-  /* vh — запасной для старых браузеров, dvh — точный (без адресной строки) */
-  .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:240px;max-height:760px}
+  /* vh — запасной для старых браузеров, dvh — точный (без адресной строки).
+     Высота взята с запасом под строку «прочитал: …» и капсулу «Проверить»:
+     при прежних 300 px эта строка уходила под кнопки. */
+  .nb-write{height:calc(100vh - 372px);height:calc(100dvh - 372px);min-height:200px;max-height:700px}
 }
 @media (max-width:900px) and (orientation:landscape){
   /* в горизонтали экран низкий: доска забирает не всё, иначе ответ уходит
      под капсулу «Проверить» — оставляем полосу под решение */
   /* доска в горизонтали — примерно треть низкого экрана, остальное уходит
      под ответ и ряд способов ввода */
-  .nb-write{height:calc(100vh - 280px);height:calc(100dvh - 280px);min-height:170px;max-height:none}
+  .nb-write{height:calc(100vh - 300px);height:calc(100dvh - 300px);min-height:150px;max-height:none}
 }
 #nbCanvas{display:block;width:100%;height:100%;background:transparent;
   touch-action:none;cursor:crosshair;-webkit-tap-highlight-color:transparent}
@@ -3345,7 +3347,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.6";
+const APP_VERSION="5.8.7";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18723,9 +18725,11 @@ window.__LEARN={
     const still=!!(opt && opt.still);
     /* Ровный режим: цифры ответа не должны «плясать». Наклон почти нулевой,
        дрожание в четыре раза слабее, базовая линия у всех знаков общая. */
-    const tiltMax=still? 0.30 : 1.7;
-    const jit=still? 0.004 : 0.018;
-    const baseJit=still? 0.004 : 0.03;
+    /* Ровный режим — без наклона и почти без дрожания: цифры ответа
+       должны стоять как по линейке, иначе на телефоне «пляшут». */
+    const tiltMax=still? 0 : 1.7;
+    const jit=still? 0.002 : 0.018;
+    const baseJit=still? 0 : 0.03;
     lay.parts.forEach(function(p){
       const r=rnd(p.seed*7919);
       const tilt=(r()*tiltMax)*Math.PI/180;
@@ -18920,53 +18924,61 @@ window.__LEARN={
     });
   }
 
-  /* Ответ сразу после записи — на ТОЙ ЖЕ строке, что и пример, и всегда
-     слева от правого края. Раньше, если справа не хватало места, ответ
-     уезжал вниз к левому краю — это и выглядело как «ответ едет». */
+  /* Прайм-край чернил: правее этой точки ничего не написано. */
+  function inkRight(list){
+    let r=-1e9;
+    (list||[]).forEach(function(st){
+      st.p.forEach(function(p){ if(p[0]>r) r=p[0]; });
+    });
+    return r;
+  }
+
+  /* Ответ короткого примера: на строке примера, строго правее последнего
+     знака, с зазором. Если справа тесно — не падаем в угол, а пишем
+     строкой ниже по левому краю примера: ответ остаётся рядом с записью. */
   function answerAfterInk(text){
     const b=inkBox(strokes);
     if(!isFinite(b.x0)) return null;
-    const W=cv.width/dpr;
-    const marks=eqMarks(strokes).sort(function(a,c){ return c.cx-a.cx; });
-    const hInk=Math.max(16, b.y1-b.y0);
-    const base=Math.max(20, Math.min(44, hInk*0.55));
-    let cy, x;
-    if(marks.length){ cy=marks[0].y; x=marks[0].right+10; }
-    else{ cy=(b.y0+b.y1)/2; x=b.x1+10; }
-    let fit=fitRun(text, base, W-x-6);
-    if(fit.size<16){
-      /* справа тесно — прижимаем к правому краю той же строки */
-      fit=fitRun(text, base, W-14);
-      x=W-6-fit.width;
+    const W=cv.width/dpr, H=cv.height/dpr, GAP=16;
+    let size=Math.max(20, Math.min(36, (b.y1-b.y0)*0.42));
+    const xR=Math.max(b.x1, inkRight(strokes))+GAP;
+    let fit=fitRun(text, size, Math.max(40, W-xR-8));
+    if(fit.size>=17 && xR+fit.width<=W-8){
+      return {text:text, x:xR, y:(b.y0+b.y1)/2-fit.size*0.5,
+              size:fit.size, color:answerPen()};
     }
-    x=Math.max(4, Math.min(x, W-6-fit.width));
-    const y=cy-fit.size*0.5;
-    return {text:text, x:x, y:y, size:fit.size, color:answerPen()};
+    size=Math.max(18, Math.min(30, size));
+    fit=fitRun(text, size, W-b.x0-20);
+    let y=b.y1+12;
+    if(y+fit.size*1.35>H) y=Math.max(6, H-fit.size*1.4);
+    return {text:text, x:Math.max(6,b.x0), y:y, size:fit.size, color:answerPen()};
   }
 
-  /* Уравнение: шаги пишутся зелёным прямо под записью на том же листе,
-     а не отдельным блоком у нижнего края экрана. */
+  /* Уравнение: шаги зелёным под примером, ровными строками с запасом по
+     высоте. Раньше шаг строки был меньше роста знака, и строки наезжали
+     друг на друга — читать было нельзя. */
   function stepsOnBoard(built){
     const b=inkBox(strokes);
     const W=cv.width/dpr, H=cv.height/dpr;
-    const rows=(built.lines||[]).map(function(l){ return l.text; }).filter(Boolean).slice(0,6);
+    const rows=(built.lines||[]).map(function(l){ return l.text; })
+                 .filter(Boolean).slice(0,4);
     if(!rows.length) return [];
-    const top=isFinite(b.y1)? (b.y1+16) : 24;
-    let size=Math.max(20, Math.min(40, (isFinite(b.y0)? (b.y1-b.y0) : 40)*0.55));
-    const avail=H-top-8;
-    /* все строки должны уложиться в лист: иначе шаги уходят под капсулу */
-    while(size>14 && rows.length*size*1.55>avail) size-=2;
-    let x=Math.max(4, Math.min(isFinite(b.x0)? b.x0 : 8, 28));
-    const placed=[];
+    const hasInk=isFinite(b.y1);
+    const top=Math.min(Math.max(16, H-40), hasInk? b.y1+20 : 24);
+    let size=Math.max(18, Math.min(30, hasInk? (b.y1-b.y0)*0.40 : 26));
+    const STEP=1.95;
+    while(size>14 && top + rows.length*size*STEP > H-6) size-=1;
+    const left=Math.max(6, Math.min(hasInk? b.x0 : 8, 28));
+    const out=[];
     let y=top;
     for(let i=0;i<rows.length;i++){
-      const fit=fitRun(rows[i], size, W-x-6);
-      if(fit.size<13) break;
-      placed.push({text:rows[i], size:fit.size, x:x, y:y, color:answerPen()});
-      y+=fit.size*1.55;
-      if(y>H-4) break;
+      const fit=fitRun(rows[i], size, W-left-14);
+      if(fit.size<12) break;
+      if(y+fit.size*STEP>H+2) break;
+      out.push({text:rows[i], size:fit.size, x:left, y:y, color:answerPen()});
+      y+=Math.max(fit.size,size)*STEP;
     }
-    return placed;
+    return out;
   }
 
   /* ================= шаги из решателя ================= */
@@ -19246,9 +19258,11 @@ window.__LEARN={
         onBoard=true;
       }
     }else if(answerText){
+      /* «=» уже стоит на листе — второй раз его не пишем. Признаков три:
+         знак в конце записи, знак вообще был в прочитанном, или на листе
+         нашлась пара горизонтальных черт. */
       const eqOnBoard=(eqMarks(strokes).length>0);
-      /* «=» уже стоит на листе — второй раз его не пишем */
-      const need=(picked.atEnd || eqOnBoard)? answerText : ("="+answerText);
+      const need=(picked.atEnd || picked.hadEq || eqOnBoard)? answerText : ("="+answerText);
       const place=answerAfterInk(need);
       if(place){
         outs.push(place);
