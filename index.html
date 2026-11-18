@@ -2961,6 +2961,16 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
   animation:nbIn .16s ease-out}
 .nb-acts[hidden]{display:none}
+/* Портрет: капсула уходит вниз, к ряду способов ввода. На листе она
+   стояла посреди страницы и закрывала место для письма. */
+@media (max-width:640px) and (orientation:portrait){
+  .nb-acts{position:fixed;left:auto;right:10px;
+    bottom:calc(132px + env(safe-area-inset-bottom,0px));z-index:942;
+    padding:5px;border-radius:16px;
+    box-shadow:0 12px 26px -14px rgba(20,25,45,.55)}
+  .nb-a{height:38px;min-width:36px}
+  .nb-a.go{padding:0 15px;font-size:13px}
+}
 @keyframes nbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .nb-a{display:inline-flex;align-items:center;gap:6px;height:32px;min-width:32px;
   padding:0 7px;border:0;border-radius:10px;background:transparent;color:#3d4350;
@@ -3303,7 +3313,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.1";
+const APP_VERSION="5.8.2";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18514,6 +18524,7 @@ window.__LEARN={
     hideFly(true);
     const pt=pos(e);
     g={x0:pt[0], y0:pt[1], yLast:pt[1], scroll:false, cleared:false,
+       n:0, t0:(window.performance? performance.now(): Date.now()),
        touch:(e.pointerType!=="mouse")};
     try{ cv.setPointerCapture(e.pointerId); }catch(err){}
     mode="draw";
@@ -18526,13 +18537,22 @@ window.__LEARN={
     if(!g) return;
     const pt=pos(e);
     const dx=pt[0]-g.x0, dy=pt[1]-g.y0;
-    /* палец пошёл вниз-вверх, а не поперёк — это прокрутка страницы,
-       а не штрих: начатую линию убираем, лист двигаем сами */
-    if(g.touch && !g.scroll && Math.abs(dy)>14 && Math.abs(dy)>Math.abs(dx)*1.8){
-      g.scroll=true;
-      if(last && strokes[strokes.length-1]===last){ strokes.pop(); last=null; }
-      mode=null;
-      redraw(); refreshActs();
+    /* Прокрутка листа — только быстрый вертикальный «флик», и только
+       в самом начале жеста. Раньше хватало 14 px по вертикали — и любая
+       вертикальная черта («1», «7», скобка) считалась прокруткой: штрих
+       удалялся, и после отрыва пальца казалось, что написанное стёрлось.
+       Теперь нужно почти строго вниз, длиннее 34 px и быстрее 0,55 px/мс. */
+    if(g.touch && !g.scroll){
+      g.n++;
+      if(g.n<=5){
+        const dt=Math.max(1, (window.performance? performance.now(): Date.now())-g.t0);
+        if(Math.abs(dy)>34 && Math.abs(dx)<10 && dy*dy>dx*dx*9 && Math.abs(dy)/dt>0.55){
+          g.scroll=true;
+          if(last && strokes[strokes.length-1]===last){ strokes.pop(); last=null; }
+          mode=null;
+          redraw(); refreshActs();
+        }
+      }
     }
     if(g.scroll){
       window.scrollBy(0, g.yLast-pt[1]);
@@ -18548,9 +18568,18 @@ window.__LEARN={
     redraw();
   });
   const stop=function(){
-    g=null;
-    if(mode==="draw"){ /* жест закончен */ }
-    mode=null; last=null;
+    /* Случайное касание или тычок оставляют точку — при чтении она
+       превращается в запятую или точку в примере. Такие штрихи убираем. */
+    if(last && strokes.length && strokes[strokes.length-1]===last){
+      const p=last.p;
+      if(p.length<2){ strokes.pop(); redraw(); }
+      else{
+        let len=0;
+        for(let i=1;i<p.length;i++) len+=Math.hypot(p[i][0]-p[i-1][0], p[i][1]-p[i-1][1]);
+        if(len<4){ strokes.pop(); redraw(); }
+      }
+    }
+    g=null; mode=null; last=null;
     refreshActs();
   };
   cv.addEventListener("pointerup", stop);
