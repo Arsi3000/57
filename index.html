@@ -2974,9 +2974,14 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
 .nb-a.go:disabled{opacity:.65;box-shadow:none}
 
 /* всплывающая подсказка у поля поиска */
-.nb-fly{position:relative;max-width:340px;margin:7px auto 0;animation:nbIn .22s ease-out}
+/* Подсказка — всплывающий пузырь над листом: не занимает место в потоке
+   (иначе при её исчезновении лист прыгал под пальцем) и не перехватывает
+   касания, чтобы не мешать писать. */
+.nb{position:relative}
+.nb-fly{position:absolute;right:6px;top:8px;z-index:4;width:186px;pointer-events:none;
+  animation:nbIn .22s ease-out}
 .nb-fly[hidden]{display:none}
-.nb-fly:before{content:"";position:absolute;left:50%;top:-6px;width:12px;height:12px;
+.nb-fly:before{content:"";position:absolute;right:22px;top:-6px;width:12px;height:12px;
   margin-left:-6px;transform:rotate(45deg);border-radius:2px;
   background:linear-gradient(135deg,#fff6d8,#fff3c8);
   border-left:1px solid rgba(200,160,40,.28);border-top:1px solid rgba(200,160,40,.28)}
@@ -3036,10 +3041,10 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
        Пишешь прямо на листе, решатель дописывает ответ ниже тем же пером. -->
   <section class="nb" id="noteBoard">
     <div class="nb-fly" id="nbFly" hidden>
-      <button type="button" class="nb-flyb" id="nbFlyGo">
+      <div class="nb-flyb" id="nbFlyGo">
         <b>Пиши прямо в тетради</b>
-        <span>выведи пример рукой — ответ допишу ниже тем же пером</span>
-      </button>
+        <span>ответ допишу тем же пером</span>
+      </div>
     </div>
     <div class="nb-write" id="nbWrite">
       <canvas id="nbCanvas" aria-label="Пишите пример от руки прямо на листе"></canvas>
@@ -18538,7 +18543,7 @@ window.__LEARN={
     /* Старое решение убираем только когда человек правда начал писать —
        не на касании. Иначе свайп по листу стирал ответ и укорачивал
        страницу, и прокручивать становилось нечего. */
-    if(!g.cleared){ g.cleared=true; if(sol && !sol.hidden) clearSol(); }
+    if(!g.cleared){ g.cleared=true; hideFly(true); if(sol && !sol.hidden) clearSol(); }
     last.p.push(pt);
     redraw();
   });
@@ -18900,7 +18905,7 @@ window.__LEARN={
       head.appendChild(more);
     }
     sol.appendChild(head);
-    if(fly) fly.hidden=true;
+    hideFly(true);
 
     const lines=built.lines.slice(0, 8);
     for(const ln of lines){
@@ -18939,14 +18944,15 @@ window.__LEARN={
 
   /* набрал пример в поле — подсказка «можешь писать прямо в тетради» больше не нужна */
   const qEl=$("q");
-  if(qEl) qEl.addEventListener("input", function(){ if(qEl.value.trim() && fly) fly.hidden=true; });
+  if(qEl) qEl.addEventListener("input", function(){ if(qEl.value.trim()) hideFly(true); });
 
   /* подсказка у поля: показываем, пока человек не начал писать.
      В разметке она скрыта, чтобы не мигала до инициализации. */
   try{
-    const off=localStorage.getItem("reshatel.nbHint")==="off";
-    if(fly) fly.hidden=off;
-  }catch(e){ if(fly) fly.hidden=false; }
+    fly.hidden=(localStorage.getItem("reshatel.nbHint")==="off");
+  }catch(e){ fly.hidden=false; }
+  /* пузырь живёт несколько секунд: место на листе нужно для письма */
+  if(!fly.hidden) setTimeout(function(){ hideFly(true); }, 9000);
 
   sizeCanvas();
   refreshActs();
