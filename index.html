@@ -3347,7 +3347,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.9";
+const APP_VERSION="5.8.10";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18916,22 +18916,32 @@ window.__LEARN={
   }
   function clearInkOut(){ outs=[]; paintOuts(); }
 
-  /* «написать» одну строку с анимацией, остальные уже стоят */
-  function animOut(o){
-    const total=runMetrics(o.text,o.size).len;
-    const dur=Math.min(900, Math.max(220, total*0.9));
+  /* «написать» вывод по очереди: сегменты пишутся один за другим,
+     уже написанные стоят. Сегменты — отдельные куски строки («=» и число
+     раздельно), чтобы зазор между ними был настоящим, а не расчётным. */
+  function animRun(list){
+    const lens=list.map(function(o){ return runMetrics(o.text,o.size).len; });
+    const total=lens.reduce(function(a,b){ return a+b; },0)||1;
+    const dur=Math.min(1100, Math.max(240, total*0.9));
     const t0=performance.now();
     return new Promise(function(done){
       function frame(now){
         const k=Math.min(1,(now-t0)/dur);
         clearOv();
-        outs.forEach(function(x){ if(x!==o) strokeRun(x.text,x.size,x.x,x.y,1,x.color); });
-        strokeRun(o.text,o.size,o.x,o.y,k,o.color);
+        let acc=0;
+        for(let i=0;i<list.length;i++){
+          const o=list[i];
+          const part=Math.max(0, Math.min(1,(total*k-acc)/(lens[i]||1)));
+          if(part>0) strokeRun(o.text,o.size,o.x,o.y,part,o.color);
+          acc+=lens[i];
+          if(acc>total*k) break;
+        }
         if(k<1) requestAnimationFrame(frame); else done();
       }
       requestAnimationFrame(frame);
     });
   }
+  function animOut(o){ return animRun([o]); }
 
   /* правая граница чернил: правее этой точки ничего не написано */
   function inkRight(list){
@@ -18943,58 +18953,94 @@ window.__LEARN={
   }
 
   /* ================= ОДНО ПРАВИЛО ДЛЯ ОТВЕТА =================
-     Договорились так:
-     • телефон вертикально — ответ пишется СТРОКОЙ НИЖЕ записи, слева под
-       началом примера. Если «=» у человека уже стоит — только число,
-       если нет — «= число».
-     • телефон горизонтально — справа в конце записи, на той же строке;
-       если там тесно, ответ сдвигается ниже, но не в угол.
-     Никакой другой раскладки нет: одно место, предсказуемое. */
+     Договорились:
+     • телефон вертикально — ответ СТРОКОЙ НИЖЕ записи, слева под началом
+       примера; «=» уже стоит у человека — пишем только число, нет — «= число»;
+     • телефон горизонтально — в конце записи на её строке, а если тесно —
+       тоже строкой ниже.
+     Части ответа («=» и число) ставятся по фактической ширине нарисованного,
+     а не по расчётной: поэтому наехать друг на друга они не могут. */
   function isLandscape(){
     return cv.width > cv.height*1.15;
   }
-  /* «=» на листе: в конце записи, где-то в прочитанном или парой черт */
-  function eqOnBoard(picked){
+  function eqDone(picked){
     try{
       if(picked && (picked.atEnd || picked.hadEq)) return true;
       return eqMarks(strokes).length>0;
     }catch(e){ return false; }
   }
-  function answerLine(picked, built){
+  /* части ответа: «=» отдельно, число отдельно */
+  function answerSegs(picked, built){
     const isEq=!!(picked && hasLetter(picked.left||""));
-    const ans=(built.answer!==undefined && built.answer!==null)? String(built.answer):"";
-    if(!ans) return "";
+    let ans=(built.answer!==undefined && built.answer!==null)? String(built.answer).trim():"";
+    if(!ans) return [];
     if(isEq){
-      /* у уравнения ответ — «x = 1», а не голое число */
-      if(/[a-zа-яё]/i.test(ans)) return ans.replace(/\s+/g," ").trim();
       const v=(String(picked.left).match(/[a-z]/i)||["x"])[0];
-      return v+" = "+ans;
+      ans=v+" = "+ans;
+      return [ans];
     }
-    return (eqOnBoard(picked)? "" : "= ")+ans;
+    return eqDone(picked)? [ans] : ["=", ans];
   }
-  function placeAnswer(text, picked){
+  /* вертикально: строка ниже записи, слева */
+  function belowInk(picked, segs){
     const b=inkBox(strokes);
     const W=cv.width/dpr, H=cv.height/dpr;
     const hasInk=isFinite(b.x0);
-    const hInk=hasInk? Math.max(24, b.y1-b.y0) : 34;
-    let size=Math.max(22, Math.min(36, hInk*0.5));
-    const left=hasInk? Math.max(6, b.x0) : 10;
-
-    if(isLandscape() && hasInk){
-      /* горизонтально: в конце записи, на её строке */
-      const xR=Math.max(b.x1, inkRight(strokes))+18;
-      let sz=fitSize(text, size, Math.max(40, W-xR-10));
-      if(sz>=18 && xR+runMetrics(text,sz).width<=W-8){
-        return [{text:text, x:xR, y:(b.y0+b.y1)/2-sz*0.5, size:sz, color:answerPen()}];
-      }
+    const hInk=hasInk? Math.max(26, b.y1-b.y0) : 36;
+    let size=Math.max(22, Math.min(34, hInk*0.46));
+    const left=hasInk? Math.max(8, b.x0) : 12;
+    const gap=Math.round(size*0.34);
+    /* сначала подбираем кегль по суммарной ширине */
+    const need=function(sz){
+      let w=0;
+      segs.forEach(function(t,i){ w+=runMetrics(t,sz).width + (i? gap:0); });
+      return w;
+    };
+    while(size>16 && need(size)>W-left-14) size-=1;
+    let y=hasInk? b.y1 + Math.round(hInk*0.52) : Math.round(size*1.4);
+    if(y+size*1.15>H-4) y=Math.max(4, H-size*1.2);
+    const out=[];
+    let x=left;
+    segs.forEach(function(t){
+      const w=runMetrics(t,size).width;
+      out.push({text:t, size:size, x:x, y:y, color:answerPen()});
+      x+=w+gap;
+    });
+    return out;
+  }
+  /* горизонтально: сразу после последнего знака на его строке */
+  function afterInk(picked, segs){
+    const b=inkBox(strokes);
+    const W=cv.width/dpr, H=cv.height/dpr;
+    const hasInk=isFinite(b.x0);
+    const hInk=hasInk? Math.max(26, b.y1-b.y0) : 36;
+    let size=Math.max(22, Math.min(34, hInk*0.46));
+    const gap=Math.round(size*0.34);
+    const xR=(hasInk? Math.max(b.x1, inkRight(strokes)) : 12) + Math.round(hInk*0.35) + 10;
+    const need=function(sz){
+      let w=0;
+      segs.forEach(function(t,i){ w+=runMetrics(t,sz).width + (i? gap:0); });
+      return w;
+    };
+    while(size>16 && xR+need(size)>W-8) size-=1;
+    if(xR+need(size)>W-8) return null;      /* не влезает — уйдём строкой ниже */
+    const y=(hasInk? (b.y0+b.y1)/2 : size*1.2) - size*0.5;
+    const out=[];
+    let x=xR;
+    segs.forEach(function(t){
+      const w=runMetrics(t,size).width;
+      out.push({text:t, size:size, x:x, y:y, color:answerPen()});
+      x+=w+gap;
+    });
+    return out;
+  }
+  function placeAnswer(picked, segs){
+    if(!segs.length) return [];
+    if(isLandscape()){
+      const a=afterInk(picked, segs);
+      if(a) return a;
     }
-
-    /* вертикально (и запасной случай): строкой ниже записи, слева */
-    let sz=fitSize(text, size, W-left-16);
-    if(sz<18){ sz=fitSize(text, Math.max(20,size*0.8), W-left-16); }
-    let y=hasInk? b.y1+Math.round(hInk*0.55) : Math.round(size*1.5);
-    if(y+sz*1.2>H-4) y=Math.max(4, H-sz*1.25);
-    return [{text:text, x:left, y:y, size:sz, color:answerPen()}];
+    return belowInk(picked, segs);
   }
 
   /* ================= шаги из решателя ================= */
@@ -19281,12 +19327,12 @@ window.__LEARN={
       say("Вижу только одно число. Напишите знак и второе число крупнее — или наберите пример в поле сверху.","err");
       return;
     }
-    const line=answerLine(picked, built);
-    if(strokes.length && line){
-      const placed=placeAnswer(line, picked);
+    const segs=answerSegs(picked, built);
+    if(strokes.length && segs.length){
+      const placed=placeAnswer(picked, segs);
       if(placed && placed.length){
         outs=placed;
-        for(let i=0;i<outs.length;i++) await animOut(outs[i]);
+        await animRun(outs);
         onBoard=true;
       }
     }
