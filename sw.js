@@ -1,8 +1,8 @@
 /* Решатель — офлайн-кеш (B10).
    Версия кэша меняется при каждой сборке: старая чистка уходит сама. */
-const VERSION = "5.8.12";
+const VERSION = "5.8.15";
 const CACHE = "reshatel-" + VERSION;
-const SHELL = ["./", "./index.html"];
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", function(e){
   e.waitUntil(
