@@ -2762,6 +2762,146 @@ body.warm .cheat,body.warm .setscreen,body.warm .themelist{background:#fbf5e7;bo
 body.warm .liveprev{background:#fbf5e7;border-color:rgba(120,90,60,.3)}
 body.warm .cardacts .act{background:#fbf5e7;border-color:rgba(120,90,60,.22);color:#2f281e}
 body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#8a5a14}
+
+/* ================= 5.9.0: вид для подростка =================
+   Пять тем + четыре открываемых скина. Фон, наклон карточек, пульс решения,
+   подсказка-строка, свой акцент. Всё на CSS-переменных, без картинок. */
+
+/* --- четыре новые темы: включаются атрибутом data-theme --- */
+body[data-theme="matrix"]{
+  --bg:#04120a; --ink:#d9ffe9; --ink-soft:#a8e8c4; --ink-dim:#7fbf9c;
+  --line:rgba(80,255,170,.20); --glass:rgba(20,80,50,.25); --glass-2:rgba(6,26,16,.90);
+  --vio:#33ff9e; --cyan:#4be0ff; --mint:#33ff9e; --accent:#33ff9e; --focus:#7dffc4;
+  --surface-1:#071a10; --surface-2:#082013; --surface-3:#0a2416;
+}
+body[data-theme="acid"]{
+  --bg:#12101c; --ink:#f4f0ff; --ink-soft:#d6cdf5; --ink-dim:#a99fd0;
+  --line:rgba(200,120,255,.22); --glass:rgba(120,60,200,.16); --glass-2:rgba(24,14,40,.90);
+  --vio:#c65cff; --cyan:#5cf0e0; --mint:#b6ff3d; --accent:#c65cff; --focus:#e0a6ff;
+  --surface-1:#171226; --surface-2:#1b1530; --surface-3:#221a3a;
+}
+body[data-theme="terminal"]{
+  --bg:#0a0a0a; --ink:#e8e8d8; --ink-soft:#c8c8b0; --ink-dim:#96967f;
+  --line:rgba(200,200,150,.18); --glass:rgba(60,60,40,.3); --glass-2:rgba(14,14,10,.92);
+  --vio:#ffcc00; --cyan:#8ad0ff; --mint:#9be36a; --accent:#ffcc00; --focus:#ffe066;
+  --surface-1:#101010; --surface-2:#141414; --surface-3:#1a1a16;
+}
+body[data-theme="synth"]{
+  --bg:#0d0318; --ink:#ffe9fb; --ink-soft:#f0c3ea; --ink-dim:#c094b8;
+  --line:rgba(255,80,190,.24); --glass:rgba(120,20,90,.22); --glass-2:rgba(24,4,34,.92);
+  --vio:#ff4fa3; --cyan:#47e0ff; --mint:#ffd166; --accent:#ff4fa3; --focus:#ff8cc6;
+  --surface-1:#150424; --surface-2:#1a0529; --surface-3:#220734;
+}
+
+/* --- свой акцент: одна переменная, красит всё, что было --vio --- */
+body{--acc:var(--vio)}
+body[data-acc]{--vio:var(--acc);--focus:var(--acc)}
+body[data-acc] .solve,body[data-acc] .act-primary,body[data-acc] .bnav.on{filter:saturate(1.05)}
+
+/* --- живой фон: три слоя, яркость 3–6 %, двигаются 40–90 с --- */
+#fxBg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .6s}
+.app{position:relative;z-index:1}
+body[data-theme="dark"] #fxBg,body[data-theme="matrix"] #fxBg,
+body[data-theme="acid"] #fxBg,body[data-theme="terminal"] #fxBg,
+body[data-theme="synth"] #fxBg{opacity:1}
+#fxBg i{position:absolute;display:block;border-radius:50%;filter:blur(40px)}
+#fxBg i:nth-child(1){width:62vmin;height:62vmin;left:-18vmin;top:-12vmin;
+  background:radial-gradient(circle,var(--vio),transparent 70%);opacity:.10;animation:fxA 62s ease-in-out infinite}
+#fxBg i:nth-child(2){width:54vmin;height:54vmin;right:-14vmin;top:26vmin;
+  background:radial-gradient(circle,var(--cyan),transparent 70%);opacity:.08;animation:fxB 78s ease-in-out infinite}
+#fxBg i:nth-child(3){width:70vmin;height:70vmin;left:12vmin;bottom:-24vmin;
+  background:radial-gradient(circle,var(--mint),transparent 72%);opacity:.07;animation:fxC 90s ease-in-out infinite}
+@keyframes fxA{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(14vmin,10vmin,0)}}
+@keyframes fxB{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(-12vmin,16vmin,0)}}
+@keyframes fxC{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(10vmin,-14vmin,0)}}
+/* сканирующие линии — только у ретро и терминала */
+body[data-theme="retro"] #fxBg,body[data-theme="terminal"] #fxBg{opacity:1}
+#fxBg b{position:absolute;inset:0;display:block;opacity:0}
+body[data-theme="retro"] #fxBg b,body[data-theme="terminal"] #fxBg b{
+  opacity:.06;background:repeating-linear-gradient(180deg,transparent 0 3px,#fff 3px 4px);
+  animation:fxScan 9s linear infinite}
+@keyframes fxScan{0%{transform:translateY(0)}100%{transform:translateY(4px)}}
+/* матрица: падающие столбцы цифр символами, без canvas */
+body[data-theme="matrix"] #fxBg u{position:absolute;inset:0;display:block;opacity:.10;
+  color:#4dffa2;font:600 13px/1.5 ui-monospace,monospace;letter-spacing:2px;white-space:pre;
+  writing-mode:vertical-rl;text-orientation:upright;animation:fxRain 26s linear infinite}
+@keyframes fxRain{0%{transform:translateY(-30%)}100%{transform:translateY(30%)}}
+/* сетка «синтвейв» — перспектива уходит за горизонт */
+body[data-theme="synth"] #fxBg s{position:absolute;inset:auto 0 0 0;height:38vh;display:block;opacity:.16;
+  background:
+    repeating-linear-gradient(90deg,rgba(255,79,163,.55) 0 1px,transparent 1px 44px),
+    repeating-linear-gradient(0deg,rgba(71,224,255,.45) 0 1px,transparent 1px 32px);
+  transform:perspective(220px) rotateX(58deg);transform-origin:50% 100%;
+  animation:fxGrid 7s linear infinite}
+@keyframes fxGrid{0%{background-position:0 0,0 0}100%{background-position:0 0,0 32px}}
+
+/* --- подсказка-строка под полем --- */
+#hintLine{margin:10px 2px 0;min-height:18px;font-size:12.5px;line-height:1.4;color:var(--ink-dim);
+  display:flex;gap:8px;align-items:flex-start;opacity:0;transition:opacity .35s}
+#hintLine.on{opacity:1}
+#hintLine .hl-i{flex:0 0 auto;color:var(--vio);font-weight:800}
+#hintLine .hl-t{flex:1 1 auto}
+#hintLine .hl-x{flex:0 0 auto;border:0;background:none;color:var(--ink-dim);font-size:14px;
+  padding:0 4px;cursor:pointer;line-height:1}
+body.light #hintLine{color:#5a6379}
+
+/* --- наклон карточек и «наклейка» темы --- */
+.card{position:relative;transform:rotate(-.25deg);box-shadow:0 18px 44px -34px rgba(0,0,0,.9)}
+.card:nth-of-type(even){transform:rotate(.22deg)}
+body.light .card,body.warm .card{box-shadow:0 14px 30px -22px rgba(50,60,90,.5)}
+#themeSticker{position:absolute;top:-9px;right:12px;padding:3px 9px;border-radius:6px;
+  font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  background:var(--vio);color:#0a0a12;transform:rotate(2deg);
+  box-shadow:0 6px 14px -8px rgba(0,0,0,.9);pointer-events:none;z-index:2}
+body.light #themeSticker,body.warm #themeSticker{color:#fff}
+
+/* --- пульс решения: вспышка по карточке и появление шагов --- */
+.card.pulse{animation:cardPulse .62s cubic-bezier(.2,.8,.2,1)}
+@keyframes cardPulse{
+  0%{box-shadow:0 0 0 0 var(--vio),0 18px 44px -34px rgba(0,0,0,.9);transform:rotate(-.25deg) scale(.992)}
+  40%{box-shadow:0 0 0 6px rgba(139,125,255,0),0 22px 50px -30px var(--vio);transform:rotate(-.25deg) scale(1.006)}
+  100%{box-shadow:0 18px 44px -34px rgba(0,0,0,.9);transform:rotate(-.25deg) scale(1)}
+}
+.card.pulse .steps>li{animation:stepIn .42s cubic-bezier(.2,.8,.2,1) both}
+.card.pulse .steps>li:nth-child(1){animation-delay:.04s}
+.card.pulse .steps>li:nth-child(2){animation-delay:.10s}
+.card.pulse .steps>li:nth-child(3){animation-delay:.16s}
+.card.pulse .steps>li:nth-child(4){animation-delay:.22s}
+.card.pulse .steps>li:nth-child(5){animation-delay:.28s}
+.card.pulse .steps>li:nth-child(6){animation-delay:.34s}
+.card.pulse .steps>li:nth-child(n+7){animation-delay:.40s}
+@keyframes stepIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+
+/* --- скины: замок в списке тем --- */
+#themeList .titem .tlock{margin-left:auto;font-size:10.5px;color:var(--ink-dim);font-weight:700}
+#themeList .titem.locked{opacity:.5}
+#themeList .titem{display:flex;align-items:center;gap:8px}
+.tdot[data-t="matrix"]{background:linear-gradient(135deg,#33ff9e,#04120a)}
+.tdot[data-t="acid"]{background:linear-gradient(135deg,#c65cff,#b6ff3d)}
+.tdot[data-t="terminal"]{background:linear-gradient(135deg,#ffcc00,#0a0a0a)}
+.tdot[data-t="synth"]{background:linear-gradient(135deg,#ff4fa3,#47e0ff)}
+
+/* --- свотчи акцента --- */
+#accRow{display:flex;gap:10px;flex-wrap:wrap}
+#accRow button{width:44px;height:44px;border-radius:50%;border:2px solid transparent;cursor:pointer;
+  padding:0;-webkit-tap-highlight-color:transparent}
+#accRow button[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 3px var(--glass)}
+
+/* 5.9.0: тост скрытой награды и записка «скин закрыт» */
+.secretToast{position:fixed;left:50%;transform:translate(-50%,24px);bottom:calc(76px + env(safe-area-inset-bottom,0px));
+  z-index:1200;min-width:210px;max-width:calc(100% - 32px);padding:12px 16px;border-radius:14px;
+  background:linear-gradient(160deg,rgba(139,125,255,.98),rgba(64,216,255,.92));color:#0a0a14;
+  box-shadow:0 20px 40px -22px rgba(0,0,0,.9);opacity:0;transition:opacity .3s,transform .3s;
+  font-size:12.5px;line-height:1.35;text-align:center}
+.secretToast.on{opacity:1;transform:translate(-50%,0)}
+.secretToast b{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.72;margin-bottom:3px}
+.secretToast span{display:block;font-size:16px;font-weight:800;margin-bottom:2px}
+.secretToast i{display:block;font-style:normal;opacity:.82}
+.skinLockNote{position:fixed;left:50%;transform:translate(-50%,14px);top:calc(64px + env(safe-area-inset-top,0px));
+  z-index:1200;max-width:calc(100% - 28px);padding:10px 14px;border-radius:12px;
+  background:var(--surface-3);border:1px solid var(--line);color:var(--ink);font-size:12px;line-height:1.4;
+  box-shadow:0 16px 30px -20px rgba(0,0,0,.9);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+.skinLockNote.on{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -2887,6 +3027,11 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
       <button type="button" class="titem" data-th="neon" role="menuitem"><span class="tdot t-neon"></span>Неон</button>
       <button type="button" class="titem" data-th="retro" role="menuitem"><span class="tdot t-retro"></span>Ретро</button>
       <button type="button" class="titem" data-th="warm" role="menuitem"><span class="tdot t-warm"></span>Тёплая бумага</button>
+      <!-- 5.9.0: скины. Пока не открыты — с замком и условием в подсказке -->
+      <button type="button" class="titem" data-th="matrix" role="menuitem"><span class="tdot" data-t="matrix"></span>Матрица<span class="tlock" data-lock="matrix"></span></button>
+      <button type="button" class="titem" data-th="acid" role="menuitem"><span class="tdot" data-t="acid"></span>Кислота<span class="tlock" data-lock="acid"></span></button>
+      <button type="button" class="titem" data-th="terminal" role="menuitem"><span class="tdot" data-t="terminal"></span>Терминал<span class="tlock" data-lock="terminal"></span></button>
+      <button type="button" class="titem" data-th="synth" role="menuitem"><span class="tdot" data-t="synth"></span>Синтвейв<span class="tlock" data-lock="synth"></span></button>
     </div>
 
     <p class="sub">Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.</p>
@@ -3020,6 +3165,11 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
   <section class="trainpanel" id="trainPanel" hidden></section>
   <section class="dashpanel" id="dashPanel" hidden></section>
 
+  <!-- 5.9.0: живой фон текущей темы. Три размытых пятна медленно ходят по экрану,
+       у ретро и терминала — скан-линии, у матрицы — падающие цифры, у синтвейва — сетка.
+       Яркость 3–10 %: это фон, а не ёлка. -->
+  <div id="fxBg" aria-hidden="true"><i></i><i></i><i></i><b></b><u id="fxRain"></u><s></s></div>
+
   <!-- 5.1.0: одна капсула по лучшим практикам ассистентов: слева «фото»,
        справа голос и круглая кнопка решения; поле — по центру, без лишних значков -->
   <form class="searchbar" id="form" autocomplete="off">
@@ -3044,6 +3194,15 @@ body.warm .cardacts .act-primary{background:#f7ecd6;border-color:#c9a15f;color:#
        строка «понял как → ответ». Не надо нажимать стрелку, чтобы узнать,
        правильно ли понят пример: ошибку видно сразу, до отправки. -->
   <div class="liveprev" id="livePrev" hidden></div>
+
+  <!-- 5.9.0: подсказка-строка. Одна короткая фраза по контексту: что сейчас
+       происходит и почему. Не «молодец», а «перенос через = меняет знак — это
+       правило, а не магия». Закрывается крестиком и больше не возвращается. -->
+  <div id="hintLine" role="status" aria-live="polite">
+    <span class="hl-i" aria-hidden="true">›</span>
+    <span class="hl-t" id="hintText"></span>
+    <button type="button" class="hl-x" id="hintOff" aria-label="Больше не показывать подсказки" title="Больше не показывать">✕</button>
+  </div>
 
   <div class="keyboard" id="keyboard" hidden></div>
   <!-- плашка распознавания: превью, прогресс и что вышло -->
@@ -3343,8 +3502,29 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
           <button type="button" class="setbtn2" data-stheme="neon">✷ Неон</button>
           <button type="button" class="setbtn2" data-stheme="retro">▚ Ретро</button>
           <button type="button" class="setbtn2" data-stheme="warm">▤ Тёплая бумага</button>
+          <button type="button" class="setbtn2" data-stheme="matrix">▦ Матрица</button>
+          <button type="button" class="setbtn2" data-stheme="acid">✳ Кислота</button>
+          <button type="button" class="setbtn2" data-stheme="terminal">▮ Терминал</button>
+          <button type="button" class="setbtn2" data-stheme="synth">◫ Синтвейв</button>
         </div>
         <p class="note">Светлая лучше для печати и для слабого экрана на солнце.</p>
+        <h4 style="margin-top:18px">Свой цвет акцента</h4>
+        <div id="accRow" role="group" aria-label="Цвет акцента"></div>
+        <p class="note">Красит кнопки, полосы и обводку — во всех темах.</p>
+        <p class="note" id="skinNote">Матрица, Кислота, Терминал и Синтвейв открываются прогрессом — условие видно в подсказке к кнопке.</p>
+      </div>
+
+      <div class="setcard">
+        <h4>Отклик</h4>
+        <div class="row">
+          <button type="button" class="fx-toggle" id="sndBtn" title="Короткие звуки на нажатие и ответ">
+            <span class="b" aria-hidden="true"></span><span>Звуки</span>
+          </button>
+          <button type="button" class="fx-toggle" id="texBtn" title="Текст шагов: по-простому или по-взрослому">
+            <span class="b" aria-hidden="true"></span><span>Подписи по-простому</span>
+          </button>
+        </div>
+        <p class="note">Звук работает без файлов и без интернета. «По-простому» — те же шаги, но словами.</p>
       </div>
 
       <div class="setcard">
@@ -3472,7 +3652,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.8.17";
+const APP_VERSION="5.9.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -11597,10 +11777,30 @@ const V4=(function(){
   /* ---------------- ТЕМЫ ---------------- */
   /* 5.3.0: «Тёплая бумага» — пятая тема, песочная. Она светлая по контрасту,
      поэтому живёт и в классе light, и в своём warm: warm перекрывает светлую. */
-  const THEMES=["light","dark","neon","retro","warm"];
+  /* 5.9.0: скины-темы. Открываются не покупкой, а прогрессом: это единственный
+     мотив, который в 12–16 работает честно. Условие проверяется при каждом
+     открытии списка тем — достиг — скин стал доступен навсегда. */
+  const SKIN_GOAL={
+    matrix:  {need:"серия 3 дня",   done:function(){ return dayStreak()>=3; }},
+    acid:    {need:"50 задач",      done:function(){ return (LS.get("counters",{total:0}).total|0)>=50; }},
+    terminal:{need:"150 задач",     done:function(){ return (LS.get("counters",{total:0}).total|0)>=150; }},
+    synth:   {need:"серия 7 дней",  done:function(){ return dayStreak()>=7; }}
+  };
+  function skinOpen(k){
+    const g=SKIN_GOAL[k];
+    if(!g) return true;
+    try{ if(g.done()){ const o=LS.get("skins",[]); if(o.indexOf(k)<0){ o.push(k); LS.set("skins",o); } return true; } }catch(e){}
+    return (LS.get("skins",[])||[]).indexOf(k)>=0;
+  }
+  const THEMES=["light","dark","neon","retro","warm","matrix","acid","terminal","synth"];
   function themeNow(){ return LS.get("theme","light"); }
   function applyTheme(name){
     if(THEMES.indexOf(name)<0) name="light";
+    /* закрытый скин не включается: подскажем, что нужно сделать */
+    if(SKIN_GOAL[name] && !skinOpen(name)){
+      try{ if(window.__skinLocked) window.__skinLocked(name, SKIN_GOAL[name].need); }catch(e){}
+      return;
+    }
     const isLight=(name==="light"||name==="warm");
     document.body.classList.toggle("light", isLight);
     document.body.classList.toggle("warm", name==="warm");
@@ -11619,15 +11819,16 @@ const V4=(function(){
     });
     const tb=document.getElementById("themeBtn");
     if(tb){
-      const NAMES={light:"светлая",dark:"тёмная",neon:"неон",retro:"ретро",warm:"тёплая бумага"};
+      const NAMES={light:"светлая",dark:"тёмная",neon:"неон",retro:"ретро",warm:"тёплая бумага",
+        matrix:"матрица",acid:"кислота",terminal:"терминал",synth:"синтвейв"};
       tb.setAttribute("aria-label","Тема: "+NAMES[name]);
       tb.setAttribute("title","Тема — "+NAMES[name]+". Нажмите — следующая, удержите — список");
     }
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta){
-      meta.setAttribute("content", name==="light"? "#f7f3e8"
-        : name==="warm"? "#f3ead8"
-        : name==="neon"? "#04060f" : name==="retro"? "#12142a" : "#070a14");
+      const TC={light:"#f7f3e8",warm:"#f3ead8",neon:"#04060f",retro:"#12142a",
+        matrix:"#04120a",acid:"#12101c",terminal:"#0a0a0a",synth:"#0d0318",dark:"#070a14"};
+      meta.setAttribute("content", TC[name]||"#070a14");
     }
     /* нативные select, скроллбары и input[type=file] берут оформление отсюда */
     try{ document.documentElement.style.colorScheme = isLight? "light" : "dark"; }catch(e){}
@@ -12059,7 +12260,7 @@ const V4=(function(){
   }
 
   return {
-    applyTheme:applyTheme, themeNow:themeNow,
+    applyTheme:applyTheme, themeNow:themeNow, skinOpen:skinOpen, SKIN_GOAL:SKIN_GOAL,
     addXP:addXP, renderXP:renderXP, xp:xp, level:level,
     renderDayStreak:renderDayStreak, touchDayStreak:touchDayStreak,
     onSolve:onSolve, onTestFinish:onTestFinish,
@@ -12069,6 +12270,8 @@ const V4=(function(){
     _achv:ACHV, _quests:questsState, _counters:counters
   };
 })();
+/* 5.9.0: наружу для блока вида — скины, тема, уровень, награды */
+try{ window.__V4=V4; }catch(e){}
 
 /* ============================================================
    v4.0 — шпаргалка, экзамен, анимация движения, теги истории
@@ -17100,7 +17303,18 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.8.17","d":"22.11","b":[
+  const CHANGES=[{"v":"5.9.0","d":"23.11","b":[
+    "Четыре новых темы-скина: «Матрица» (падающие цифры по фону), «Кислота», «Терминал» (скан-линии как у ЭЛТ) и «Синтвейв» (сетка, уходящая за горизонт). Открываются не покупкой, а прогрессом: Матрица — серия 3 дня, Кислота — 50 задач, Терминал — 150, Синтвейв — серия 7 дней. В списке тем у закрытых стоит замок с условием",
+    "Живой фон во всех тёмных темах: три размытых пятна медленно ходят по экрану на 7–10 % яркости. Это фон, а не ёлка — текст читается как раньше",
+    "Подсказка-строка под полем: одна короткая фраза по контексту — «перенос через = меняет знак, это правило, а не магия», «сомневаешься в ответе — посмотри шаг 2». Меняется раз в полминуты, закрывается крестиком навсегда",
+    "Пульс решения: когда разбор готов, карточка коротко вспыхивает, а шаги въезжают по очереди слева. На быстрых решениях не чаще раза в 0,7 с",
+    "Карточки стоят с лёгким наклоном, у каждой — «наклейка» текущей темы в углу",
+    "Свой цвет акцента: пять свотчей и «авто». Красит кнопки, полосы и обводку во всех темах",
+    "Пять скрытых наград: «Полночный ум» (задача между 00:00 и 05:00), «Десять подряд», «Читатель», «Тысяча», «Коллекционер». В общем списке их не видно — только когда получишь",
+    "Микро-звук без файлов и без сети: короткий отклик на нажатие, другой на верный ответ. Выключается в настройках одной кнопкой",
+    "Подписи «по-простому»: те же шаги, но заголовки без терминов — «Собираем иксы и числа» вместо «Приводим подобные слагаемые». Включается в настройках"
+  ]},
+  {"v":"5.8.17","d":"22.11","b":[
     "Скобки в итоговой записи: «190 − (37 + 26)» больше не превращается в «190 − 37 + 26». Ответ был верным, а запись — нет; теперь скобки ставятся там, где без них меняется смысл",
     "Shift+Enter переносит строку, а не отправляет форму. Длинную задачу можно писать с новой строки, поле растёт до трёх строк; Enter по-прежнему решает",
     "Неверный вариант в тесте объясняет себя: «Похоже, здесь умножили там, где надо было делить», «Потерян минус», «Это число из условия, но не ответ». Раньше было только «неверно»",
@@ -18610,8 +18824,15 @@ window.__LEARN={
       /* удержание уже открыло список — второй раз не листаем */
       if(long){ long=false; e.preventDefault(); return; }
       if(!list.hidden){ closeList(); return; }
-      const i=ORDER.indexOf(curTheme());
-      setTh(ORDER[(i<0? 0 : i+1)%ORDER.length]);
+      /* 5.9.0: в кружке листаем и открытые скины, закрытые пропускаем */
+      let pool=ORDER.slice();
+      try{
+        if(window.__V4) ["matrix","acid","terminal","synth"].forEach(function(k){
+          if(window.__V4.skinOpen(k)) pool.push(k);
+        });
+      }catch(e){}
+      const i=pool.indexOf(curTheme());
+      setTh(pool[(i<0? 0 : i+1)%pool.length]);
     });
     list.addEventListener("click", function(e){
       const b=e.target.closest(".titem"); if(!b) return;
@@ -21294,6 +21515,345 @@ window.__LEARN={
 })();
 </script>
 
+<script>/* 5.9.0 вид */
+/* =====================================================================
+   5.9.0 «Вид для подростка»
+   Один блок, который ничего не переписывает в старом коде: он подключается
+   к уже существующим точкам — теме, решению, настройкам, уровням.
+   Здесь: подсказка-строка, микро-звук, свой акцент, скрытые награды,
+   пульс решения, наклейка темы, подписи «по-простому».
+   ===================================================================== */
+(function(){
+  if(window.__fx090) return;
+  window.__fx090=true;
+  /* V4 объявлен через const в другом <script> — из глобальной лексики он виден,
+     но не как window.V4. Проверяем аккуратно. */
+  const V=window.__V4||null;
+  const LSget=function(k,d){ try{ const v=localStorage.getItem(k); return v===null? d : JSON.parse(v); }catch(e){ return d; } };
+  const LSset=function(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+  const el=function(id){ return document.getElementById(id); };
+  const reduce=function(){ try{ return window.matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+
+  /* ---------- 1. ЖИВОЙ ФОН ---------- */
+  const rain=el("fxRain");
+  if(rain){
+    /* столбцы «матрицы»: набор знаков фиксирован — от него не зависит смысл */
+    let txt="";
+    const sym="01x+−=÷×²√π789";
+    for(let i=0;i<170;i++) txt+=sym[Math.floor(Math.random()*sym.length)]+"\n";
+    rain.textContent=txt;
+  }
+
+  /* ---------- 2. НАКЛЕЙКА ТЕМЫ НА КАРТОЧКЕ ---------- */
+  const STICK={light:"бумага",dark:"ночь",neon:"неон",retro:"ретро",warm:"тёплая",
+               matrix:"матрица",acid:"кислота",terminal:"терминал",synth:"синтвейв"};
+  function themeName(){
+    try{ return window.__themeNow? window.__themeNow() : "light"; }catch(e){ return "light"; }
+  }
+  function sticker(){
+    const card=document.querySelector("#out .card");
+    if(!card) return;
+    let st=card.querySelector("#themeSticker");
+    if(!st){ st=document.createElement("span"); st.id="themeSticker"; card.appendChild(st); }
+    st.textContent=STICK[themeName()]||"";
+  }
+
+  /* ---------- 3. ПУЛЬС РЕШЕНИЯ ---------- */
+  let lastPulse=0;
+  function pulse(){
+    if(reduce()) return;
+    /* без частокола: не чаще раза в 700 мс — иначе на быстрых решениях мельтешит */
+    const t=Date.now(); if(t-lastPulse<700) return; lastPulse=t;
+    const card=document.querySelector("#out .card");
+    if(!card) return;
+    card.classList.remove("pulse");
+    void card.offsetWidth;
+    card.classList.add("pulse");
+    setTimeout(function(){ card.classList.remove("pulse"); }, 1400);
+    sticker();
+  }
+  /* подключаемся к появлению карточки результата */
+  const outBox=el("out");
+  if(outBox && window.MutationObserver){
+    new MutationObserver(function(muts){
+      for(const m of muts){
+        if(m.addedNodes && m.addedNodes.length){ pulse(); return; }
+      }
+    }).observe(outBox, {childList:true});
+  }
+
+  /* ---------- 4. МИКРО-ЗВУК БЕЗ ФАЙЛОВ ---------- */
+  let AC=null;
+  function ac(){
+    if(AC) return AC;
+    try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; }
+    return AC;
+  }
+  function sndOn(){ return LSget("reshatel.snd",true)!==false; }
+  function blip(freq, dur, type, gain){
+    if(!sndOn()) return;
+    const a=ac(); if(!a) return;
+    try{
+      if(a.state==="suspended") a.resume();
+      const o=a.createOscillator(), g=a.createGain();
+      o.type=type||"sine"; o.frequency.value=freq;
+      g.gain.value=0;
+      const t=a.currentTime;
+      g.gain.linearRampToValueAtTime(gain||0.045, t+0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+(dur||0.11));
+      o.connect(g); g.connect(a.destination);
+      o.start(t); o.stop(t+(dur||0.11)+0.02);
+    }catch(e){}
+  }
+  function haptic(ms){ try{ if(navigator.vibrate && LSget("reshatel.snd",true)!==false) navigator.vibrate(ms||8); }catch(e){} }
+  /* вешаем на клики по главным действиям и на появление результата */
+  document.addEventListener("pointerdown", function(e){
+    const t=e.target.closest && e.target.closest(".solve,.act-primary,.rm,.tact,.trbtn,.rmodes .rm");
+    if(t){ blip(430,0.055,"triangle",0.03); haptic(6); }
+  }, {passive:true});
+  document.addEventListener("click", function(e){
+    const t=e.target.closest && e.target.closest(".copy,[data-tech],.bnav,.mistab,.mchip");
+    if(t){ blip(620,0.05,"sine",0.028); }
+  }, {passive:true});
+
+  /* ---------- 5. СВОЙ АКЦЕНТ ---------- */
+  const ACCS=[
+    {n:"фиолетовый", c:"#8b7dff"},
+    {n:"бирюзовый",  c:"#2fd7c6"},
+    {n:"оранжевый",  c:"#ff8a3d"},
+    {n:"розовый",    c:"#ff5c9e"},
+    {n:"зелёный",    c:"#3ddc84"}
+  ];
+  function applyAcc(){
+    const i=LSget("reshatel.acc",-1);
+    if(i>=0 && ACCS[i]){
+      document.body.setAttribute("data-acc","1");
+      document.documentElement.style.setProperty("--acc", ACCS[i].c);
+      document.body.style.setProperty("--vio", ACCS[i].c);
+      document.body.style.setProperty("--focus", ACCS[i].c);
+    }else{
+      document.body.removeAttribute("data-acc");
+      document.body.style.removeProperty("--vio");
+      document.body.style.removeProperty("--focus");
+    }
+  }
+  function renderAccRow(){
+    const box=el("accRow"); if(!box) return;
+    const cur=LSget("reshatel.acc",-1);
+    box.innerHTML=ACCS.map(function(a,i){
+      return '<button type="button" data-acc-i="'+i+'" style="background:'+a.c+'" '+
+        'aria-pressed="'+(i===cur)+'" aria-label="Акцент: '+a.n+'" title="'+a.n+'"></button>';
+    }).join("")+
+    '<button type="button" data-acc-i="-1" aria-pressed="'+(cur<0)+'" '+
+      'style="background:transparent;border:2px dashed var(--line);color:var(--ink-dim);font-size:11px" '+
+      'aria-label="Как в теме" title="Как в теме">авто</button>';
+  }
+  document.addEventListener("click", function(e){
+    const b=e.target.closest && e.target.closest("[data-acc-i]");
+    if(!b) return;
+    LSset("reshatel.acc", parseInt(b.getAttribute("data-acc-i"),10));
+    applyAcc(); renderAccRow(); blip(700,0.06,"sine",0.03);
+  });
+
+  /* ---------- 6. ПОДСКАЗКА-СТРОКА ---------- */
+  const HINTS=[
+    "Перенос через «=» меняет знак. Это правило, а не магия.",
+    "Не получается с ответом — проверь его подстановкой. Двадцать секунд.",
+    "Дроби складывают, только когда знаменатели одинаковы. Иначе — общий.",
+    "Скобку перед которой стоит минус, раскрывают с заменой всех знаков.",
+    "Печатаешь длинную задачу — Shift+Enter переносит строку.",
+    "Корень уравнения — это число, которое делает равенство верным.",
+    "«Похожая» под разбором — тот же тип с другими числами. Лучший способ закрепить.",
+    "Ошибка — это данные. Она уже в очереди, разберёшь позже.",
+    "Сомневаешься в ответе — посмотри шаг 2. Почти всегда там.",
+    "x² и x — не подобные. Их нельзя сложить в одно."
+  ];
+  function hintOn(){ return LSget("reshatel.hint",true)!==false; }
+  function showHint(txt){
+    const box=el("hintLine"), t=el("hintText");
+    if(!box||!t) return;
+    if(!hintOn()){ box.classList.remove("on"); return; }
+    t.textContent=txt;
+    box.classList.add("on");
+  }
+  let hintIdx=Math.floor(Math.random()*HINTS.length);
+  function nextHint(){
+    if(!hintOn()) return;
+    /* контекст важнее очереди: если открыт разбор — говорим про шаги */
+    if(document.querySelector("#out .card")){
+      const pool=[HINTS[1],HINTS[6],HINTS[8],HINTS[9]];
+      showHint(pool[hintIdx%pool.length]); hintIdx++;
+      return;
+    }
+    showHint(HINTS[hintIdx%HINTS.length]); hintIdx++;
+  }
+  /* первая подсказка — через 6 с после старта, дальше по кругу раз в 24 с */
+  setTimeout(nextHint, 6000);
+  setInterval(nextHint, 24000);
+  const off=el("hintOff");
+  if(off) off.addEventListener("click", function(){
+    LSset("reshatel.hint", false);
+    const box=el("hintLine"); if(box) box.classList.remove("on");
+    blip(300,0.07,"sine",0.03);
+  });
+
+  /* ---------- 7. СКРЫТЫЕ НАГРАДЫ ---------- */
+  /* Не видны в списке, пока не получены: скрытая ачивка — это находка,
+     открытая — обязанность. Поэтому отдельный список и свой тост. */
+  const SECRET=[
+    {k:"night",  n:"Полночный ум",  d:"Решил задачу между 00:00 и 05:00", test:function(){ const h=new Date().getHours(); return h>=0&&h<5; }},
+    {k:"streak10",n:"Десять подряд", d:"Десять верных ответов без единой ошибки", test:function(){ return (LSget("reshatel.combo",0)|0)>=10; }},
+    {k:"allread",n:"Читатель",      d:"Открыл «Что нового» и докрутил до первой версии", test:function(){ return !!LSget("reshatel.allread",false); }},
+    {k:"thousand",n:"Тысяча",       d:"1000 решённых задач", test:function(){ return (LSget("counters",{total:0}).total|0)>=1000; }},
+    {k:"skins",  n:"Коллекционер",  d:"Открыл все четыре скина-темы", test:function(){
+        try{ return ["matrix","acid","terminal","synth"].every(function(k){ return (LSget("skins",[])||[]).indexOf(k)>=0; }); }catch(e){ return false; } }}
+  ];
+  function secGot(){ return LSget("reshatel.secret",[])||[]; }
+  function secCheck(){
+    const got=secGot();
+    SECRET.forEach(function(a){
+      if(got.indexOf(a.k)>=0) return;
+      let ok=false;
+      try{ ok=!!a.test(); }catch(e){}
+      if(!ok) return;
+      got.push(a.k); LSset("reshatel.secret", got);
+      secretToast(a); blip(880,0.16,"sine",0.05); setTimeout(function(){ blip(1180,0.18,"sine",0.04); },120);
+    });
+  }
+  function secretToast(a){
+    const d=document.createElement("div");
+    d.className="secretToast";
+    d.setAttribute("role","status");
+    d.innerHTML='<b>Скрытая награда</b><span>'+a.n+'</span><i>'+a.d+'</i>';
+    document.body.appendChild(d);
+    requestAnimationFrame(function(){ d.classList.add("on"); });
+    setTimeout(function(){ d.classList.remove("on"); setTimeout(function(){ d.remove(); },400); }, 4200);
+  }
+  setInterval(secCheck, 5000);
+  setTimeout(secCheck, 2500);
+
+  /* счётчик «верных подряд» — по тем же событиям, что и решение */
+  if(outBox && window.MutationObserver){
+    new MutationObserver(function(){
+      const ok=document.querySelector("#out .verdict.ok,#out .ok");
+      if(ok){ LSset("reshatel.combo",(LSget("reshatel.combo",0)|0)+1); }
+    }).observe(outBox,{childList:true,subtree:true});
+  }
+
+  /* «читатель»: запоминаем, что дошли до последней версии в «О приложении» */
+  document.addEventListener("click", function(e){
+    const h=e.target.closest && e.target.closest(".wnhead");
+    if(!h) return;
+    const items=[].slice.call(document.querySelectorAll(".wnitem"));
+    if(!items.length) return;
+    const last=items[items.length-1];
+    if(last && last.classList.contains("open")) LSset("reshatel.allread", true);
+  }, {passive:true});
+
+  /* ---------- 8. ЗАМОК СКИНА ---------- */
+  window.__skinLocked=function(name, need){
+    const H={matrix:"Матрица",acid:"Кислота",terminal:"Терминал",synth:"Синтвейв"};
+    let t=document.getElementById("skinLockNote");
+    if(!t){
+      t=document.createElement("div");
+      t.id="skinLockNote"; t.className="skinLockNote";
+      document.body.appendChild(t);
+    }
+    t.innerHTML='Скин «'+(H[name]||name)+'» закрыт: нужно '+need+'. '+
+      'Прогресс виден в «Учиться → Прогресс».';
+    t.classList.add("on");
+    clearTimeout(window.__skinLockT);
+    window.__skinLockT=setTimeout(function(){ t.classList.remove("on"); }, 4200);
+    blip(300,0.09,"square",0.03);
+  };
+  function paintLocks(){
+    document.querySelectorAll("[data-lock]").forEach(function(b){
+      const k=b.getAttribute("data-lock");
+      const g=(V&&V.SKIN_GOAL)? V.SKIN_GOAL[k] : null;
+      const open=(V&&V.skinOpen)? V.skinOpen(k) : true;
+      b.textContent=open? "" : "🔒";
+      b.parentElement.classList.toggle("locked", !open);
+      b.parentElement.title=open? "" : "Откроется за "+(g? g.need : "");
+    });
+  }
+  /* список тем перерисовывается при открытии — ловим это через клик по кружку */
+  document.addEventListener("click", function(e){
+    if(e.target.closest && e.target.closest("#themeBtn,#themeList .titem")) setTimeout(paintLocks, 30);
+  }, {passive:true});
+  setTimeout(paintLocks, 1200);
+
+  /* ---------- 9. ПОДПИСИ «ПО-ПРОСТОМУ» ---------- */
+  /* Тот же разбор, но заголовки шагов короче и без терминов. Это не второй
+     текст, а подмена подписей: тело шага остаётся проверенным. */
+  function simpleOn(){ return LSget("reshatel.simple",false)===true; }
+  const SIMPLE_MAP=[
+    [/^Записываем уравнение/i, "Что дано"],
+    [/^Читаем пример/i, "Что дано"],
+    [/^Записываем/i, "Что дано"],
+    [/^Переносим/i, "Переносим через равно"],
+    [/Приводим подобные слагаемые/i, "Собираем иксы и числа"],
+    [/Переносим слагаемые через знак/i, "Переносим через равно"],
+    [/Находим корень/i, "Находим ответ"],
+    [/Раскрываем скобки/i, "Открываем скобки"],
+    [/Приводим к общему знаменателю/i, "Делаем одинаковые низы"],
+    [/Сокращаем дробь/i, "Уменьшаем дробь"],
+    [/Вычисляем дискриминант/i, "Считаем дискриминант"],
+    [/Проверяем/i, "Проверка"]
+  ];
+  function simplify(){
+    if(!simpleOn()) return;
+    document.querySelectorAll("#out .steps .sh").forEach(function(h){
+      if(h.dataset.simple) return;
+      /* меняем только первый текстовый узел: внутри заголовка живут кнопки
+         «почему?» и «проще», их нельзя переписать вместе с подписью */
+      const tn=h.firstChild;
+      if(!tn || tn.nodeType!==3) return;
+      const t=tn.nodeValue;
+      for(const pair of SIMPLE_MAP){
+        if(pair[0].test(t)){
+          h.dataset.origText=t;
+          tn.nodeValue=t.replace(pair[0],pair[1]);
+          h.dataset.simple="1";
+          break;
+        }
+      }
+    });
+  }
+  if(outBox && window.MutationObserver){
+    new MutationObserver(function(){ setTimeout(simplify, 60); }).observe(outBox,{childList:true,subtree:true});
+  }
+
+  /* ---------- 10. ПЕРЕКЛЮЧАТЕЛИ В НАСТРОЙКАХ ---------- */
+  function syncToggles(){
+    const s=el("sndBtn"), t=el("texBtn");
+    if(s) s.classList.toggle("on", sndOn());
+    if(s) s.setAttribute("aria-pressed", sndOn()? "true":"false");
+    if(t) t.classList.toggle("on", simpleOn());
+    if(t) t.setAttribute("aria-pressed", simpleOn()? "true":"false");
+  }
+  const sndB=el("sndBtn");
+  if(sndB) sndB.addEventListener("click", function(){
+    LSset("reshatel.snd", !sndOn()); syncToggles(); blip(600,0.08,"sine",0.04);
+  });
+  const texB=el("texBtn");
+  if(texB) texB.addEventListener("click", function(){
+    LSset("reshatel.simple", !simpleOn()); syncToggles();
+    if(!simpleOn()){
+      document.querySelectorAll("#out .sh[data-simple]").forEach(function(h){
+        const tn=h.firstChild;
+        if(tn && tn.nodeType===3 && h.dataset.origText) tn.nodeValue=h.dataset.origText;
+        delete h.dataset.simple; delete h.dataset.origText;
+      });
+    }
+    simplify();
+  });
+
+  /* ---------- запуск ---------- */
+  applyAcc(); renderAccRow(); syncToggles();
+  document.addEventListener("DOMContentLoaded", function(){ applyAcc(); renderAccRow(); syncToggles(); });
+})();
+
+</script>
 </body>
 
 </html>
