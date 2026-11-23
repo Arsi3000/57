@@ -2980,8 +2980,9 @@ body.light .chatSeg button.on,body.warm .chatSeg button.on{color:#fff}
 .chatQuick button{flex:0 0 auto;min-height:34px;padding:6px 12px;border-radius:999px;
   border:1px solid var(--line);background:var(--glass);color:var(--ink-soft);
   font-family:inherit;font-size:12px;font-weight:650;cursor:pointer;white-space:nowrap}
-body.mode-chat .searchbar{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
-  -webkit-backdrop-filter:blur(10px)}
+/* 5.10.2: в чате капсула ввода стоит внизу (правило ниже), поэтому
+   «липкость» сверху из 5.10.0 отменена — она тянула поле к верху экрана. */
+body.mode-chat .searchbar{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 /* лента */
 .chatfeed{display:none;flex-direction:column;gap:10px;padding:6px 0 96px;margin-top:6px;
   max-height:calc(100dvh - 380px);overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth}
@@ -3038,6 +3039,62 @@ body.light .cb.me-quiet .cbb{background:rgba(20,25,45,.05)}
   .chatfeed{scroll-behavior:auto}
   .cstep{animation:none}
   .cdot{animation:none;opacity:.6}
+}
+
+/* ================= 5.10.2: чат как мессенджер ================= */
+/* капсула ввода в чате уходит вниз и стоит над навигацией */
+body.mode-chat .searchbar{position:fixed;left:8px;right:8px;
+  bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:944;margin:0;
+  max-width:520px;margin-left:auto;margin-right:auto;
+  box-shadow:0 18px 40px -22px rgba(4,6,20,.9);
+  animation:chatbarIn .34s cubic-bezier(.2,.9,.2,1) both}
+@keyframes chatbarIn{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+body.mode-chat .chatfeed{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px));
+  max-height:calc(100dvh - 250px);margin-top:0}
+body.mode-chat .chatHead{bottom:calc(122px + env(safe-area-inset-bottom,0px));left:8px}
+body.mode-chat .dockToggle{bottom:calc(122px + env(safe-area-inset-bottom,0px))}
+body.mode-chat .dockbar{bottom:calc(122px + env(safe-area-inset-bottom,0px));right:64px}
+/* плюс внутри капсулы */
+.chatPlus{display:none;flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);
+  background:var(--glass);color:var(--ink-soft);cursor:pointer;padding:0;place-items:center;
+  -webkit-tap-highlight-color:transparent;transition:transform .16s,background .16s,color .16s}
+.chatPlus svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.3;
+  stroke-linecap:round;stroke-linejoin:round}
+.chatPlus:active{transform:scale(.92)}
+body.mode-chat .chatPlus{display:grid}
+body.dock-open .chatPlus{background:var(--vio);color:#0b0b14;border-color:transparent}
+body.dock-open .chatPlus svg{transform:rotate(45deg);transition:transform .22s}
+body.mode-chat .searchbar .icon-btn{display:none}
+
+/* ---------- выбор формата: красивый сегмент ---------- */
+.chatSeg{padding:4px;gap:2px;position:relative;overflow:hidden}
+.chatSeg button{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;
+  padding:7px 13px;transition:color .2s}
+.chatSeg button .ico2{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.1;
+  stroke-linecap:round;stroke-linejoin:round}
+.chatSeg button.on{background:none;color:#0b0b14}
+body.light .chatSeg button.on,body.warm .chatSeg button.on{color:#fff}
+.chatSeg:before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);
+  border-radius:999px;background:var(--vio);z-index:0;transition:transform .3s cubic-bezier(.2,.9,.2,1)}
+body.fmt-chat .chatSeg:before{transform:translateX(100%)}
+body.light .chatSeg:before,body.warm .chatSeg:before{background:var(--vio)}
+
+/* ---------- вау при смене формата ---------- */
+.fmtFlash{position:fixed;inset:0;z-index:960;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 88%,var(--vio),transparent 62%)}
+.fmtFlash.go{animation:fmtFlash .62s ease-out}
+@keyframes fmtFlash{0%{opacity:0;transform:scale(.6)}28%{opacity:.30}100%{opacity:0;transform:scale(1.5)}}
+body.fmt-changing .chatfeed .cb{animation:cbIn .42s cubic-bezier(.2,.9,.2,1) both}
+body.fmt-changing .chatfeed .cb:nth-child(2){animation-delay:.05s}
+body.fmt-changing .chatfeed .cb:nth-child(3){animation-delay:.10s}
+body.fmt-changing .chatfeed .cb:nth-child(4){animation-delay:.15s}
+body.fmt-changing .chatfeed .cb:nth-child(n+5){animation-delay:.20s}
+@keyframes cbIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+body.fmt-changing #out .card{animation:cardIn .46s cubic-bezier(.2,.9,.2,1) both}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) rotate(-1.2deg)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  .fmtFlash,body.fmt-changing .chatfeed .cb,body.fmt-changing #out .card,body.mode-chat .searchbar{animation:none}
+  .chatSeg:before{transition:none}
 }
 </style>
 </head>
@@ -3323,6 +3380,12 @@ body.light .cb.me-quiet .cbb{background:rgba(20,25,45,.05)}
       <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
     </button>
     <input type="file" id="ocrFile" accept="image/*" hidden>
+    <!-- 5.10.2: в режиме чата капсула стоит внизу, и слева в ней — «плюс»
+         как в мессенджерах: раскрывает способы ввода. В форме этой кнопки нет. -->
+    <button type="button" class="chatPlus" id="chatPlus" aria-label="Способы ввода"
+            aria-expanded="false" title="Способы ввода">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
     <!-- 5.8.12: язычок старой доски убран. Писать от руки можно прямо
          в тетради (доска под полем), и вторая, «выдвижная» доска только
          путала: два разных места для одного и того же. -->
@@ -3807,7 +3870,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.10.1";
+const APP_VERSION="5.10.2";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17458,7 +17521,13 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.10.1","d":"24.11","b":[
+  const CHANGES=[{"v":"5.10.2","d":"24.11","b":[
+    "В режиме чата поле ввода переехало вниз, к большим пальцам, как в мессенджере — и в нём слева «плюс»: он раскрывает способы ввода, отдельная кнопка справа в чате больше не нужна",
+    "Выбор формата стал сегментом с двумя значками и бегунком, который плавно переезжает с «Форма» на «Чат»",
+    "Кнопки «Стереть» больше нет — она путалась под рукой. Переписка очищается долгим нажатием на кружок формата (0,6 с), с лёгкой вибрацией",
+    "Смена формата теперь с вау-эффектом: короткая вспышка от низа экрана, лента и карточка ответа въезжают по очереди. Всё укладывается в 0,7 с и выключается при системной настройке «уменьшить движение»"
+  ]},
+  {"v":"5.10.1","d":"24.11","b":[
     "Кнопка выбора «Форма / Чат» наконец видна: раньше она показывалась только внутри самого режима чата — включить его было нечем. Теперь это кружок внизу слева, в цвет темы; тап раскрывает «Форма · Чат · Стереть»",
     "Капсула способов ввода (шпаргалка, вставить, фото, микрофон, клавиатура) спрятана за нижний край и выезжает по тапу круглой кнопки справа. Пока она открыта, кружок формата уезжает влево. Повторный тап — убрать",
     "Обе кнопки — кружки 48 px в цвет темы, как кнопка решения; в тёмных темах подсвечиваются акцентом"
@@ -22101,9 +22170,10 @@ window.__LEARN={
     '<button type="button" class="fmtDot" id="fmtDot" aria-expanded="false" '+
       'title="Формат показа" aria-label="Формат: форма или чат">Ф</button>'+
     '<div class="chatSeg" id="chatSeg" role="group" aria-label="Как показывать решение">'+
-      '<button type="button" data-cmode="form" aria-pressed="false">Форма</button>'+
-      '<button type="button" data-cmode="chat" aria-pressed="false">Чат</button>'+
-      '<button type="button" class="chatClear" id="chatClear" title="Очистить переписку">Стереть</button>'+
+      '<button type="button" data-cmode="form" aria-pressed="false">'+
+        '<svg class="ico2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h13"/></svg>Форма</button>'+
+      '<button type="button" data-cmode="chat" aria-pressed="false">'+
+        '<svg class="ico2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.2A7 7 0 0 1 4 12a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7z"/></svg>Чат</button>'+
     '</div>';
   document.body.appendChild(head);
 
@@ -22115,11 +22185,17 @@ window.__LEARN={
   dt.innerHTML='<svg class="ic-plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'+
                '<svg class="ic-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   document.body.appendChild(dt);
-  dt.addEventListener("click", function(){
+  function toggleDock(){
     const open=document.body.classList.toggle("dock-open");
     if(open) document.body.classList.remove("fmt-open");
+    const cp=$("chatPlus"); if(cp) cp.setAttribute("aria-expanded", open? "true":"false");
     dt.setAttribute("aria-expanded", open? "true":"false");
-  });
+  }
+  dt.addEventListener("click", toggleDock);
+  /* плюс внутри капсулы делает то же самое: в чате способ ввода вызывается
+     из самого поля, как в мессенджере, а не отдельной кнопкой сбоку */
+  const cp=$("chatPlus");
+  if(cp) cp.addEventListener("click", function(e){ e.preventDefault(); toggleDock(); });
 
   const quick=document.createElement("div");
   quick.className="chatQuick";
@@ -22301,6 +22377,7 @@ window.__LEARN={
 
   function paint(){
     document.body.classList.toggle("mode-chat", chatOn);
+    document.body.classList.toggle("fmt-chat", chatOn);
     if(dot){
       dot.textContent = chatOn? "Ч":"Ф";
       dot.setAttribute("aria-label", "Формат: "+(chatOn? "чат":"форма")+". Нажми, чтобы сменить");
@@ -22320,12 +22397,28 @@ window.__LEARN={
       setTimeout(function(){ feed.scrollTop=feed.scrollHeight; }, 30);
     }
   }
+  /* 5.10.2: при смене формата — короткая вспышка от низа экрана и
+     «въезд» содержимого. Это вау-эффект, но 0,6 с и без конфетти:
+     в 12–16 лет ценится сдержанность. При reduce-motion выключено. */
+  function flash(){
+    if(reduce()) return;
+    let f=document.querySelector(".fmtFlash");
+    if(!f){ f=document.createElement("div"); f.className="fmtFlash"; document.body.appendChild(f); }
+    f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+    document.body.classList.add("fmt-changing");
+    setTimeout(function(){ document.body.classList.remove("fmt-changing"); }, 700);
+  }
   head.addEventListener("click", function(e){
     const b=e.target.closest("[data-cmode]");
     if(!b) return;
-    chatOn=b.getAttribute("data-cmode")==="chat";
+    const next=b.getAttribute("data-cmode")==="chat";
+    if(next===chatOn){ document.body.classList.remove("fmt-open"); return; }
+    chatOn=next;
     LSset("reshatel.chat", chatOn);
     paint();
+    flash();
+    document.body.classList.remove("fmt-open");
+    const d2=$("fmtDot"); if(d2) d2.setAttribute("aria-expanded","false");
   });
 
   /* ---------- быстрые ответы ---------- */
@@ -22343,12 +22436,28 @@ window.__LEARN={
     scrollDown();
   });
 
-  const clr=$("chatClear");
-  if(clr) clr.addEventListener("click", function(){
-    feed.innerHTML=""; seq++;
-    bubble("bot",'<div class="ck">начали заново</div><div class="ctxt">Переписка очищена. Пиши задачу.</div>');
-    scrollDown(true);
-  });
+  /* 5.10.2: отдельной кнопки «Стереть» больше нет — она путалась под рукой.
+     Очистка переписки — долгое нажатие (0,6 с) на кружок формата: жест
+     знакомый, случайно не нажмёшь. */
+  if(dot){
+    let holdT=null, held=false;
+    const startHold=function(){
+      held=false;
+      holdT=setTimeout(function(){
+        held=true;
+        feed.innerHTML=""; seq++;
+        bubble("bot",'<div class="ck">начали заново</div><div class="ctxt">Переписка очищена. Пиши задачу.</div>');
+        scrollDown(true);
+        try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
+      }, 600);
+    };
+    const stopHold=function(){ clearTimeout(holdT); };
+    dot.addEventListener("pointerdown", startHold);
+    dot.addEventListener("pointerup", stopHold);
+    dot.addEventListener("pointerleave", stopHold);
+    dot.addEventListener("pointercancel", stopHold);
+    dot.addEventListener("click", function(e){ if(held){ e.preventDefault(); e.stopPropagation(); held=false; } }, true);
+  }
 
   paint();
 })();
