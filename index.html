@@ -2934,17 +2934,36 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
 .chatHead{position:fixed;left:8px;bottom:calc(62px + env(safe-area-inset-bottom,0px));
   z-index:942;display:flex;align-items:center;gap:6px;transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
 body.mode-other .chatHead,body.exam-mode .chatHead,body.set-on .chatHead{display:none}
-.chatSeg{display:none;align-items:center;gap:4px;padding:4px;border-radius:999px;
-  border:1px solid var(--line);background:var(--surface-2);
-  box-shadow:0 14px 30px -18px rgba(4,6,20,.8)}
-body.fmt-open .chatSeg{display:flex}
+/* 5.10.3: одна кнопка, как у темы: тап переключает «Форма ⇄ Чат»,
+   удержание открывает маленькое меню. Внутри кружка — значок текущего режима:
+   строки для формы, облачко для чата. Никаких сегментов и лишних подписей. */
 .fmtDot{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
-  background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:15px;font-weight:800;
+  background:var(--surface-2);color:var(--ink);
   display:grid;place-items:center;cursor:pointer;padding:0;
-  box-shadow:0 14px 30px -18px rgba(4,6,20,.8);transition:transform .2s,background .16s;
-  -webkit-tap-highlight-color:transparent}
-.fmtDot:active{transform:scale(.94)}
-body.fmt-open .fmtDot{background:var(--vio);color:#0b0b14;border-color:transparent}
+  box-shadow:0 14px 30px -18px rgba(4,6,20,.8);
+  transition:transform .2s cubic-bezier(.2,.9,.2,1),background .16s,color .16s;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.fmtDot svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.1;
+  stroke-linecap:round;stroke-linejoin:round;transition:transform .28s cubic-bezier(.2,.9,.2,1)}
+.fmtDot:active{transform:scale(.92)}
+body.mode-chat .fmtDot{background:var(--vio);color:#0b0b14;border-color:transparent}
+body.mode-chat .fmtDot svg{transform:rotate(-6deg) scale(1.06)}
+.fmtMenu{position:fixed;left:8px;bottom:calc(178px + env(safe-area-inset-bottom,0px));z-index:960;
+  max-height:min(320px,60vh);overflow:auto;
+  display:flex;flex-direction:column;gap:2px;padding:6px;border-radius:16px;
+  background:var(--surface-2);border:1px solid var(--line);min-width:184px;
+  box-shadow:0 22px 44px -24px rgba(4,6,20,.95);
+  opacity:0;transform:translateY(8px) scale(.97);pointer-events:none;
+  transition:opacity .18s,transform .18s cubic-bezier(.2,.9,.2,1)}
+.fmtMenu.on{opacity:1;transform:none;pointer-events:auto}
+.fmtMenu button{display:flex;align-items:center;gap:9px;min-height:42px;padding:8px 10px;border:0;
+  border-radius:11px;background:none;color:var(--ink);font-family:inherit;font-size:13px;
+  font-weight:650;cursor:pointer;text-align:left;width:100%}
+.fmtMenu button svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.1;
+  stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.fmtMenu button[aria-checked="true"]{background:rgba(124,108,255,.16);color:var(--vio)}
+.fmtMenu .fmtSep{height:1px;background:var(--line);margin:4px 6px}
+.fmtMenu button.danger{color:var(--ink-dim);font-weight:600}
 /* капсула ввода: по умолчанию спрятана за нижним краем, выезжает по тапу */
 .dockbar{transform:translateY(140%);opacity:0;pointer-events:none;
   transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s;right:68px}
@@ -2966,15 +2985,7 @@ body.dock-open .dockToggle .ic-plus{display:none}
 body:not(.dock-open) .dockToggle .ic-x{display:none}
 body.mode-other .dockToggle,body.exam-mode .dockToggle,body.set-on .dockToggle{display:none}
 .chatQuick{display:none}
-.chatSeg{display:flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--line);
-  background:var(--glass)}
-.chatSeg button{min-height:34px;padding:6px 14px;border:0;border-radius:999px;background:none;
-  color:var(--ink-dim);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
-  -webkit-tap-highlight-color:transparent}
-.chatSeg button.on{background:var(--vio);color:#0b0b14}
-body.light .chatSeg button.on,body.warm .chatSeg button.on{color:#fff}
-.chatClear{margin-left:auto;border:0;background:none;color:var(--ink-dim);font-family:inherit;
-  font-size:12px;font-weight:600;padding:8px 4px;cursor:pointer;min-height:34px}
+
 .chatQuick{display:none;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px;scrollbar-width:none}
 .chatQuick::-webkit-scrollbar{display:none}
 .chatQuick button{flex:0 0 auto;min-height:34px;padding:6px 12px;border-radius:999px;
@@ -3067,17 +3078,7 @@ body.dock-open .chatPlus svg{transform:rotate(45deg);transition:transform .22s}
 body.mode-chat .searchbar .icon-btn{display:none}
 
 /* ---------- выбор формата: красивый сегмент ---------- */
-.chatSeg{padding:4px;gap:2px;position:relative;overflow:hidden}
-.chatSeg button{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;
-  padding:7px 13px;transition:color .2s}
-.chatSeg button .ico2{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.1;
-  stroke-linecap:round;stroke-linejoin:round}
-.chatSeg button.on{background:none;color:#0b0b14}
-body.light .chatSeg button.on,body.warm .chatSeg button.on{color:#fff}
-.chatSeg:before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);
-  border-radius:999px;background:var(--vio);z-index:0;transition:transform .3s cubic-bezier(.2,.9,.2,1)}
-body.fmt-chat .chatSeg:before{transform:translateX(100%)}
-body.light .chatSeg:before,body.warm .chatSeg:before{background:var(--vio)}
+
 
 /* ---------- вау при смене формата ---------- */
 .fmtFlash{position:fixed;inset:0;z-index:960;pointer-events:none;opacity:0;
@@ -3094,8 +3095,75 @@ body.fmt-changing #out .card{animation:cardIn .46s cubic-bezier(.2,.9,.2,1) both
 @keyframes cardIn{from{opacity:0;transform:translateY(14px) rotate(-1.2deg)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){
   .fmtFlash,body.fmt-changing .chatfeed .cb,body.fmt-changing #out .card,body.mode-chat .searchbar{animation:none}
-  .chatSeg:before{transition:none}
+
 }
+
+/* ============================================================ */
+/*  5.10.3: сетки и тач-цели                                       */
+/*  Прогон по всем экранам на 320 px показал: кнопка «Новая задача» */
+/*  в grid 1fr 1fr выпирала на 16 px и давала горизонтальный скролл. */
+/*  Причина у всех таких сеток одна: 1fr не сжимается ниже min-content. */
+/* ============================================================ */
+.cardacts{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.cardacts .act{min-width:0;white-space:normal;text-align:center;justify-content:center;padding:10px 8px}
+.prmeta,.topics,.opts,.tracts{grid-template-columns:repeat(2,minmax(0,1fr))}
+.topics>*,.opts>*,.tracts>*,.tracts .trbtn{min-width:0}
+
+/* тач-цель не меньше 44 px: палец в 16 лет не тоньше, чем в 40 */
+.setbtn{min-width:44px;min-height:44px}
+#clear{width:44px;height:44px}
+.rm{min-height:44px}
+.lsw{min-height:44px}
+.clchip{min-height:44px}
+#chatPlus{width:42px;height:42px}
+#cheatBtn,#pasteBtn,#ocr{width:44px;min-width:44px}
+#cvin,#cvfrom,#cvto{min-height:44px}
+#cvswap{width:44px;height:44px;min-width:44px}
+#chatNew{min-height:38px}
+/* мелкие значки в шапке и в поле: цель расширяем невидимым кругом,
+   вид кнопки не трогаем */
+.themeBtn,#clear,#hintOff{position:relative}
+.themeBtn::after,#clear::after,#hintOff::after{content:"";position:absolute;left:50%;top:50%;
+  width:44px;height:44px;transform:translate(-50%,-50%);border-radius:50%}
+
+/* ---- 5.10.3, второй проход: остальные цели меньше 44 px ---- */
+.themeBtn{min-width:44px;min-height:44px}
+.copy,.ccopy{min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.subnav .subbtn{min-height:44px}
+.learnswitch .lsw{min-height:44px}
+.cheat-tab{min-height:44px}
+.trmode{min-height:44px}
+.trnext{min-height:44px}
+.exgroup .chip{min-height:44px}
+.mic{min-width:44px;min-height:44px}
+/* совсем мелкие подписи («почему?», «сказать») сохраняют вид, но ловят палец
+   расширенной областью */
+.why{min-height:36px}
+.saybtn{min-height:36px;padding:9px 10px}
+.saybtn,.why{position:relative}
+.saybtn::after,.why::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;
+  transform:translateY(-50%)}
+/* ---- 5.10.3, третий проход: добираем оставшиеся цели ---- */
+.tcirc{min-width:44px;min-height:44px}
+.chip{min-height:44px}
+.trtopics .clchip{min-height:44px}
+.tracts .trbtn{min-height:44px}
+#setClose{min-height:44px;min-width:44px}
+.setbtn2{min-height:44px}
+.searchbar .mic{flex:0 0 44px;width:44px;min-width:44px;height:44px}
+#kbnav{min-height:44px}
+/* ползунки в тренажёрах: полоса тонкая, но «держать» её должно быть удобно */
+.ptsl input[type=range]{height:36px;margin:-8px 0}
+/* реакции в чате — текстовые пилюли, им хватает 36 px */
+.cb .creact button{min-height:36px}
+/* ---- 5.10.3, четвёртый проход ---- */
+.cReact button{min-height:40px;padding:8px 12px}
+.dockbar .dockb{min-width:44px}
+#chatNew{min-height:44px}
+.fmtMenu button{min-height:44px}
+#sndBtn,#texBtn,#checkbtn,#fxtoggle,#kbbtn{min-height:44px}
+.cReact button{min-height:44px}
+.ptsl input[type=range]{height:44px;margin:-12px 0}
 </style>
 </head>
 <body>
@@ -3870,7 +3938,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.10.2";
+const APP_VERSION="5.10.3";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -4179,6 +4247,8 @@ function tokenize(src){
       toks.push({t:"var"}); i=j; continue;
     }
     if("+-*/^()".indexOf(ch)>=0){ toks.push({t:"op", v:ch}); i++; continue; }
+    /* 5.10.3: факториал — постфиксный знак: 5!, (2+3)! */
+    if(ch==="!"){ toks.push({t:"op", v:"!"}); i++; continue; }
     throw new Error("Непонятный символ «"+ch+"».");
   }
   /* неявное умножение: 2x, 3(x+1), x(x-1) */
@@ -4714,6 +4784,8 @@ function arithTokens(src){
       continue;
     }
     if("+-*/^÷()".indexOf(c)>=0){ t.push({t:"op", v:c}); i++; continue; }
+    /* 5.10.3: факториал — постфиксный знак: 5!, (2+3)! */
+    if(c==="!"){ t.push({t:"op", v:"!"}); i++; continue; }
     throw new Error("Непонятный символ «"+c+"» в примере.");
   }
   const out=[];
@@ -4727,6 +4799,42 @@ function arithTokens(src){
     out.push(cur);
   }
   return out;
+}
+
+/* 5.10.3: узел факториала для примеров вида 5! + 3 */
+function factorialNode(n){
+  function val(node){
+    if(node && typeof node.val==="function") return node.val();   /* передали саму дробь */
+    if(node.type==="num") return node.v.val();
+    if(node.type==="neg") return -val(node.a);
+    if(node.type==="op"){
+      const a=val(node.l), b=val(node.r);
+      if(node.op==="+") return a+b;
+      if(node.op==="-") return a-b;
+      if(node.op==="*") return a*b;
+      if(node.op==="/") return a/b;
+      if(node.op==="^") return Math.pow(a,b);
+    }
+    if(node.type==="fact") return val(node.a);
+    return NaN;
+  }
+  const v=val(n);
+  if(!isFinite(v) || Math.abs(v-Math.round(v))>1e-9 || v<0)
+    throw new Error("Факториал берут только от целого неотрицательного числа.");
+  if(v>18) throw new Error("Факториал больше 18! — число из 17 и более цифр, в точном виде телефон его не покажет.");
+  let r=1; for(let k=2;k<=v;k++) r*=k;
+  return {type:"num", v:fracFromStr(String(r)), factOf:v};
+}
+
+/* 5.10.3: конечная десятичная запись дроби — для «0,1 + 0,2 → 0,3».
+   Возвращает null, если дробь в десятичную не переводится (например 1/3). */
+function decimalFrac(f){
+  if(f.d===1) return String(f.n).replace("-","−");
+  let d=f.d, k=0;
+  while(d%2===0){ d/=2; k++; }
+  while(d%5===0){ d/=5; k++; }
+  if(d!==1 || k>9) return null;
+  return String(Math.round((f.n/f.d)*1e9)/1e9).replace(".",",").replace("-","−");
 }
 
 function arithParse(src){
@@ -4768,11 +4876,17 @@ function arithParse(src){
   function atom(){
     const p=t[i++];
     if(!p) throw new Error("Пример обрывается — проверьте запись.");
-    if(p.t==="num") return {type:"num", v:p.v};
+    if(p.t==="num"){
+      const nx=t[i];
+      if(nx && nx.t==="op" && nx.v==="!"){ i++; return factorialNode(p.v); }
+      return {type:"num", v:p.v};
+    }
     if(p.t==="op" && p.v==="("){
       const n=expr();
       const c=t[i++];
       if(!c || c.v!==")") throw new Error("Не хватает закрывающей скобки.");
+      const bang=t[i];
+      if(bang && bang.t==="op" && bang.v==="!"){ i++; return factorialNode(n); }
       return n;
     }
     throw new Error("Неожиданный символ — проверьте запись примера.");
@@ -5030,7 +5144,10 @@ function solveArithmetic(src){
   }
 
   const val=cur.v;
-  let answer=prettyFrac(val);
+  /* 5.10.3: считали десятичные дроби — так же и отвечаем: «0,3», не «3/10».
+     Дробная запись остаётся в шагах, чтобы правило было видно. */
+  const dec = /\d[.,]\d/.test(src) ? decimalFrac(val) : null;
+  let answer= dec || prettyFrac(val);
   const extra=[];
   if(val.d!==1){
     extra.push("в десятичной записи это ≈ "+n2s(val.val(),6));
@@ -5046,7 +5163,7 @@ function solveArithmetic(src){
     kind:"Пример на действия"+(val.d!==1? " с дробями":""),
     steps:steps,
     answer:answer,
-    answerHtml:fracAnswerHtml(val),
+    answerHtml: dec? esc(dec) : fracAnswerHtml(val),
     numeric: val,
     isExample:true
   };
@@ -7862,6 +7979,45 @@ function mWater(low, t){
 /* ============================================================ */
 /*  9д. Корни √ в записи                                         */
 /* ============================================================ */
+/* 5.10.3: sqrt(81) / SQRT 81 / «корень из 81» → «√81» */
+function sqToRadical(src){
+  let s=String(src);
+  s=s.replace(/\b(?:sqrt|sqr|корень\s+из|квадратный\s+корень\s+из)\s*\(\s*([^()]+?)\s*\)/gi, function(a,b){ return "√("+b+")"; });
+  s=s.replace(/\b(?:sqrt|sqr)\s*(\d+(?:[.,]\d+)?)/gi, function(a,b){ return "√"+b; });
+  s=s.replace(/(?:квадратный\s+)?корень\s+из\s+(\d+(?:[.,]\d+)?)/gi, function(a,b){ return "√"+b; });
+  return s;
+}
+
+/* 5.10.3: факториал n! — отдельная тема, у неё свои шаги.
+   Считаем точно только до 18!: 19! уже не влезает в точное число JavaScript. */
+function solveFactorial(src){
+  const m=/^\s*(\d{1,2})\s*!\s*$/.exec(String(src));
+  if(!m) return null;
+  const n=parseInt(m[1],10);
+  if(n<0) return null;
+  if(n>18) throw new Error("Факториал больше 18! — это число из 17 и более цифр, в точном виде телефон его не покажет. "+
+    "Такие задания решают по свойству: например, 20! = 19!·20.");
+  let v=1; const parts=[];
+  for(let k=2;k<=n;k++){ v*=k; if(k<=6 || k===n) parts.push(k); }
+  const chain = n<=1 ? "1" : (n<=6 ? Array.from({length:n-1},(_,i)=>i+2).join(" · ") : "2 · 3 · … · "+n);
+  return {
+    kind:"Факториал",
+    steps:[
+      {h:"Что такое факториал",
+       b:eq(esc(n+"!"),true)+"<p>Знак «!» — факториал: произведение всех целых чисел от 1 до "+n+
+         ". Считаем по порядку, слева направо.</p>"},
+      {h:"Раскладываем произведение",
+       b:eq(n+"! = "+chain,true)+(n<=6? "": "<p class=\"mini\">Промежуточные множители пропущены, чтобы запись не растягивалась.</p>")},
+      {h:"Ответ",
+       b:'<p class="ans">'+n+"! = "+fmtNum(v)+"</p>"}
+    ],
+    answer:fmtNum(v)
+  };
+}
+function fmtNum(v){
+  return Number.isInteger(v)? String(v).replace("-","−") : String(v);
+}
+
 function replaceRadicals(src){
   function rootOf(x, txt){
     if(x<0) throw new Error("Корень из отрицательного числа не извлекается.");
@@ -8276,13 +8432,22 @@ function solveRaw(input){
   if(!s) throw new Error("Введите уравнение или условие задачи.");
   s=s.replace(/^(реши|решите|вычисли|вычислите|найди|найдите|посчитай|посчитайте|помоги решить|сколько будет|посчитай)(?![а-яёa-z])[:\s]*/i,"").trim();
   s=s.replace(/^систем[уыа]?\s+(уравнени[а-яё]*\s*)?/i,"").trim();
-  /* хвостовая пунктуация: «2+2?», «5 км в метры.» */
-  s=s.replace(/[?!.]+\s*$/,"").trim();
+  /* хвостовая пунктуация: «2+2?», «5 км в метры.»
+     5.10.3: «!» после цифры или скобки — это факториал, а не пунктуация:
+     раньше «5!» молча превращалось в «5» и давало неверный ответ. */
+  s=s.replace(/[?.]+\s*$/,"").trim();
+  if(/[а-яёa-z]\s*!\s*$/i.test(s)) s=s.replace(/!+\s*$/,"").trim();
   /* «найди x: 5x-10=0» — после команды осталась буква с двоеточием */
   s=s.replace(/^[a-zа-яё]\s*:\s*/i,"").trim();
   if(!s) throw new Error("Введите уравнение или условие задачи.");
   const pct=solvePercentOf(s);
   if(pct) return pct;
+  /* 5.10.3: факториал. Раньше «5!» срезался как пунктуация и давал «5». */
+  const fact=solveFactorial(s);
+  if(fact) return fact;
+  /* 5.10.3: sqrt(81), sqr, «корень из 81» — приводим к записи с √,
+     дальше её разбирает обычный конвейер */
+  s=sqToRadical(s);
   /* задания новых тем (C7): НОД, пропорции, модуль, степени, прогрессии и др. */
   if(typeof window.__extraSolve==="function"){
     let ex=null;
@@ -17521,7 +17686,17 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.10.2","d":"24.11","b":[
+  const CHANGES=[{"v":"5.10.3","d":"24.11","b":[
+    "Выбор формата — одна круглая кнопка, как у темы: тап переключает «Форма ⇄ Чат», удержание 0,45 с открывает меню «Форма · Чат · Очистить переписку». В кружке значок текущего режима, в чате кнопка подсвечена акцентом, над ней висит подпись «Чат»",
+    "Полный прогон приложения на ширине 320, 360 и 390 px в девяти темах: горизонтальной прокрутки нет ни на одном экране, ошибок в консоли нет",
+    "Сетки «в две колонки» больше не выпирают за экран: кнопка «Новая задача» на узком телефоне растягивала страницу на 16 px",
+    "Тач-цели доведены до 44 px: тема, очистка поля, ползунки, чипы тем, кнопки настроек, реакции в чате",
+    "Факториал: «5!» считался как «5» — двоеточие… точнее, «!» срезался как знак препинания. Теперь 5! = 120, работают 5! + 3 и (2+3)!",
+    "Корни: sqrt(81), sqrt 144, «корень из 49» — раньше «выражение с буквой», теперь 9, 12 и 7",
+    "Десятичные ответы: «0,1 + 0,2» отвечало «3/10», теперь «0,3» — дробь остаётся в шагах",
+    "Меню формата больше не наезжает на кнопку, вспышка при смене режима не срабатывает при «уменьшить движение»"
+  ]},
+  {"v":"5.10.2","d":"24.11","b":[
     "В режиме чата поле ввода переехало вниз, к большим пальцам, как в мессенджере — и в нём слева «плюс»: он раскрывает способы ввода, отдельная кнопка справа в чате больше не нужна",
     "Выбор формата стал сегментом с двумя значками и бегунком, который плавно переезжает с «Форма» на «Чат»",
     "Кнопки «Стереть» больше нет — она путалась под рукой. Переписка очищается долгим нажатием на кружок формата (0,6 с), с лёгкой вибрацией",
@@ -20579,7 +20754,10 @@ window.__LEARN={
   window.__noteBoard={check:check, getStrokes:function(){ return strokes; },
     _strokeRun:strokeRun, _clearOv:clearOv, _metrics:runMetrics, _poly:toPolylines,
     clear:function(){ strokes=[]; redraw(); clearSol(); refreshActs(); },
-    write:writeInto, _steps:buildSteps, _can:canHandwrite};
+    write:writeInto, _steps:buildSteps, _can:canHandwrite,
+    /* 5.10.3: пересчёт холста после смены формата — лента и поле меняют
+       раскладку, доска не должна остаться старого размера */
+    resize:function(){ try{ sizeCanvas(); }catch(e){} }};
 })();
 </script>
 
@@ -22164,18 +22342,26 @@ window.__LEARN={
   /* ---------- разметка переключателя ---------- */
   /* 5.10.1: внизу слева кружок, при тапе раскрывается в «Форма / Чат».
      Кнопка видна всегда, независимо от режима — иначе включить чат нечем. */
+const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h13"/></svg>';
+  const I_CHAT='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.2A7 7 0 0 1 4 12a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7z"/></svg>';
+  const I_ERASE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>';
+    /* 5.10.3: ОДНА кнопка, как у темы. Тап — переключить формат,
+     удержание (0,45 с) — маленькое меню: Форма · Чат · Очистить переписку.
+     В кружке значок текущего режима, поэтому подписи не нужны. */
   const head=document.createElement("div");
   head.className="chatHead";
-  head.innerHTML=
-    '<button type="button" class="fmtDot" id="fmtDot" aria-expanded="false" '+
-      'title="Формат показа" aria-label="Формат: форма или чат">Ф</button>'+
-    '<div class="chatSeg" id="chatSeg" role="group" aria-label="Как показывать решение">'+
-      '<button type="button" data-cmode="form" aria-pressed="false">'+
-        '<svg class="ico2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h13"/></svg>Форма</button>'+
-      '<button type="button" data-cmode="chat" aria-pressed="false">'+
-        '<svg class="ico2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a7 7 0 0 1-7 7H8l-4 3v-4.2A7 7 0 0 1 4 12a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7z"/></svg>Чат</button>'+
-    '</div>';
+  head.innerHTML='<button type="button" class="fmtDot" id="fmtDot" aria-haspopup="menu" '+
+      'aria-expanded="false" aria-label="Формат показа: форма или чат. Удержание — меню">'+I_FORM+'</button>';
   document.body.appendChild(head);
+
+  const fmenu=document.createElement("div");
+  fmenu.className="fmtMenu"; fmenu.id="fmtMenu"; fmenu.setAttribute("role","menu");
+  fmenu.innerHTML=
+    '<button type="button" role="menuitemradio" data-cmode="form" aria-checked="false">'+I_FORM+'Форма</button>'+
+    '<button type="button" role="menuitemradio" data-cmode="chat" aria-checked="false">'+I_CHAT+'Чат</button>'+
+    '<div class="fmtSep"></div>'+
+    '<button type="button" role="menuitem" class="danger" data-cact="clear">'+I_ERASE+'Очистить переписку</button>';
+  document.body.appendChild(fmenu);
 
   /* кнопка вызова капсулы способов ввода */
   const dt=document.createElement("button");
@@ -22369,24 +22555,20 @@ window.__LEARN={
 
   /* ---------- переключатель ---------- */
   const dot=$("fmtDot");
-  if(dot) dot.addEventListener("click", function(){
-    const open=document.body.classList.toggle("fmt-open");
-    dot.setAttribute("aria-expanded", open? "true":"false");
-    if(open) document.body.classList.remove("dock-open");
-  });
-
+  /* ---------- одна кнопка формата ---------- */
   function paint(){
     document.body.classList.toggle("mode-chat", chatOn);
-    document.body.classList.toggle("fmt-chat", chatOn);
-    if(dot){
-      dot.textContent = chatOn? "Ч":"Ф";
-      dot.setAttribute("aria-label", "Формат: "+(chatOn? "чат":"форма")+". Нажми, чтобы сменить");
-    }
     feed.hidden=!chatOn;
-    head.querySelectorAll("[data-cmode]").forEach(function(b){
-      const on=b.getAttribute("data-cmode")===(chatOn? "chat":"form");
-      b.classList.toggle("on", on);
-      b.setAttribute("aria-pressed", on? "true":"false");
+    const dot=$("fmtDot");
+    if(dot){
+      dot.innerHTML = chatOn? I_CHAT : I_FORM;
+      dot.setAttribute("aria-pressed", chatOn? "true":"false");
+      dot.setAttribute("aria-label", "Формат: "+(chatOn? "чат":"форма")+". Нажми, чтобы сменить, удержание — меню");
+      dot.setAttribute("title", "Формат: "+(chatOn? "чат":"форма"));
+    }
+    const fm=$("fmtMenu");
+    if(fm) fm.querySelectorAll("[data-cmode]").forEach(function(b){
+      b.setAttribute("aria-checked", (b.getAttribute("data-cmode")===(chatOn? "chat":"form"))? "true":"false");
     });
     const h=$("hintLine"); if(h) h.hidden=chatOn;
     const out=$("out"); if(out) out.style.display=chatOn? "none":"";
@@ -22397,9 +22579,8 @@ window.__LEARN={
       setTimeout(function(){ feed.scrollTop=feed.scrollHeight; }, 30);
     }
   }
-  /* 5.10.2: при смене формата — короткая вспышка от низа экрана и
-     «въезд» содержимого. Это вау-эффект, но 0,6 с и без конфетти:
-     в 12–16 лет ценится сдержанность. При reduce-motion выключено. */
+
+  /* вспышка при смене формата: 0,6 с, без конфетти */
   function flash(){
     if(reduce()) return;
     let f=document.querySelector(".fmtFlash");
@@ -22408,55 +22589,67 @@ window.__LEARN={
     document.body.classList.add("fmt-changing");
     setTimeout(function(){ document.body.classList.remove("fmt-changing"); }, 700);
   }
-  head.addEventListener("click", function(e){
-    const b=e.target.closest("[data-cmode]");
-    if(!b) return;
-    const next=b.getAttribute("data-cmode")==="chat";
-    if(next===chatOn){ document.body.classList.remove("fmt-open"); return; }
-    chatOn=next;
+
+  function setChat(on){
+    if(on===chatOn) return;
+    chatOn=on;
     LSset("reshatel.chat", chatOn);
     paint();
     flash();
-    document.body.classList.remove("fmt-open");
-    const d2=$("fmtDot"); if(d2) d2.setAttribute("aria-expanded","false");
-  });
+    /* 5.10.3: при смене формата пересчитываем размеры — иначе после возврата
+       из чата холст доски и лента держат старую высоту */
+    requestAnimationFrame(function(){
+      try{ if(window.__noteBoard && window.__noteBoard.resize) window.__noteBoard.resize(); }catch(e){}
+      document.body.classList.remove("dock-open");
+    });
+  }
 
-  /* ---------- быстрые ответы ---------- */
-  quick.addEventListener("click", function(e){
-    const b=e.target.closest("[data-cq]"); if(!b) return;
-    const k=b.getAttribute("data-cq");
-    if(k==="steps"){
-      if(!lastRes) return bubble("bot","Сначала пришли задачу — разберу по шагам."), scrollDown(true);
-      bubble("me","по шагам","me-quiet"); botExplain(false);
-    }else if(k==="plain"){
-      bubble("me","проще","me-quiet"); botExplain(true);
-    }else{
-      q.focus();
-    }
-    scrollDown();
-  });
-
-  /* 5.10.2: отдельной кнопки «Стереть» больше нет — она путалась под рукой.
-     Очистка переписки — долгое нажатие (0,6 с) на кружок формата: жест
-     знакомый, случайно не нажмёшь. */
-  if(dot){
-    let holdT=null, held=false;
-    const startHold=function(){
-      held=false;
-      holdT=setTimeout(function(){
-        held=true;
+  const fm=$("fmtMenu");
+  function menuOpen(on){
+    if(!fm) return;
+    fm.classList.toggle("on", !!on);
+    const d=$("fmtDot");
+    if(d) d.setAttribute("aria-expanded", on? "true":"false");
+  }
+  if(fm){
+    fm.addEventListener("click", function(e){
+      const b=e.target.closest("button"); if(!b) return;
+      if(b.hasAttribute("data-cmode")){
+        setChat(b.getAttribute("data-cmode")==="chat");
+      }else if(b.getAttribute("data-cact")==="clear"){
         feed.innerHTML=""; seq++;
         bubble("bot",'<div class="ck">начали заново</div><div class="ctxt">Переписка очищена. Пиши задачу.</div>');
         scrollDown(true);
         try{ if(navigator.vibrate) navigator.vibrate(12); }catch(e){}
-      }, 600);
-    };
-    const stopHold=function(){ clearTimeout(holdT); };
-    dot.addEventListener("pointerdown", startHold);
-    dot.addEventListener("pointerup", stopHold);
-    dot.addEventListener("pointerleave", stopHold);
-    dot.addEventListener("pointercancel", stopHold);
-    dot.addEventListener("click", function(e){ if(held){ e.preventDefault(); e.stopPropagation(); held=false; } }, true);
+      }
+      menuOpen(false);
+    });
+    document.addEventListener("pointerdown", function(e){
+      if(!fm.classList.contains("on")) return;
+      if(e.target.closest("#fmtMenu")||e.target.closest("#fmtDot")) return;
+      menuOpen(false);
+    }, true);
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") menuOpen(false); });
+  }
+
+  /* тап — переключить, удержание 0,45 с — меню (как у кружка темы) */
+  const dot2=$("fmtDot");
+  if(dot2){
+    let holdT=null, held=false;
+    dot2.addEventListener("pointerdown", function(){
+      held=false;
+      clearTimeout(holdT);
+      holdT=setTimeout(function(){ held=true; menuOpen(true); try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){} }, 450);
+    });
+    const stop=function(){ clearTimeout(holdT); };
+    dot2.addEventListener("pointerup", stop);
+    dot2.addEventListener("pointerleave", stop);
+    dot2.addEventListener("pointercancel", stop);
+    dot2.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+    dot2.addEventListener("click", function(e){
+      if(held){ held=false; e.preventDefault(); e.stopPropagation(); return; }
+      setChat(!chatOn);
+    });
   }
 
   paint();
