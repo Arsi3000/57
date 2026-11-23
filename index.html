@@ -49,9 +49,13 @@
   /* 5.2.5: внутри строки поиска фокус рисует сама строка — по своему контуру.
      Ореол вокруг самого input давал прямоугольник с острыми углами внутри поля,
      его углы и торчали за скругление. */
-  .searchbar input:focus-visible,.searchbar input:focus{
-    outline:none;box-shadow:none}
-  .searchbar input{caret-color:var(--vio,#3366ff)}
+  .searchbar input:focus-visible,.searchbar input:focus,
+  .searchbar textarea:focus-visible,.searchbar textarea:focus{
+    outline:none;box-shadow:none;border:0}
+  .searchbar input,.searchbar textarea{caret-color:var(--vio,#3366ff)}
+  /* 5.9.1: textarea наследовала и общую подсветку фокуса (прямоугольник
+     с острыми углами внутри круглой капсулы), и собственный бордер браузера */
+  .searchbar #q{border:0;outline:0;box-shadow:none;background:transparent;-webkit-appearance:none;appearance:none}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   html{scroll-behavior:smooth;color-scheme:dark}
@@ -119,7 +123,7 @@
     box-shadow:inset 0 0 0 1px rgba(124,108,255,.55),0 24px 50px -30px rgba(0,0,0,.9)}
   .searchbar .ico{font-size:22px;color:var(--ink-dim);line-height:1}
   #q{flex:1;border:0;outline:0;font-size:16px;padding:12px 2px;background:transparent;color:var(--ink);min-width:0;font-family:inherit;
-    resize:none;overflow:hidden;line-height:1.35;max-height:112px;display:block}
+    resize:none;overflow:hidden;max-height:112px;display:block}
   #q::placeholder{color:#7d86a6}
   .solve{border:0;cursor:pointer;font-family:inherit;font-size:14px;font-weight:650;color:#fff;
     padding:12px 24px;border-radius:var(--r);display:inline-flex;align-items:center;gap:8px;
@@ -2127,7 +2131,10 @@ body.light .wnitem ul{color:#3d4459}
    ============================================================ */
 .searchbar{gap:6px;padding:7px;border-radius:999px;align-items:center;margin:14px 0 6px}
 .searchbar .ico{display:none}
-#q{min-height:44px;padding:0 6px;font-size:16px}
+/* 5.9.1: было padding 0 при min-height 44 — строка прилипала к верхней кромке.
+   Теперь отступы по 11 px и строка 22 px: одна строка ровно 44, текст по центру.
+   Многострочный режим (Shift+Enter) считает высоту от этих же чисел. */
+#q{min-height:44px;padding:11px 6px;font-size:16px;line-height:22px;box-sizing:border-box}
 .round,.mic{flex:none;width:42px;height:42px;min-height:0;border-radius:50%;border:1px solid var(--line);
   background:rgba(255,255,255,.05);color:var(--ink-soft);display:grid;place-items:center;
   cursor:pointer;padding:0;transition:background .15s,color .15s,border-color .15s,transform .12s;
@@ -2816,15 +2823,32 @@ body[data-theme="synth"] #fxBg{opacity:1}
 @keyframes fxC{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(10vmin,-14vmin,0)}}
 /* сканирующие линии — только у ретро и терминала */
 body[data-theme="retro"] #fxBg,body[data-theme="terminal"] #fxBg{opacity:1}
-#fxBg b{position:absolute;inset:0;display:block;opacity:0}
-body[data-theme="retro"] #fxBg b,body[data-theme="terminal"] #fxBg b{
+#fxBg b,#fxBg u,#fxBg s,#fxBg em{position:absolute;inset:0;display:none;opacity:0}
+body[data-theme="terminal"] #fxBg b{display:block;
   opacity:.06;background:repeating-linear-gradient(180deg,transparent 0 3px,#fff 3px 4px);
   animation:fxScan 9s linear infinite}
+/* 5.9.1: у ретро «дождь» из формул читался поверх шапки — это был баг, а не задумка.
+   Вместо него по левому полю, за красной линией, идут бледные пометки как на полях
+   тетради: знаки, которые забывают. Тихо, 7 % яркости, только в поле. */
+body[data-theme="retro"] #fxBg em{display:block;opacity:1;inset:auto 0 0 0;height:100%;
+  background:repeating-linear-gradient(180deg,transparent 0 132px,transparent 132px);
+  pointer-events:none}
+body[data-theme="retro"] #fxBg em:before{
+  content:"×  ·  a  ·  =  ·  π  ·  b  ·  ÷  ·  +  ·  x  ·  ²  ·  −  ·  √  ·  y  ·  :  ·  ³  ·  %";
+  position:absolute;left:2px;top:0;bottom:0;width:34px;white-space:pre-line;
+  font:600 11px/26px ui-monospace,SFMono-Regular,monospace;letter-spacing:1px;
+  color:rgba(150,110,60,.34);text-align:center;opacity:.85;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 12%,#000 82%,transparent);
+  mask-image:linear-gradient(180deg,transparent,#000 12%,#000 82%,transparent)}
 @keyframes fxScan{0%{transform:translateY(0)}100%{transform:translateY(4px)}}
 /* матрица: падающие столбцы цифр символами, без canvas */
 body[data-theme="matrix"] #fxBg u{position:absolute;inset:0;display:block;opacity:.10;
   color:#4dffa2;font:600 13px/1.5 ui-monospace,monospace;letter-spacing:2px;white-space:pre;
-  writing-mode:vertical-rl;text-orientation:upright;animation:fxRain 26s linear infinite}
+  writing-mode:vertical-rl;text-orientation:upright;animation:fxRain 26s linear infinite;
+  /* 5.9.1: раньше столбцы лезли на шапку и на поле. Теперь верх глушится маской —
+     символы начинаются ниже капсулы и тают к низу */
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 190px,#000 88%,transparent);
+  mask-image:linear-gradient(180deg,transparent 0,#000 190px,#000 88%,transparent)}
 @keyframes fxRain{0%{transform:translateY(-30%)}100%{transform:translateY(30%)}}
 /* сетка «синтвейв» — перспектива уходит за горизонт */
 body[data-theme="synth"] #fxBg s{position:absolute;inset:auto 0 0 0;height:38vh;display:block;opacity:.16;
@@ -3168,7 +3192,7 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
   <!-- 5.9.0: живой фон текущей темы. Три размытых пятна медленно ходят по экрану,
        у ретро и терминала — скан-линии, у матрицы — падающие цифры, у синтвейва — сетка.
        Яркость 3–10 %: это фон, а не ёлка. -->
-  <div id="fxBg" aria-hidden="true"><i></i><i></i><i></i><b></b><u id="fxRain"></u><s></s></div>
+  <div id="fxBg" aria-hidden="true"><i></i><i></i><i></i><b></b><u id="fxRain"></u><s></s><em></em></div>
 
   <!-- 5.1.0: одна капсула по лучшим практикам ассистентов: слева «фото»,
        справа голос и круглая кнопка решения; поле — по центру, без лишних значков -->
@@ -3229,6 +3253,18 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
      при прежних 300 px эта строка уходила под кнопки. */
   .nb-write{height:calc(100vh - 372px);height:calc(100dvh - 372px);min-height:200px;max-height:700px}
 }
+/* 5.9.1: свёрнутый лист — узкая полоса с подписью. Разворачивается первым
+   касанием; после «стереть всё» снова сворачивается, чтобы ответ стоял
+   сразу под полем, а не уходил вниз экрана. */
+#nbWrite{transition:height .28s cubic-bezier(.2,.8,.2,1)}
+#nbWrite.idle{height:96px !important;min-height:0 !important;max-height:none !important}
+#nbWrite.idle:after{content:"Лист ждёт записи — коснись и пиши, ответ допишу сам";
+  position:absolute;left:0;right:0;top:calc(50% + 14px);text-align:center;pointer-events:none;
+  font-size:11.5px;line-height:1.3;color:var(--ink-dim);opacity:.72}
+/* пунктирная строка-ориентир: без неё узкая полоса читалась как пустое место */
+#nbWrite.idle:before{content:"";position:absolute;left:8px;right:8px;top:calc(50% + 6px);
+  border-top:1px dashed var(--line);pointer-events:none;opacity:.9}
+body.light #nbWrite.idle:after,body.warm #nbWrite.idle:after{color:#6c7280}
 @media (max-width:900px) and (orientation:landscape){
   /* в горизонтали экран низкий: доска забирает не всё, иначе ответ уходит
      под капсулу «Проверить» — оставляем полосу под решение */
@@ -3652,7 +3688,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.9.0";
+const APP_VERSION="5.9.1";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17303,7 +17339,14 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.9.0","d":"23.11","b":[
+  const CHANGES=[{"v":"5.9.1","d":"23.11","b":[
+    "Поле ввода: убрана прямоугольная рамка внутри капсулы — она осталась от общей подсветки фокуса, когда поле стало многострочным. Цифры больше не прилипают к верхней кромке: строка стоит по центру капсулы",
+    "Пустой лист больше не занимает пол-экрана. Пока на нём ничего нет, это узкая полоса с подписью «коснись и пиши» — ответ стоит сразу под полем. Первое касание разворачивает лист на полную, «стереть всё» снова сворачивает",
+    "Формулы-«дождь» больше не сыплются поверх шапки и поля: у матрицы они начинаются ниже капсулы, у остальных тем выключены совсем",
+    "В «Ретро» вместо дождя — бледные пометки по левому полю, за красной линией: знаки, которые чаще всего забывают",
+    "Ярлык темы в углу карточки больше не вылезает на нижнюю панель: если карточка низкая, ярлык не ставится"
+  ]},
+  {"v":"5.9.0","d":"23.11","b":[
     "Четыре новых темы-скина: «Матрица» (падающие цифры по фону), «Кислота», «Терминал» (скан-линии как у ЭЛТ) и «Синтвейв» (сетка, уходящая за горизонт). Открываются не покупкой, а прогрессом: Матрица — серия 3 дня, Кислота — 50 задач, Терминал — 150, Синтвейв — серия 7 дней. В списке тем у закрытых стоит замок с условием",
     "Живой фон во всех тёмных темах: три размытых пятна медленно ходят по экрану на 7–10 % яркости. Это фон, а не ёлка — текст читается как раньше",
     "Подсказка-строка под полем: одна короткая фраза по контексту — «перенос через = меняет знак, это правило, а не магия», «сомневаешься в ответе — посмотри шаг 2». Меняется раз в полминуты, закрывается крестиком навсегда",
@@ -19323,6 +19366,18 @@ window.__LEARN={
   function refreshActs(){
     if(!acts) return;
     acts.hidden = !(strokes.length>0);
+    boardIdle(!(strokes.length>0));
+  }
+  /* 5.9.1: пустой лист занимал пол-экрана — между полем и ответом зиял
+     промежуток с одинокими каракулями, и было непонятно, что это вообще.
+     Теперь пустая доска — узкая полоса с подписью; первое же касание
+     разворачивает её на полную. Ответ после этого поднимается к полю. */
+  let idleLock=false;
+  function boardIdle(on){
+    const w=document.getElementById("nbWrite");
+    if(!w) return;
+    if(on) idleLock=false;
+    w.classList.toggle("idle", !!on && !idleLock);
   }
   /* 5.8.12: пока палец ведёт по листу, капсула ввода (фото, микрофон,
      клавиатура) тает — она закрывала нижнюю часть записи. Отпустил палец —
@@ -19352,6 +19407,8 @@ window.__LEARN={
        n:0, t0:(window.performance? performance.now(): Date.now()),
        touch:(e.pointerType!=="mouse")};
     try{ cv.setPointerCapture(e.pointerId); }catch(err){}
+    /* первое касание разворачивает свёрнутый лист */
+    if(idleLock===false){ idleLock=true; boardIdle(false); requestAnimationFrame(sizeCanvas); }
     dimDock(true);
     mode="draw";
     last={ c:pen(), w:(e.pointerType==="pen"? 2.6 : 2.4), p:[pt] };
@@ -21553,7 +21610,12 @@ window.__LEARN={
   function sticker(){
     const card=document.querySelector("#out .card");
     if(!card) return;
+    /* 5.9.1: наклейка не ставится, если карточка низкая и упирается в нижнюю
+       панель — иначе ярлык темы висел поверх капсулы ввода */
+    const r=card.getBoundingClientRect();
+    const tight=r.height<120 || r.top>window.innerHeight-150;
     let st=card.querySelector("#themeSticker");
+    if(tight){ if(st) st.remove(); return; }
     if(!st){ st=document.createElement("span"); st.id="themeSticker"; card.appendChild(st); }
     st.textContent=STICK[themeName()]||"";
   }
