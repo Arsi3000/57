@@ -2928,8 +2928,44 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
 .skinLockNote.on{opacity:1;transform:translate(-50%,0)}
 
 /* ================= 5.10.0: режим чата ================= */
-.chatHead{display:none;align-items:center;gap:8px;margin:14px 0 2px}
-body.mode-chat .chatHead,body.mode-chat .chatQuick{display:flex}
+/* 5.10.1: выбор формата живёт внизу слева, на уровне капсулы ввода.
+   В свёрнутом виде — просто кружок в цвет темы. Раньше переключатель был
+   виден только ВНУТРИ режима чата, поэтому включить его было нечем. */
+.chatHead{position:fixed;left:8px;bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  z-index:942;display:flex;align-items:center;gap:6px;transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s}
+body.mode-other .chatHead,body.exam-mode .chatHead,body.set-on .chatHead{display:none}
+.chatSeg{display:none;align-items:center;gap:4px;padding:4px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface-2);
+  box-shadow:0 14px 30px -18px rgba(4,6,20,.8)}
+body.fmt-open .chatSeg{display:flex}
+.fmtDot{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink);font-family:inherit;font-size:15px;font-weight:800;
+  display:grid;place-items:center;cursor:pointer;padding:0;
+  box-shadow:0 14px 30px -18px rgba(4,6,20,.8);transition:transform .2s,background .16s;
+  -webkit-tap-highlight-color:transparent}
+.fmtDot:active{transform:scale(.94)}
+body.fmt-open .fmtDot{background:var(--vio);color:#0b0b14;border-color:transparent}
+/* капсула ввода: по умолчанию спрятана за нижним краем, выезжает по тапу */
+.dockbar{transform:translateY(140%);opacity:0;pointer-events:none;
+  transition:transform .26s cubic-bezier(.2,.8,.2,1),opacity .2s;right:68px}
+body.dock-open .dockbar{transform:translateY(0);opacity:1;pointer-events:auto}
+/* пока док открыт, капсула формата уезжает влево и не мешает */
+body.dock-open .chatHead{transform:translateX(-140%);opacity:0;pointer-events:none}
+body.dock-open .chatQuick{opacity:0;pointer-events:none}
+/* правая круглая кнопка вызова способов ввода */
+.dockToggle{position:fixed;right:8px;bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  z-index:943;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;
+  padding:0;box-shadow:0 14px 30px -18px rgba(4,6,20,.8);
+  transition:transform .2s,background .16s;-webkit-tap-highlight-color:transparent}
+.dockToggle svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.2;
+  stroke-linecap:round;stroke-linejoin:round}
+.dockToggle:active{transform:scale(.94)}
+body.dock-open .dockToggle{background:var(--vio);color:#0b0b14;border-color:transparent}
+body.dock-open .dockToggle .ic-plus{display:none}
+body:not(.dock-open) .dockToggle .ic-x{display:none}
+body.mode-other .dockToggle,body.exam-mode .dockToggle,body.set-on .dockToggle{display:none}
+.chatQuick{display:none}
 .chatSeg{display:flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--line);
   background:var(--glass)}
 .chatSeg button{min-height:34px;padding:6px 14px;border:0;border-radius:999px;background:none;
@@ -3771,7 +3807,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.10.0";
+const APP_VERSION="5.10.1";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17422,7 +17458,12 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.10.0","d":"24.11","b":[
+  const CHANGES=[{"v":"5.10.1","d":"24.11","b":[
+    "Кнопка выбора «Форма / Чат» наконец видна: раньше она показывалась только внутри самого режима чата — включить его было нечем. Теперь это кружок внизу слева, в цвет темы; тап раскрывает «Форма · Чат · Стереть»",
+    "Капсула способов ввода (шпаргалка, вставить, фото, микрофон, клавиатура) спрятана за нижний край и выезжает по тапу круглой кнопки справа. Пока она открыта, кружок формата уезжает влево. Повторный тап — убрать",
+    "Обе кнопки — кружки 48 px в цвет темы, как кнопка решения; в тёмных темах подсвечиваются акцентом"
+  ]},
+  {"v":"5.10.0","d":"24.11","b":[
     "Режим чата на экране «Решить»: задача — пузырь справа, разбор — пузырями слева с аватаром. Шаги приходят по одному, перед ответом короткое «печатает…». Переключатель «Форма / Чат» запоминается: закрыл в чате — так и откроется",
     "Ответ стоит отдельным крупным пузырём, под ним — «Понял», «Не понял», «Объясни иначе» и копирование. «Объясни иначе» пересказывает те же шаги другими словами",
     "Быстрые ответы над перепиской: «по шагам», «проще», «ещё задача» — как в мессенджере, без поиска кнопок",
@@ -22052,15 +22093,33 @@ window.__LEARN={
   let lastRes=null;     /* последний разбор — для реакций и чипов */
 
   /* ---------- разметка переключателя ---------- */
+  /* 5.10.1: внизу слева кружок, при тапе раскрывается в «Форма / Чат».
+     Кнопка видна всегда, независимо от режима — иначе включить чат нечем. */
   const head=document.createElement("div");
   head.className="chatHead";
   head.innerHTML=
-    '<div class="chatSeg" role="group" aria-label="Как показывать решение">'+
+    '<button type="button" class="fmtDot" id="fmtDot" aria-expanded="false" '+
+      'title="Формат показа" aria-label="Формат: форма или чат">Ф</button>'+
+    '<div class="chatSeg" id="chatSeg" role="group" aria-label="Как показывать решение">'+
       '<button type="button" data-cmode="form" aria-pressed="false">Форма</button>'+
       '<button type="button" data-cmode="chat" aria-pressed="false">Чат</button>'+
-    '</div>'+
-    '<button type="button" class="chatClear" id="chatClear" title="Очистить переписку">Стереть</button>';
-  form.parentNode.insertBefore(head, form);
+      '<button type="button" class="chatClear" id="chatClear" title="Очистить переписку">Стереть</button>'+
+    '</div>';
+  document.body.appendChild(head);
+
+  /* кнопка вызова капсулы способов ввода */
+  const dt=document.createElement("button");
+  dt.type="button"; dt.className="dockToggle"; dt.id="dockToggle";
+  dt.setAttribute("aria-label","Способы ввода");
+  dt.setAttribute("title","Способы ввода: фото, голос, клавиатура");
+  dt.innerHTML='<svg class="ic-plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>'+
+               '<svg class="ic-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  document.body.appendChild(dt);
+  dt.addEventListener("click", function(){
+    const open=document.body.classList.toggle("dock-open");
+    if(open) document.body.classList.remove("fmt-open");
+    dt.setAttribute("aria-expanded", open? "true":"false");
+  });
 
   const quick=document.createElement("div");
   quick.className="chatQuick";
@@ -22233,8 +22292,19 @@ window.__LEARN={
   }, true);
 
   /* ---------- переключатель ---------- */
+  const dot=$("fmtDot");
+  if(dot) dot.addEventListener("click", function(){
+    const open=document.body.classList.toggle("fmt-open");
+    dot.setAttribute("aria-expanded", open? "true":"false");
+    if(open) document.body.classList.remove("dock-open");
+  });
+
   function paint(){
     document.body.classList.toggle("mode-chat", chatOn);
+    if(dot){
+      dot.textContent = chatOn? "Ч":"Ф";
+      dot.setAttribute("aria-label", "Формат: "+(chatOn? "чат":"форма")+". Нажми, чтобы сменить");
+    }
     feed.hidden=!chatOn;
     head.querySelectorAll("[data-cmode]").forEach(function(b){
       const on=b.getAttribute("data-cmode")===(chatOn? "chat":"form");
