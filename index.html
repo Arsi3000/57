@@ -2926,6 +2926,83 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
   background:var(--surface-3);border:1px solid var(--line);color:var(--ink);font-size:12px;line-height:1.4;
   box-shadow:0 16px 30px -20px rgba(0,0,0,.9);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
 .skinLockNote.on{opacity:1;transform:translate(-50%,0)}
+
+/* ================= 5.10.0: режим чата ================= */
+.chatHead{display:none;align-items:center;gap:8px;margin:14px 0 2px}
+body.mode-chat .chatHead,body.mode-chat .chatQuick{display:flex}
+.chatSeg{display:flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--line);
+  background:var(--glass)}
+.chatSeg button{min-height:34px;padding:6px 14px;border:0;border-radius:999px;background:none;
+  color:var(--ink-dim);font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.chatSeg button.on{background:var(--vio);color:#0b0b14}
+body.light .chatSeg button.on,body.warm .chatSeg button.on{color:#fff}
+.chatClear{margin-left:auto;border:0;background:none;color:var(--ink-dim);font-family:inherit;
+  font-size:12px;font-weight:600;padding:8px 4px;cursor:pointer;min-height:34px}
+.chatQuick{display:none;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px;scrollbar-width:none}
+.chatQuick::-webkit-scrollbar{display:none}
+.chatQuick button{flex:0 0 auto;min-height:34px;padding:6px 12px;border-radius:999px;
+  border:1px solid var(--line);background:var(--glass);color:var(--ink-soft);
+  font-family:inherit;font-size:12px;font-weight:650;cursor:pointer;white-space:nowrap}
+body.mode-chat .searchbar{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px)}
+/* лента */
+.chatfeed{display:none;flex-direction:column;gap:10px;padding:6px 0 96px;margin-top:6px;
+  max-height:calc(100dvh - 380px);overflow-y:auto;overscroll-behavior:contain;scroll-behavior:smooth}
+body.mode-chat .chatfeed{display:flex}
+.cb{display:flex;align-items:flex-end;gap:8px;max-width:100%}
+.cb.me{justify-content:flex-end}
+.cbb{max-width:86%;padding:10px 13px;border-radius:16px 16px 16px 5px;
+  background:var(--surface-2);border:1px solid var(--line);color:var(--ink);
+  font-size:13.5px;line-height:1.45;position:relative;overflow-wrap:anywhere}
+.cb.me .cbb{border-radius:16px 16px 5px 16px;background:var(--vio);color:#0b0b14;border-color:transparent;
+  font-weight:600}
+body.light .cb.me .cbb,body.warm .cb.me .cbb{color:#fff}
+.cb.me-quiet .cbb{background:var(--glass);color:var(--ink-soft);font-weight:500;font-size:12.5px;
+  border-color:var(--line)}
+.cav{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(150deg,var(--vio),var(--cyan));color:#0b0b14;font-size:12px;font-weight:800}
+.ck{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:800;
+  color:var(--ink-dim);margin-bottom:5px}
+.ctxt{font-size:13px;color:var(--ink-soft)}
+.cmeta{margin-top:7px;font-size:11.5px;color:var(--ink-dim)}
+.cstep{padding:7px 0;border-top:1px dashed var(--line);animation:cstepIn .3s ease both}
+.cstep:first-child{border-top:0;padding-top:2px}
+@keyframes cstepIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.csh{font-size:12.5px;font-weight:750;color:var(--ink);margin-bottom:4px}
+.csb{font-size:13px;color:var(--ink-soft);line-height:1.45}
+.csb .eq,.csb .fr{font-size:13px}
+.csb p{margin:5px 0 0}
+.csb ul,.csb ol{margin:5px 0 0;padding-left:18px}
+.cans{font-size:22px;font-weight:800;line-height:1.25;color:var(--ink)}
+.cb.answer .cbb{border-color:var(--vio)}
+.ccopy{margin-top:8px;display:block;border:1px solid var(--line);background:none;color:var(--ink-dim);
+  font-family:inherit;font-size:11.5px;font-weight:650;padding:6px 10px;border-radius:999px;
+  cursor:pointer;min-height:32px}
+.cReact{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.cReact button{border:1px solid var(--line);background:none;color:var(--ink-dim);font-family:inherit;
+  font-size:11.5px;font-weight:650;padding:6px 10px;border-radius:999px;cursor:pointer;min-height:32px}
+.cReact button:hover{border-color:var(--vio);color:var(--ink)}
+.clist{margin:6px 0 0;padding-left:18px;font-size:13px;line-height:1.5;color:var(--ink-soft)}
+.typing{display:flex;gap:4px;align-items:center}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--ink-dim);display:inline-block;
+  animation:cdot 1.1s infinite}
+.cdot:nth-child(2){animation-delay:.16s}
+.cdot:nth-child(3){animation-delay:.32s}
+@keyframes cdot{0%,60%,100%{opacity:.28;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}
+.chatNew{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));
+  z-index:60;border:0;border-radius:999px;padding:8px 14px;background:var(--vio);color:#0b0b14;
+  font-family:inherit;font-size:12px;font-weight:750;cursor:pointer;
+  box-shadow:0 12px 24px -14px rgba(0,0,0,.8)}
+body.mode-chat #noteBoard,body.mode-chat #out,body.mode-chat .liveprev{display:none !important}
+body.mode-chat #hintLine{display:none}
+body.light .cbb{background:#fff;border-color:rgba(20,25,45,.12);color:#16233a}
+body.light .cb.me-quiet .cbb{background:rgba(20,25,45,.05)}
+@media (prefers-reduced-motion: reduce){
+  .chatfeed{scroll-behavior:auto}
+  .cstep{animation:none}
+  .cdot{animation:none;opacity:.6}
+}
 </style>
 </head>
 <body>
@@ -3222,6 +3299,9 @@ body.light #themeSticker,body.warm #themeSticker{color:#fff}
   <!-- 5.9.0: подсказка-строка. Одна короткая фраза по контексту: что сейчас
        происходит и почему. Не «молодец», а «перенос через = меняет знак — это
        правило, а не магия». Закрывается крестиком и больше не возвращается. -->
+  <!-- 5.10.0: лента режима чата. Пузыри добавляет скрипт внизу файла -->
+  <div class="chatfeed" id="chatFeed" hidden aria-live="polite" aria-label="Переписка с решателем"></div>
+
   <div id="hintLine" role="status" aria-live="polite">
     <span class="hl-i" aria-hidden="true">›</span>
     <span class="hl-t" id="hintText"></span>
@@ -3691,7 +3771,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.9.2";
+const APP_VERSION="5.10.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17342,7 +17422,14 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.9.2","d":"23.11","b":[
+  const CHANGES=[{"v":"5.10.0","d":"24.11","b":[
+    "Режим чата на экране «Решить»: задача — пузырь справа, разбор — пузырями слева с аватаром. Шаги приходят по одному, перед ответом короткое «печатает…». Переключатель «Форма / Чат» запоминается: закрыл в чате — так и откроется",
+    "Ответ стоит отдельным крупным пузырём, под ним — «Понял», «Не понял», «Объясни иначе» и копирование. «Объясни иначе» пересказывает те же шаги другими словами",
+    "Быстрые ответы над перепиской: «по шагам», «проще», «ещё задача» — как в мессенджере, без поиска кнопок",
+    "Новое сообщение не дёргает ленту, если ты читаешь выше: внизу появляется «↓ новое» и лента не прыгает",
+    "Поле ввода в чате закреплено сверху и не уезжает при прокрутке переписки"
+  ]},
+  {"v":"5.9.2","d":"23.11","b":[
     "Цифры на доске больше не «разъезжаются» под пальцем. Причина была в плавном раскрытии листа: пока высота ехала 0,28 с, координаты штриха считались по меняющемуся размеру, и запись растягивалась вслед за листом. Теперь лист меняет высоту мгновенно, а первая точка берётся уже по новому размеру",
     "Лист сворачивается и разворачивается в том же кадре, что и меняет размер — красная линия тетради больше не дёргается"
   ]},
@@ -21933,6 +22020,267 @@ window.__LEARN={
   /* ---------- запуск ---------- */
   applyAcc(); renderAccRow(); syncToggles();
   document.addEventListener("DOMContentLoaded", function(){ applyAcc(); renderAccRow(); syncToggles(); });
+})();
+
+</script>
+<script>/* 5.10.0 режим чата */
+/* =====================================================================
+   5.10.0 «Режим чата»
+   Экран «Решить» можно показать как переписку: задача — пузырь справа,
+   разбор — пузырями слева, шаги приходят по одному, с «печатает…».
+   Переключатель запоминается: закрыл в чате — так и откроется.
+   Режим ничего не переписывает в решателе: он вызывает window.__solve.
+   ===================================================================== */
+(function(){
+  if(window.__chatMode) return;
+  window.__chatMode=true;
+
+  const LSget=function(k,d){ try{ const v=localStorage.getItem(k); return v===null? d : JSON.parse(v); }catch(e){ return d; } };
+  const LSset=function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+  const $=function(id){ return document.getElementById(id); };
+  const esc=function(t){
+    return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  };
+  const reduce=function(){ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
+
+  const feed=$("chatFeed"), form=$("form"), q=$("q");
+  if(!feed || !form || !q) return;
+
+  let chatOn = LSget("reshatel.chat", false)===true;
+  let seq=0;            /* номер текущего ответа: старый таймер не должен лезть в новый */
+  let lastRes=null;     /* последний разбор — для реакций и чипов */
+
+  /* ---------- разметка переключателя ---------- */
+  const head=document.createElement("div");
+  head.className="chatHead";
+  head.innerHTML=
+    '<div class="chatSeg" role="group" aria-label="Как показывать решение">'+
+      '<button type="button" data-cmode="form" aria-pressed="false">Форма</button>'+
+      '<button type="button" data-cmode="chat" aria-pressed="false">Чат</button>'+
+    '</div>'+
+    '<button type="button" class="chatClear" id="chatClear" title="Очистить переписку">Стереть</button>';
+  form.parentNode.insertBefore(head, form);
+
+  const quick=document.createElement("div");
+  quick.className="chatQuick";
+  quick.innerHTML=
+    '<button type="button" data-cq="steps">по шагам</button>'+
+    '<button type="button" data-cq="plain">проще</button>'+
+    '<button type="button" data-cq="again">ещё задача</button>';
+  form.parentNode.insertBefore(quick, feed);
+  feed.parentNode.insertBefore(quick, feed);
+
+  /* ---------- пузыри ---------- */
+  function bubble(who, html, cls){
+    const b=document.createElement("div");
+    b.className="cb "+who+(cls? " "+cls:"");
+    b.innerHTML='<div class="cbb">'+html+'</div>';
+    if(who==="bot"){
+      const a=document.createElement("span");
+      a.className="cav"; a.setAttribute("aria-hidden","true"); a.textContent="Σ";
+      b.insertBefore(a, b.firstChild);
+    }
+    feed.appendChild(b);
+    return b;
+  }
+  function nearBottom(){
+    return feed.scrollHeight - feed.scrollTop - feed.clientHeight < 140;
+  }
+  function scrollDown(force){
+    if(force || nearBottom()) feed.scrollTop=feed.scrollHeight;
+    else pulseNew();
+  }
+  function pulseNew(){
+    let n=$("chatNew");
+    if(!n){
+      n=document.createElement("button");
+      n.id="chatNew"; n.className="chatNew"; n.type="button";
+      n.textContent="↓ новое";
+      n.addEventListener("click", function(){ feed.scrollTop=feed.scrollHeight; n.remove(); });
+      document.body.appendChild(n);
+    }
+  }
+  function typing(){
+    const b=bubble("bot",'<span class="cdot"></span><span class="cdot"></span><span class="cdot"></span>',"typing");
+    b.setAttribute("aria-label","Печатает");
+    scrollDown();
+    return b;
+  }
+  function wait(ms){
+    return new Promise(function(res){ setTimeout(res, reduce()? Math.min(60,ms) : ms); });
+  }
+
+  /* ---------- заглушка для «понял / не понял» ---------- */
+  function reactions(box){
+    const row=document.createElement("div");
+    row.className="cReact";
+    row.innerHTML=
+      '<button type="button" data-r="ok">Понял</button>'+
+      '<button type="button" data-r="no">Не понял</button>'+
+      '<button type="button" data-r="why">Объясни иначе</button>';
+    row.querySelectorAll("[data-r]").forEach(function(b){
+      b.addEventListener("click", function(){
+        const r=b.getAttribute("data-r");
+        row.remove();
+        if(r==="ok") bubble("me","Понял, спасибо","me-quiet");
+        else if(r==="no"){ bubble("me","Не понял","me-quiet"); botExplain(false); }
+        else { bubble("me","Объясни иначе","me-quiet"); botExplain(true); }
+        scrollDown();
+      });
+    });
+    box.appendChild(row);
+  }
+
+  /* ---------- «проще»: те же шаги, но заголовки без терминов ---------- */
+  const PLAIN=[
+    [/^Записываем/i,"Что дано"], [/^Читаем пример/i,"Что дано"],
+    [/Переносим/i,"Переносим через равно"], [/Приводим подобные/i,"Собираем иксы и числа"],
+    [/Находим корень/i,"Находим ответ"], [/Раскрываем скобки/i,"Открываем скобки"],
+    [/общему знаменателю/i,"Делаем одинаковые низы"], [/Сокращаем/i,"Уменьшаем дробь"],
+    [/дискриминант/i,"Считаем дискриминант"], [/Проверяем/i,"Проверка"]
+  ];
+  function plainHead(h){
+    for(const p of PLAIN){ if(p[0].test(h)) return h.replace(p[0],p[1]); }
+    return h;
+  }
+
+  /* ---------- объяснение «иначе» ---------- */
+  function botExplain(plain){
+    if(!lastRes){ bubble("bot","Сначала пришли задачу — объясню на ней."); scrollDown(true); return; }
+    const steps=lastRes.steps||[];
+    const html='<div class="ck">'+(plain? "другими словами":"ещё раз, по шагам")+'</div>'+
+      '<ul class="clist">'+steps.map(function(s,i){
+        return "<li><b>"+(i+1)+".</b> "+esc(plain? plainHead(s.h):s.h)+"</li>";
+      }).join("")+'</ul>';
+    bubble("bot", html+"<div class=\"cmeta\">ответ: <b>"+esc(String(lastRes.answer).replace(/&nbsp;/g," "))+"</b></div>");
+    scrollDown();
+  }
+
+  /* ---------- главный сценарий: задача → разбор ---------- */
+  async function ask(text){
+    const my=++seq;
+    bubble("me", esc(text));
+    q.value=""; q.style.height="auto";
+    scrollDown(true);
+    lastRes=null;
+
+    const t=typing();
+    await wait(430);
+    if(my!==seq){ t.remove(); return; }
+
+    let res=null, err=null;
+    try{ res=window.__solve? window.__solve(text) : null; }catch(e){ err=e; }
+    t.remove();
+
+    if(!res){
+      bubble("bot",'<div class="ck">не разобрал</div>'+
+        '<div class="ctxt">'+(err? esc(err.message||"Такую запись решить не могу.") : "Такую запись решить не могу.")+
+        '</div><div class="cmeta">Попробуй иначе: «2x + 5 = 13», «3/4 + 5/6», «20% от 1500».</div>');
+      scrollDown(); return;
+    }
+    lastRes=res;
+
+    const kind=esc(res.kind||"Решение");
+    const box=bubble("bot",'<div class="ck">'+kind+'</div><div class="csteps"></div>');
+    scrollDown();
+    const holder=box.querySelector(".csteps");
+    const steps=res.steps||[];
+
+    /* шаги по одному: включено по умолчанию. Пауза короткая — 260 мс,
+       читать успеваешь, но не скучаешь. При reduce-motion всё появляется сразу. */
+    for(let i=0;i<steps.length;i++){
+      if(my!==seq) return;
+      const st=steps[i];
+      const li=document.createElement("div");
+      li.className="cstep";
+      li.innerHTML='<div class="csh">'+esc(st.h)+'</div><div class="csb">'+st.b+'</div>';
+      holder.appendChild(li);
+      scrollDown();
+      await wait(260);
+    }
+    if(my!==seq) return;
+
+    /* сам ответ — отдельным крупным пузырём, как «итог» в переписке */
+    const ans=String(res.answer).replace(/&nbsp;/g," ");
+    const fin=bubble("bot",
+      '<div class="cans">'+(res.answerHtml||esc(ans))+'</div>'+
+      '<div class="cmeta">проверено · ответ можно копировать</div>',
+      "answer");
+    const cp=document.createElement("button");
+    cp.type="button"; cp.className="ccopy"; cp.textContent="Копировать";
+    cp.addEventListener("click", function(){
+      const txt=String(lastRes? lastRes.answer : ans).replace(/&nbsp;/g," ");
+      if(navigator.clipboard) navigator.clipboard.writeText(txt).then(function(){
+        cp.textContent="Скопировано"; setTimeout(function(){ cp.textContent="Копировать"; },1600);
+      }).catch(function(){ cp.textContent="Не вышло"; });
+      else cp.textContent="Не вышло";
+    });
+    fin.querySelector(".cbb").appendChild(cp);
+    reactions(fin.querySelector(".cbb"));
+    scrollDown();
+  }
+
+  /* ---------- перехват отправки ---------- */
+  document.addEventListener("submit", function(e){
+    if(!chatOn || e.target!==form) return;
+    /* перехватываем в фазе захвата: свой обработчик формы (render) не должен
+       сработать — иначе разбор попадёт и в форму, и в переписку */
+    e.preventDefault(); e.stopPropagation();
+    const text=(window.__qFlat? window.__qFlat() : String(q.value||"")).trim();
+    if(text.length<1) return;
+    ask(text);
+  }, true);
+
+  /* ---------- переключатель ---------- */
+  function paint(){
+    document.body.classList.toggle("mode-chat", chatOn);
+    feed.hidden=!chatOn;
+    head.querySelectorAll("[data-cmode]").forEach(function(b){
+      const on=b.getAttribute("data-cmode")===(chatOn? "chat":"form");
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on? "true":"false");
+    });
+    const h=$("hintLine"); if(h) h.hidden=chatOn;
+    const out=$("out"); if(out) out.style.display=chatOn? "none":"";
+    if(chatOn){
+      if(!feed.children.length){
+        bubble("bot",'<div class="ck">на связи</div><div class="ctxt">Пиши задачу или пример — покажу разбор по шагам, как в переписке. Фото и голос работают как раньше.</div>');
+      }
+      setTimeout(function(){ feed.scrollTop=feed.scrollHeight; }, 30);
+    }
+  }
+  head.addEventListener("click", function(e){
+    const b=e.target.closest("[data-cmode]");
+    if(!b) return;
+    chatOn=b.getAttribute("data-cmode")==="chat";
+    LSset("reshatel.chat", chatOn);
+    paint();
+  });
+
+  /* ---------- быстрые ответы ---------- */
+  quick.addEventListener("click", function(e){
+    const b=e.target.closest("[data-cq]"); if(!b) return;
+    const k=b.getAttribute("data-cq");
+    if(k==="steps"){
+      if(!lastRes) return bubble("bot","Сначала пришли задачу — разберу по шагам."), scrollDown(true);
+      bubble("me","по шагам","me-quiet"); botExplain(false);
+    }else if(k==="plain"){
+      bubble("me","проще","me-quiet"); botExplain(true);
+    }else{
+      q.focus();
+    }
+    scrollDown();
+  });
+
+  const clr=$("chatClear");
+  if(clr) clr.addEventListener("click", function(){
+    feed.innerHTML=""; seq++;
+    bubble("bot",'<div class="ck">начали заново</div><div class="ctxt">Переписка очищена. Пиши задачу.</div>');
+    scrollDown(true);
+  });
+
+  paint();
 })();
 
 </script>
