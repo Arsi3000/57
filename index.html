@@ -3169,6 +3169,13 @@ body.fmt-changing #out .card{animation:cardIn .46s cubic-bezier(.2,.9,.2,1) both
 #sndBtn,#texBtn,#checkbtn,#fxtoggle,#kbbtn{min-height:44px}
 .cReact button{min-height:44px}
 .ptsl input[type=range]{height:44px;margin:-12px 0}
+
+/* ---- 5.12.0: «показать ещё» в очереди ошибок ---- */
+.misMore{display:block;width:100%;margin:10px 0 0;min-height:44px;
+  border:1px dashed var(--line);border-radius:12px;background:none;
+  color:var(--ink-soft);font:650 13px/1.2 inherit;cursor:pointer}
+.misMore:hover{background:var(--surface-2);color:var(--ink)}
+.misMore:active{transform:scale(.99)}
 </style>
 </head>
 <body>
@@ -3218,6 +3225,19 @@ body.fmt-changing #out .card{animation:cardIn .46s cubic-bezier(.2,.9,.2,1) both
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4.5 12h13"/><path d="m12.4 6 6 6-6 6"/></symbol>
   </defs>
 </svg>
+<script>
+/* 5.12.0: ОДИН эскейпер на всё приложение.
+   Раньше в файле жили девять разных esc/esc2: часть не экранировала кавычки,
+   и одна и та же строка в разных экранах выводилась по-разному — вплоть до
+   того, что значение с кавычкой ломало атрибут. Здесь полный вариант:
+   амперсанд, угловые скобки, оба вида кавычек. Для текста это безопасно
+   (&quot; браузер показывает как обычную кавычку), для атрибутов — обязательно. */
+window.__esc=function(t){
+  if(t===null || t===undefined) return "";
+  return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+};
+</script>
 <script>window.ICON=function(n){return '<svg class="ic" aria-hidden="true"><use href="#i-'+n+'"/></svg>'};</script>
 <div class="bg" aria-hidden="true">
   <div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
@@ -3943,7 +3963,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.10.4";
+const APP_VERSION="5.12.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -4363,9 +4383,11 @@ function detectVar(s){
 /* ============================================================ */
 /*  4. Вёрстка шага                                              */
 /* ============================================================ */
-const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-/* то же, но и для кавычек: только для значений атрибутов (value="…") */
-const escAttr = s => esc(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+const esc = s => window.__esc(s);
+/* 5.12.0: escAttr больше не отдельная логика — единый эскейпер и так
+   закрывает кавычки, поэтому это псевдоним. Оставлен, чтобы не править
+   два десятка вызовов по файлу. */
+const escAttr = s => window.__esc(s);
 const eq = (s,big) => '<div class="eq'+(big?" big":"")+'">'+s+"</div>";
 function plainText(html){
   return String(html).replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ")
@@ -8835,9 +8857,7 @@ document.getElementById("form").addEventListener("submit",function(ev){
   if(!inp||!box) return;
   let timer=null, shown="";
 
-  function esc2(t){
-    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
+  function esc2(t){ return window.__esc(t); }
   function hide(){ clearTimeout(timer); shown=""; box.hidden=true; box.innerHTML=""; }
   function quiet(){
     if(document.body.classList.contains("exam-mode")) return true;
@@ -9939,8 +9959,8 @@ function renderRecent(){
   if(!items.length || document.body.classList.contains("exam-mode")){ box.hidden=true; box.innerHTML=""; return; }
   box.hidden=false;
   box.innerHTML='<div class="rlist">'+items.map(function(r){
-    const q=String(r.q).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const a=String(r.a).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    /* 5.12.0: кавычки тоже экранируем — q уходит в data-атрибут */
+    const q=window.__esc(r.q), a=window.__esc(r.a);
     /* ответ «x = 6» — уже с равенством, второй знак не нужен */
     const bare=/^\s*[a-zA-Zа-яё]\s*=/.test(a);
     return '<button type="button" class="rrow" data-recent="'+q.replace(/"/g,"&quot;")+'">'+
@@ -13009,9 +13029,7 @@ const V4UI=(function(){
       clearAll();
     });
   }
-  function escAttr(s){
-    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
+  function escAttr(s){ return window.__esc(s); }
 
   /* ---------------- ВКЛАДКА «ДЭШ» ---------------- */
   function renderDash(){
@@ -13322,7 +13340,7 @@ const V4UI=(function(){
 /* ============================================================ */
 (function(){
   const $=function(id){ return document.getElementById(id); };
-  const esc2=function(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+  const esc2=function(t){ return window.__esc(t); };
   const plain=function(html){ return String(html).replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim(); };
   const L=function(){ return window.__LEARN; };
 
@@ -14189,7 +14207,7 @@ window.__dbg={getTest:function(){return TEST;},tBuild:tBuild,TEST_TOPICS:TEST_TO
     return R;
   }
 
-  function esc2(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function esc2(t){ return window.__esc(t); }
   const VER=(typeof window!=="undefined" && window.APP_VERSION)? window.APP_VERSION : "";
 
   function draw(R){
@@ -14286,7 +14304,7 @@ window.__dbg={getTest:function(){return TEST;},tBuild:tBuild,TEST_TOPICS:TEST_TO
 "use strict";
 
 const MINUS="−";
-const esc=function(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); };
+const esc=function(s){ return window.__esc(s); };
 const eq=function(s,big){ return '<div class="eq'+(big?" big":"")+'">'+s+'</div>'; };
 
 /* ---------- числа и запись ---------- */
@@ -14961,9 +14979,7 @@ if(window.__GEN_TYPES){
 if(window.__LF) return;                 /* второй раз не грузимся */
 
 const MINUS="\u2212";
-const esc=function(s){
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-};
+const esc=function(s){ return window.__esc(s); };
 const eq=function(html,big){ return '<div class="eq'+(big?" big":"")+'">'+html+'</div>'; };
 const p=function(html){ return "<p>"+html+"</p>"; };
 
@@ -15952,7 +15968,7 @@ window.__EXTRA_KEYS=KEYS;
 "use strict";
 
 const MINUS="−";
-const esc=function(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+const esc=function(s){ return window.__esc(s); };
 const STORE=window.__store;
 const KEY="v4.learn";
 const LADDER=[1,3,7,16,30];
@@ -17121,7 +17137,12 @@ function queueScreen(){
     if(!list.length){
       html+='<p class="exnote">В этой теме открытых ошибок нет.</p>';
     }else{
-      html+='<div class="mislist misfull">'+list.map(function(m){
+      /* 5.12.0: длинный список не вываливается простынёй. Показываем по 10,
+         «показать ещё» добавляет следующие 10. Счётчик живёт в window.__misView,
+         чтобы не сбрасывался при перерисовке после закрытия ошибки. */
+      const shown=qs.shown||10;
+      const part=list.slice(0, shown);
+      html+='<div class="mislist misfull">'+part.map(function(m){
         return '<div class="misrow"><div class="miq">'+esc(m.q)+'</div>'+
           '<div class="mid">Ваш ответ: '+esc(m.my||"—")+' · верно: '+esc(m.a)+
             (m.date? " · "+esc(misDate(m.date)):"")+(m.n>1? " · повторялась "+m.n+" "+plural(m.n,["раз","раза","раз"]):"")+'</div>'+
@@ -17133,6 +17154,11 @@ function queueScreen(){
               'title="Закрыть без записи в освоение: ответ был верным, но записан с ошибкой">Это опечатка</button>'+
           '</div></div>';
       }).join("")+'</div>';
+      if(list.length>shown){
+        const left=list.length-shown;
+        html+='<button type="button" class="trbtn ghost misMore" data-mmore>'+
+          'Показать ещё '+Math.min(10,left)+' · осталось '+left+'</button>';
+      }
     }
   }
 
@@ -17161,6 +17187,14 @@ function queueScreen(){
       redraw();
     });
   });
+  w.querySelectorAll("[data-mmore]").forEach(function(b){
+    b.addEventListener("click", function(){
+      const v=window.__misView||{topic:"", sort:"new"};
+      v.shown=(v.shown||10)+10;
+      window.__misView=v;
+      redraw();
+    });
+  });
   w.querySelectorAll("[data-msort]").forEach(function(b){
     b.addEventListener("click", function(){
       qs.sort=b.getAttribute("data-msort");
@@ -17184,25 +17218,8 @@ function queueScreen(){
   });
   w.querySelectorAll("[data-f-show]").forEach(function(b){
     b.addEventListener("click", function(){
-      const id=b.getAttribute("data-f-show");
-      /* 5.8.16: state() заново — иначе после закрытия соседней ошибки подписи старые */
-      const m=state().mistakes.filter(function(x){ return x.id===id; })[0];
-      if(!m) return;
-      let h='<div class="lessonhead"><h2>Разбор ошибки</h2>'+
-        '<button type="button" class="trbtn ghost" data-close>Закрыть</button></div>'+
-        '<div class="eq big">'+esc(m.q)+'</div>'+
-        '<p class="exnote">Ваш ответ: <b>'+esc(m.my||"—")+'</b> · верный: <b>'+esc(m.a)+'</b></p>';
-      try{
-        const r=window.__solve(m.q);
-        h+=window.__stepsHtml(r.steps);
-      }catch(e){ h+='<p class="exnote">Разбор недоступен.</p>'; }
-      h+='<div class="mistools">'+
-        '<button type="button" class="trbtn" data-close>Понятно</button>'+
-        '<button type="button" class="trbtn ghost" id="misClose2">Получилось — закрыть</button></div>';
-      const w2=overlay(h);
-      closeBtn(w2);
-      const cb=w2.querySelector("#misClose2");
-      if(cb) cb.addEventListener("click", function(){ closeMistake(id); w2.remove(); redraw(); });
+      /* 5.12.0: одна функция разбора на всё приложение */
+      resolveSheet(b.getAttribute("data-f-show"), redraw);
     });
   });
   w.querySelectorAll("[data-f-like]").forEach(function(b){
@@ -17235,6 +17252,54 @@ window.__misQueueState=MISQ;
 /* старые вызовы ведут на «Слабые места» */
 function mistakesScreen(){ weakScreen(); }
 
+/* ============================================================ */
+/*  5.12.0: ОДИН «Разбор ошибки» на всё приложение               */
+/*  Было две копии: data-mis-show (список ошибок в дэше) и        */
+/*  data-f-show (экран очереди). Они разошлись: в одной «Решить   */
+/*  похожую», в другой «Получилось — закрыть», в одной шаги в     */
+/*  «eq», в другой своими подписями. Правку приходилось делать    */
+/*  дважды, и они уже успели разойтись по поведению. Здесь одна   */
+/*  панель и один набор кнопок; отличаются только «после».        */
+/* ============================================================ */
+function resolveSheet(id, onDone){
+  const m=openMistakes().filter(function(x){ return x.id===id; })[0] ||
+          state().mistakes.filter(function(x){ return x.id===id; })[0];
+  if(!m) return null;
+
+  let h='<div class="lessonhead"><h2>Разбор ошибки</h2>'+
+    '<button type="button" class="trbtn ghost" data-close>Закрыть</button></div>'+
+    '<div class="eq big">'+esc(m.q)+'</div>'+
+    '<p class="exnote">Ваш ответ: <b>'+esc(m.my||"—")+'</b> · верный: <b>'+esc(m.a)+'</b></p>';
+  try{
+    const r=window.__solve(m.q);
+    h+=window.__stepsHtml(r.steps);
+  }catch(e){
+    h+='<p class="exnote">Разбор недоступен. '+
+       'Попробуйте решить этот пример в основном поле — там покажем шаги.</p>';
+  }
+  h+='<div class="mistools">'+
+    '<button type="button" class="trbtn" data-rsolved>Получилось — закрыть</button>'+
+    '<button type="button" class="trbtn ghost" data-rlike>Решить похожую</button>'+
+    '<button type="button" class="trbtn ghost" data-close>Понятно</button>'+
+  '</div>';
+
+  const w=overlay(h);
+  closeBtn(w);
+  const done=function(){ w.remove(); if(onDone) onDone(); };
+
+  const sb=w.querySelector("[data-rsolved]");
+  if(sb) sb.addEventListener("click", function(){ closeMistake(id); done(); });
+  const lb=w.querySelector("[data-rlike]");
+  if(lb) lb.addEventListener("click", function(){
+    const next=pickTask(m.topic||"lin", 2);
+    w.remove();
+    if(next && window.__trainWith) window.__trainWith(next, m.id);
+    else if(window.__trainTopic) window.__trainTopic(m.topic||"lin");
+  });
+  return w;
+}
+window.__resolveSheet=resolveSheet;
+
 function bind(box, refresh){
   const q=function(sel){ return box.querySelector(sel); };
   const train=function(k){ if(window.__trainTopic) window.__trainTopic(k); };
@@ -17247,23 +17312,8 @@ function bind(box, refresh){
   });
   box.querySelectorAll("[data-mis-show]").forEach(function(b){
     b.addEventListener("click", function(){
-      const id=b.getAttribute("data-mis-show");
-      const m=openMistakes().filter(function(x){ return x.id===id; })[0];
-      if(!m) return;
-      let html='<h2>Разбор ошибки</h2><div class="eq big">'+esc(m.q)+"</div>"+
-        '<p class="dashnote">Ваш ответ: <b>'+esc(m.my||"—")+"</b> · верный: <b>"+esc(m.a)+"</b></p>";
-      try{
-        const r=window.__solve(m.q);
-        html+=window.__stepsHtml(r.steps);
-      }catch(e){ html+='<p class="dashnote">Разбор недоступен.</p>'; }
-      html+='<div class="lessonacts"><button type="button" class="trbtn" id="misLike">Решить похожую</button>'+
-        '<button type="button" class="trbtn ghost" data-close>Закрыть</button></div>';
-      const w=overlay(html);
-      closeBtn(w);
-      w.querySelector("#misLike").addEventListener("click", function(){
-        w.remove();
-        if(window.__trainTopic) window.__trainTopic(m.topic||"lin");
-      });
+      /* 5.12.0: та же панель, что в очереди; после закрытия — перерисовать экран */
+      resolveSheet(b.getAttribute("data-mis-show"), function(){ if(refresh) refresh(); });
     });
   });
   box.querySelectorAll("[data-mis-like]").forEach(function(b){
@@ -17702,14 +17752,20 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.10.4","d":"24.11","b":[
-    "Кнопка формата выкрашена как логотип: тот же градиент фиолетовый−голубой и белый значок. Один цвет приложения на всех кнопках",
+  const CHANGES=[{"v":"5.12.0","d":"24.11","b":[
+    "«Разбор ошибки» теперь один на всё приложение. Было две копии, и они уже разошлись поведением: в одной кнопка «Получилось — закрыть», в другой «Решить похожую». Править пришлось бы дважды — теперь одна панель с тремя действиями",
+    "Один эскейпер вместо девяти. Часть прежних не экранировала кавычки, поэтому значение с кавычкой ломало атрибут в одном экране и не ломало в другом",
+    "Очередь ошибок больше не простыня: показываем по 10, кнопка «Показать ещё N · осталось M». При 30 ошибках экран читается",
+    "Входы разложены по двум ящикам: __API — постоянные точки входа, __dbg — отладка. Раньше 78 имён __* лежали вперемешку, и было не понять, что можно трогать",
+    "Исправлена поломка 5.10.4: в «Что нового» у версии 5.10.3 потерялась скобка массива и весь список не открывался"
+  ]},
+  {"v":"5.10.4","d":"24.11","b":[ "Кнопка формата выкрашена как логотип: тот же градиент фиолетовый−голубой и белый значок. Один цвет приложения на всех кнопках",
     "В чате остался один «плюс» — внутри поля ввода. Второй, справа от капсулы, убран: он делал то же самое",
     "«25 − 20 =» решается как пример, а не выдаёт ошибку про уравнение. Знак «=» в конце — привычка с листка, и это нормально",
     "«3·6 = 18» теперь проверка равенства («верно»), а не «в уравнении нет неизвестного»",
     "Уравнение с пустой правой частью («2x + 5 =») объясняет, что дописать, вместо «Пустое выражение»"
   ]},
-  {"v":"5.10.3","d":"24.11","b":    "Выбор формата — одна круглая кнопка, как у темы: тап переключает «Форма ⇄ Чат», удержание 0,45 с открывает меню «Форма · Чат · Очистить переписку». В кружке значок текущего режима, в чате кнопка подсвечена акцентом, над ней висит подпись «Чат»",
+  {"v":"5.10.3","d":"24.11","b":[ "Выбор формата — одна круглая кнопка, как у темы: тап переключает «Форма ⇄ Чат», удержание 0,45 с открывает меню «Форма · Чат · Очистить переписку». В кружке значок текущего режима, в чате кнопка подсвечена акцентом, над ней висит подпись «Чат»",
     "Полный прогон приложения на ширине 320, 360 и 390 px в девяти темах: горизонтальной прокрутки нет ни на одном экране, ошибок в консоли нет",
     "Сетки «в две колонки» больше не выпирают за экран: кнопка «Новая задача» на узком телефоне растягивала страницу на 16 px",
     "Тач-цели доведены до 44 px: тема, очистка поля, ползунки, чипы тем, кнопки настроек, реакции в чате",
@@ -17798,7 +17854,7 @@ window.__LEARN={
   const verEl=document.getElementById("wnVer");
   if(verEl && window.APP_VERSION) verEl.textContent="v"+window.APP_VERSION;
 
-  function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function esc(t){ return window.__esc(t); }
   /* 5.8.12: последняя версия раскрыта — её и читают; остальные свёрнуты
      в строку с версией и раскрываются нажатием. Раньше весь список разом
      лежал простынёй на несколько экранов. */
@@ -17948,7 +18004,7 @@ window.__LEARN={
 
   let workerP=null, libP=null, busy=false, prog=null, preview=null;
 
-  function esc(t){ return String(t==null? "":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function esc(t){ return window.__esc(t); }
 
   /* плашка: картинка + строка состояния + (необязательно) полоса прогресса */
   function show(img, title, sub, opt){
@@ -18264,7 +18320,7 @@ window.__LEARN={
   const SHOW=function(){ try{ return window.__ocrShow.apply(null, arguments); }catch(e){} };
   const HIDE=function(){ try{ window.__ocrHide&&window.__ocrHide(); }catch(e){} };
   const PROG=function(){ try{ window.__ocrProgress.apply(null, arguments); }catch(e){} };
-  const esc=function(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); };
+  const esc=function(t){ return window.__esc(t); };
 
   /* ---------- подготовка кадра ---------- */
   function toGray(src){
@@ -19606,9 +19662,7 @@ window.__LEARN={
         });
       });
     }
-    function escHtml(t){
-      return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-    }
+    function escHtml(t){ return window.__esc(t); }
 
     async function recognize(closeAfter){
       if(!strokes.length){ if(closeAfter) close(); return; }
@@ -20546,9 +20600,7 @@ window.__LEARN={
     function prettyEq(t){
     return String(t||"").replace(/(\d)\s*-\s*(?=[\d(x])/g,"$1 \u2212 ").replace(/\s+/g," ").trim();
   }
-  function esc(t){
-    return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  }
+  function esc(t){ return window.__esc(t); }
   function say(txt, kind){
     sol.hidden=false;
     sol.innerHTML='<div class="nb-msg'+(kind==="err"?" err":"")+'">'+esc(txt)+'</div>';
@@ -22348,10 +22400,7 @@ window.__LEARN={
   const LSget=function(k,d){ try{ const v=localStorage.getItem(k); return v===null? d : JSON.parse(v); }catch(e){ return d; } };
   const LSset=function(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
   const $=function(id){ return document.getElementById(id); };
-  const esc=function(t){
-    return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  };
+  const esc=function(t){ return window.__esc(t); };
   const reduce=function(){ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches; }catch(e){ return false; } };
 
   const feed=$("chatFeed"), form=$("form"), q=$("q");
@@ -22675,6 +22724,84 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
   }
 
   paint();
+})();
+
+/* ============================================================ */
+/*  5.12.0: РЕЕСТР ВХОДОВ                                        */
+/*  До этой версии из кода торчало 78 имён window.__*: настоящие  */
+/*  точки входа (решить пример, запустить тренировку, открыть    */
+/*  настройки) лежали вперемешку с отладочными (последний кадр    */
+/*  камеры, тестовый ГПСЧ, падение). Снаружи нельзя было понять,  */
+/*  что можно трогать, а что сломается при любой правке.         */
+/*                                                              */
+/*  Теперь два ящика:                                           */
+/*    __API — постоянные точки входа. Обещаю не переименовывать  */
+/*            и не убирать без записи в CHANGELOG.               */
+/*    __dbg — отладка. Меняется когда угодно, опираться нельзя.  */
+/*  Старые имена оставлены живыми (на них висят вызовы внутри     */
+/*  файла и закладки): это псевдонимы, новые правки — через ящик. */
+/* ============================================================ */
+(function(){
+  const API={
+    /* решение и разбор */
+    solve:"__solve", stepsHtml:"__stepsHtml", prepText:"__prepText",
+    resolveSheet:"__resolveSheet",
+    /* учиться */
+    learn:"__LEARN", dashRefresh:"__dashRefresh", trainTopic:"__trainTopic",
+    trainWith:"__trainWith", trainRender:"__trainRender", trainState:"__trainState",
+    /* ошибки */
+    mistakes:"__misView", queueStart:"__misQueueStart", queueState:"__misQueueState",
+    /* оформление */
+    theme:"__setTheme", themeNow:"__themeNow", openSettings:"__openSettings",
+    openWhatsNew:"__openWhatsNew", aboutReturn:"__aboutReturn",
+    syncBottomNav:"__syncBottomNav", chatMode:"__chatMode",
+    /* распознавание и доска */
+    ocrRun:"__ocrRun", ocrWarm:"__ocrWarm", ocrShow:"__ocrShow",
+    ocrProgress:"__ocrProgress", ocrTidy:"__ocrTidy",
+    noteBoard:"__noteBoard", board:"__board",
+    /* генераторы и проверка */
+    extraSolve:"__extraSolve", lfSolve:"__lfSolve", lfSameAnswer:"__LF_sameAnswer",
+    genTypes:"__GEN_TYPES", extraTopics:"__EXTRA_TOPICS", extraKeys:"__EXTRA_KEYS",
+    /* учитель и печать */
+    teacher:"__teacher", pdfClassWork:"__pdfClassWork",
+    /* служебное */
+    esc:"__esc", store:"__store", rand:"__rand", version:"__APP_VERSION"
+  };
+  const DBG={
+    V4:"__V4", v4:"__v4", v4hist:"__v4hist", storeNotice:"__storeNotice",
+    seedRandom:"__seedRandom", codeToSeed:"__codeToSeed", selftest:"__selftest",
+    crash:"__crash", skinLocked:"__skinLocked", skinLockT:"__skinLockT",
+    cap:"__cap", capLast:"__capLast", capLog:"__capLog", capInstalled:"__capInstalled",
+    livePrevBuild:"__livePrevBuild", livePrevHide:"__livePrevHide",
+    ptMount:"__ptMount", ptLastPaint:"__ptLastPaint",
+    ocrGetWorker:"__ocrGetWorker", ocrRaw:"__ocrRaw", ocrPrep:"__ocrPrep", ocrHide:"__ocrHide",
+    boardAI:"__boardAI", CHEAT:"__CHEAT", qFlat:"__qFlat", cleanPaste:"__cleanPaste",
+    speechToMath:"__speechToMath", kbHints:"__kbHints", toggleKb:"__toggleKb",
+    renderRecent:"__renderRecent", flushAchv:"__flushAchv",
+    fx090:"__fx090", fxFill:"__fxFill",
+    LF:"__LF", clPdf:"__clPdf", clDownloadPdf:"__clDownloadPdf",
+    clInvalidateWork:"__clInvalidateWork", pdfClassWork:"__pdfClassWork",
+    ruDate:"__ruDate", misQueueDone:"__misQueueDone", teacherOn:"__teacherOn"
+  };
+  function box(map){
+    const o={};
+    Object.keys(map).forEach(function(k){
+      Object.defineProperty(o, k, {
+        enumerable:true,
+        get:function(){ return window[map[k]]; }
+      });
+    });
+    return Object.freeze(o);
+  }
+  window.__API=box(API);
+  /* __dbg уже частично занят (внутренние тесты тем) — дополняем, не затирая */
+  const oldDbg=window.__dbg||{};
+  const dbgBox=box(DBG);
+  Object.keys(dbgBox).forEach(function(k){
+    try{ Object.defineProperty(oldDbg, k, {enumerable:true, get:function(){ return window[DBG[k]]; }}); }catch(e){}
+  });
+  window.__dbg=oldDbg;
+  window.__API_NAMES=Object.keys(API);
 })();
 
 </script>
