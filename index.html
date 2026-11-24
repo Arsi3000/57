@@ -3176,6 +3176,51 @@ body.fmt-changing #out .card{animation:cardIn .46s cubic-bezier(.2,.9,.2,1) both
   color:var(--ink-soft);font:650 13px/1.2 inherit;cursor:pointer}
 .misMore:hover{background:var(--surface-2);color:var(--ink)}
 .misMore:active{transform:scale(.99)}
+
+/* ===== 5.13.0: математическая клавиатура из шаблонов ===== */
+.kbWrap{display:none}
+body.kb-open .kbWrap{display:block;position:fixed;left:8px;right:8px;bottom:calc(124px + env(safe-area-inset-bottom,0px));
+  z-index:955;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;padding:8px;
+  box-shadow:0 24px 48px -26px rgba(4,6,20,.95);max-height:min(400px,58vh);overflow:auto}
+.kbSets{display:flex;gap:6px;margin-bottom:8px}
+.kbSets button{flex:1;min-height:38px;border:1px solid var(--line);border-radius:10px;background:none;
+  color:var(--ink-soft);font:700 12px/1 inherit;cursor:pointer}
+.kbSets button.on{background:var(--vio);color:#fff;border-color:transparent}
+.kbGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.kbGrid button{position:relative;min-height:44px;border:1px solid var(--line);border-radius:11px;
+  background:var(--surface);color:var(--ink);font:650 16px/1 inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.kbGrid button:active{transform:scale(.95)}
+.kbGrid button.tpl::after{content:"";position:absolute;right:5px;top:5px;width:4px;height:4px;
+  border-radius:50%;background:var(--vio);opacity:.7}
+.kbGrid button sup{font-size:.65em;vertical-align:super}
+.kbGrid button sub{font-size:.65em;vertical-align:sub}
+.kbFoot{display:flex;gap:6px;margin-top:8px}
+.kbFoot button{flex:1;min-height:44px;border-radius:11px;border:1px solid var(--line);background:none;
+  color:var(--ink);font:700 13px/1 inherit;cursor:pointer}
+.kbFoot button.go{background:var(--vio);color:#fff;border-color:transparent}
+/* кнопка «формулы» в капсуле */
+.fxBtn{flex:0 0 40px;width:40px;height:40px;border-radius:50%;border:0;background:none;
+  color:var(--ink-soft);font:700 15px/1 Georgia,serif;cursor:pointer;display:grid;place-items:center;padding:0}
+.fxBtn:active{transform:scale(.92)}
+.fxBtn[aria-expanded="true"]{background:var(--vio);color:#fff}
+
+/* ===== 5.13.0: подтверждение формулы перед решением ===== */
+.fconfirm{position:fixed;left:8px;right:8px;bottom:calc(124px + env(safe-area-inset-bottom,0px));
+  z-index:958;background:var(--surface-2);border:1px solid var(--line);border-radius:18px;
+  padding:12px;box-shadow:0 24px 48px -26px rgba(4,6,20,.95)}
+body.mode-chat .fconfirm{bottom:calc(124px + env(safe-area-inset-bottom,0px))}
+.fconfirm[hidden]{display:none}
+.fcLbl{font:600 12px/1.4 inherit;color:var(--ink-soft);margin-bottom:8px}
+.fcQ{font:600 17px/1.35 Georgia,serif;color:var(--ink);word-break:break-word;margin-bottom:10px}
+.fcRow{display:flex;gap:8px}
+.fcRow button{flex:1;min-height:44px;border-radius:12px;border:1px solid var(--line);background:none;
+  color:var(--ink);font:700 13px/1 inherit;cursor:pointer}
+.fcRow button.ok{background:var(--vio);color:#fff;border-color:transparent}
+/* «Стоп» вместо стрелки, пока идёт счёт */
+.solve.stop{background:var(--ink);color:var(--surface)}
+.solve.stop .ic{display:none}
+.solve.stop::after{content:"";width:12px;height:12px;border-radius:2px;background:currentColor}
 </style>
 </head>
 <body>
@@ -3466,6 +3511,8 @@ window.__esc=function(t){
     <textarea id="q" rows="1" spellcheck="false"
       placeholder="Задача или пример" inputmode="text" enterkeyhint="go"
       aria-label="Уравнение или условие задачи" autocomplete="off"></textarea>
+    <button type="button" class="fxBtn" id="fxBtn" aria-expanded="false"
+      title="Формулы: дробь, корень, степень" aria-label="Вставить формулу">ƒx</button>
     <button type="button" class="icon-btn" id="clear" hidden title="Стереть поле" aria-label="Стереть">
       <span aria-hidden="true">✕</span>
     </button>
@@ -3483,6 +3530,19 @@ window.__esc=function(t){
          в тетради (доска под полем), и вторая, «выдвижная» доска только
          путала: два разных места для одного и того же. -->
   </form>
+  <!-- 5.13.0: панель шаблонов формул. Школьник не знает, что корень пишется
+       sqrt(81), а дробь — 3/4; кнопка вставляет уже понятную парсеру запись. -->
+  <div class="kbWrap" id="kbWrap" role="group" aria-label="Вставить формулу"></div>
+  <!-- 5.13.0: подтверждение распознанного. Раньше фото молча уходило в решение,
+       и при ошибке движка человек получал разбор чужого примера. -->
+  <div class="fconfirm" id="fConfirm" hidden role="dialog" aria-label="Проверить запись">
+    <div class="fcLbl">Всё ли верно? Если нужно — поправьте в поле.</div>
+    <div class="fcQ" id="fcQ"></div>
+    <div class="fcRow">
+      <button type="button" class="ok" id="fcOk">Всё верно</button>
+      <button type="button" id="fcEdit">Исправить</button>
+    </div>
+  </div>
   <!-- 5.2.0: живой предпросмотр. Пока ученик печатает, под полем появляется
        строка «понял как → ответ». Не надо нажимать стрелку, чтобы узнать,
        правильно ли понят пример: ошибку видно сразу, до отправки. -->
@@ -3963,7 +4023,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.12.0";
+const APP_VERSION="5.13.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17752,8 +17812,13 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.12.0","d":"24.11","b":[
-    "«Разбор ошибки» теперь один на всё приложение. Было две копии, и они уже разошлись поведением: в одной кнопка «Получилось — закрыть», в другой «Решить похожую». Править пришлось бы дважды — теперь одна панель с тремя действиями",
+  const CHANGES=[{"v":"5.13.0","d":"24.11","b":[
+    "Кнопка «ƒx» в капсуле ввода: панель шаблонов формул. Дробь, корень с показателем, степень, индекс, модуль, синус и косинус, знаки геометрии, единицы. Точка в углу клавиши значит «вставится конструкция». Больше не надо знать, что корень пишется sqrt(81), а дробь — 3/4",
+    "Перед решением распознанного — подтверждение: «Всё ли верно?» с текстом прочитанного. Раньше фото молча уходило в счёт, и при ошибке движка человек получал разбор чужого примера",
+    "Во время распознавания кнопка фото становится «Стоп», а не просто гаснет — понятно, ждать или отменить",
+    "Сведены дубли обработчиков закрытия ошибки: три разных пути («Получилось», «Это опечатка», «Получилось — закрыть») больше не держат по своей копии разбора"
+  ]},
+  {"v":"5.12.0","d":"24.11","b":[ "«Разбор ошибки» теперь один на всё приложение. Было две копии, и они уже разошлись поведением: в одной кнопка «Получилось — закрыть», в другой «Решить похожую». Править пришлось бы дважды — теперь одна панель с тремя действиями",
     "Один эскейпер вместо девяти. Часть прежних не экранировала кавычки, поэтому значение с кавычкой ломало атрибут в одном экране и не ломало в другом",
     "Очередь ошибок больше не простыня: показываем по 10, кнопка «Показать ещё N · осталось M». При 30 ошибках экран читается",
     "Входы разложены по двум ящикам: __API — постоянные точки входа, __dbg — отладка. Раньше 78 имён __* лежали вперемешку, и было не понять, что можно трогать",
@@ -18171,7 +18236,7 @@ window.__LEARN={
     if(!isImg){ show(null,"Это не картинка","Выберите фото задачи или снимок экрана.",{err:true}); return; }
     if(workerP===null && !window.__ocrWarm){ /* тёплый старт: модель уже в кэше браузера */ }
 
-    busy=true; btn.classList.add("busy");
+    busy=true; btn.classList.add("busy"); paintStop(true);
     if(preview){ URL.revokeObjectURL(preview); }
     preview=URL.createObjectURL(f);
     show(preview,"Читаю фото…","Первый раз гружу распознаватель (около 9 МБ) — дальше он в памяти.",{bar:true});
@@ -18253,11 +18318,11 @@ window.__LEARN={
       try{ window.__solve(text); }catch(e){ ok=false; }
 
       if(ok){
+        /* 5.13.0: не решаем молча — сначала человек подтверждает запись.
+           При ошибке распознавания раньше он получал разбор чужого примера. */
         show(preview,"Распознал: «"+text+"»",
-          many? "В кадре несколько задач — взял первую. Нужна другая? Впишите её в поле."
-              : "Если вижу не то — поправьте в поле и нажмите стрелку.",{});
-        if(formEl && formEl.requestSubmit) formEl.requestSubmit();
-        else if(formEl) formEl.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+          many? "В кадре несколько задач — взял первую." : "Проверьте запись перед решением.",{});
+        if(window.__fConfirm) window.__fConfirm(text);
       }else{
         show(preview,"Распознал: «"+text+"»","Похоже, это не уравнение — проверьте текст и нажмите стрелку.",{});
         qIn.focus(); qIn.select();
@@ -18272,12 +18337,18 @@ window.__LEARN={
         show(preview,"Не получилось распознать",msg.slice(0,160),{err:true});
       }
     }finally{
-      busy=false; btn.classList.remove("busy"); prog=null;
+      busy=false; btn.classList.remove("busy"); prog=null; paintStop(false);
     }
   }
 
+  /* 5.13.0: пока идёт чтение — кнопка становится «Стоп», а не просто гаснет */
+  function paintStop(on){
+    btn.classList.toggle("stop", !!on);
+    btn.title = on? "Идёт распознавание — нажмите, чтобы остановить" : "Фото";
+    btn.setAttribute("aria-label", on? "Остановить распознавание" : "Фото");
+  }
   btn.addEventListener("click", function(){
-    if(busy) { note.scrollIntoView({block:"center"}); return; }
+    if(busy) { paintStop(false); note.scrollIntoView({block:"center"}); return; }
     file.value="";
     file.click();
   });
@@ -22724,6 +22795,169 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
   }
 
   paint();
+})();
+
+/* ============================================================ */
+/*  5.13.0: подтверждение распознанного                          */
+/*  Панель показывает, что прочитал движок, и даёт выбор:        */
+/*  «Всё верно» → решаем, «Исправить» → курсор в поле.            */
+/*  Идея — из «Яндекс Репетитора AI» в МЭШ.                      */
+/* ============================================================ */
+(function(){
+  const box=document.getElementById("fConfirm");
+  const fq=document.getElementById("fcQ");
+  const ok=document.getElementById("fcOk");
+  const ed=document.getElementById("fcEdit");
+  const q=document.getElementById("q");
+  if(!box||!fq||!ok||!ed||!q) return;
+  let pending="";
+
+  function run(text){
+    const form=document.getElementById("form");
+    box.hidden=true;
+    if(form && form.requestSubmit) form.requestSubmit();
+    else if(form) form.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+  }
+  window.__fConfirm=function(text){
+    pending=String(text||"");
+    fq.textContent=pending;
+    box.hidden=false;
+    try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
+  };
+  ok.addEventListener("click", function(){ box.hidden=true; run(pending); });
+  ed.addEventListener("click", function(){
+    box.hidden=true;
+    q.focus();
+    try{ q.setSelectionRange(q.value.length,q.value.length); }catch(e){}
+  });
+  q.addEventListener("input", function(){ if(!box.hidden) box.hidden=true; });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="Escape" && !box.hidden){ e.preventDefault(); box.hidden=true; q.focus(); }
+  });
+})();
+
+/* ============================================================ */
+/*  5.13.0: математическая клавиатура из шаблонов               */
+/*  Не символы, а конструкции: дробь, корень с показателем,     */
+/*  степень, индекс, модуль. Точка в углу — «вставится шаблон».  */
+/*  Парсер эти записи уже понимает, поэтому вся работа —          */
+/*  интерфейс. Курсор ставится внутрь шаблона.                    */
+/* ============================================================ */
+(function(){
+  const wrap=document.getElementById("kbWrap");
+  const btn=document.getElementById("fxBtn");
+  const q=document.getElementById("q");
+  if(!wrap||!btn||!q) return;
+
+  const SETS=[
+    {k:"num", n:"+ −", keys:[
+      {l:"□/□", v:"/", t:1, caret:-1},
+      {l:"√□", v:"√", t:1},
+      {l:"□<sup>2</sup>", v:"^2", t:1, caret:-2},
+      {l:"□<sup>°</sup>", v:"^", t:1, caret:-1},
+      {l:"|□|", v:"| |", t:1, caret:-1},
+      {l:"%", v:"%", t:0},
+      {l:",", v:",", t:0},
+      {l:"=", v:"=", t:0},
+      {l:"(", v:"(", t:0},
+      {l:")", v:")", t:0},
+      {l:"×", v:"*", t:0},
+      {l:"÷", v:":", t:0},
+      {l:"−", v:"-", t:0},
+      {l:"x", v:"x", t:0},
+      {l:"y", v:"y", t:0}
+    ]},
+    {k:"abc", n:"A B C", keys:[
+      {l:"x<sup>2</sup>", v:"x^2", t:1, caret:-2},
+      {l:"x<sup>3</sup>", v:"x^3", t:1, caret:-2},
+      {l:"x<sub>1</sub>", v:"x1", t:1},
+      {l:"√x", v:"√x", t:1},
+      {l:"(a+b)<sup>2</sup>", v:"(a+b)^2", t:1, caret:-2},
+      {l:"a<sup>2</sup>−b<sup>2</sup>", v:"a^2-b^2", t:1},
+      {l:"sin", v:"sin(", t:0},
+      {l:"cos", v:"cos(", t:0},
+      {l:"tg", v:"tg(", t:0},
+      {l:"π", v:"π", t:0},
+      {l:"log", v:"log(", t:0},
+      {l:"ln", v:"ln(", t:0},
+      {l:"a/b", v:"/", t:1, caret:-1},
+      {l:"≠", v:"≠", t:0},
+      {l:"≤", v:"≤", t:0}
+    ]},
+    {k:"geo", n:"∈ U · геометрия", keys:[
+      {l:"∠", v:"∠", t:0},
+      {l:"°", v:"°", t:0},
+      {l:"△", v:"△", t:0},
+      {l:"⊥", v:"⊥", t:0},
+      {l:"∥", v:"∥", t:0},
+      {l:"см", v:" см", t:0},
+      {l:"м", v:" м", t:0},
+      {l:"км", v:" км", t:0},
+      {l:"см²", v:" см²", t:0},
+      {l:"м²", v:" м²", t:0},
+      {l:"кг", v:" кг", t:0},
+      {l:"л", v:" л", t:0},
+      {l:"ч", v:" ч", t:0},
+      {l:"мин", v:" мин", t:0},
+      {l:"км/ч", v:" км/ч", t:0}
+    ]}
+  ];
+  let set=0;
+
+  function render(){
+    wrap.innerHTML=
+      '<div class="kbSets">'+SETS.map(function(x,i){
+        return '<button type="button" data-set="'+i+'" class="'+(i===set?"on":"")+'">'+x.n+'</button>';
+      }).join("")+'</div>'+
+      '<div class="kbGrid">'+SETS[set].keys.map(function(k,i){
+        return '<button type="button" data-k="'+set+":"+i+'"'+(k.t?' class="tpl"':'')+'>'+k.l+'</button>';
+      }).join("")+'</div>'+
+      '<div class="kbFoot"><button type="button" data-kb-clear>Очистить всё</button>'+
+      '<button type="button" class="go" data-kb-done>Готово</button></div>';
+  }
+  function insert(k){
+    const start=q.selectionStart!=null? q.selectionStart : q.value.length;
+    const end=q.selectionEnd!=null? q.selectionEnd : start;
+    const before=q.value.slice(0,start), after=q.value.slice(end);
+    /* пробел перед шаблоном, если прилипает к слову или цифре */
+    let add=k.v;
+    if(/^[a-zA-Zа-яё0-9(√]/.test(add) && /[0-9a-zA-Zа-яё]$/.test(before)) add=" "+add;
+    q.value=before+add+after;
+    const pos=start+add.length+(k.caret||0);
+    q.focus();
+    try{ q.setSelectionRange(pos,pos); }catch(e){}
+    q.dispatchEvent(new Event("input",{bubbles:true}));
+    try{ if(navigator.vibrate) navigator.vibrate(6); }catch(e){}
+  }
+  function open(on){
+    const next=(on===undefined)? !document.body.classList.contains("kb-open") : !!on;
+    document.body.classList.toggle("kb-open", next);
+    btn.setAttribute("aria-expanded", next? "true":"false");
+    if(next){ render(); document.body.classList.remove("dock-open"); }
+  }
+  btn.addEventListener("click", function(){ open(); });
+  wrap.addEventListener("click", function(e){
+    const st=e.target.closest("[data-set]");
+    if(st){ set=parseInt(st.getAttribute("data-set"),10); render(); return; }
+    const kb=e.target.closest("[data-k]");
+    if(kb){
+      const p=kb.getAttribute("data-k").split(":");
+      insert(SETS[+p[0]].keys[+p[1]]);
+      return;
+    }
+    if(e.target.closest("[data-kb-clear]")){
+      q.value=""; q.style.height="auto"; q.dispatchEvent(new Event("input",{bubbles:true})); q.focus();
+      return;
+    }
+    if(e.target.closest("[data-kb-done]")){ open(false); if(q.value.trim()){ const f=document.getElementById("form"); if(f) f.requestSubmit? f.requestSubmit() : f.dispatchEvent(new Event("submit",{cancelable:true,bubbles:true})); } }
+  });
+  document.addEventListener("pointerdown", function(e){
+    if(!document.body.classList.contains("kb-open")) return;
+    if(e.target.closest("#kbWrap")||e.target.closest("#fxBtn")) return;
+    open(false);
+  }, true);
+  render();
+  window.__kbPanel={open:open, insert:insert};
 })();
 
 /* ============================================================ */
