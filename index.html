@@ -2937,8 +2937,8 @@ body.mode-other .chatHead,body.exam-mode .chatHead,body.set-on .chatHead{display
 /* 5.10.3: одна кнопка, как у темы: тап переключает «Форма ⇄ Чат»,
    удержание открывает маленькое меню. Внутри кружка — значок текущего режима:
    строки для формы, облачко для чата. Никаких сегментов и лишних подписей. */
-.fmtDot{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
-  background:var(--surface-2);color:var(--ink);
+.fmtDot{flex:0 0 auto;width:48px;height:48px;border-radius:50%;border:0;
+  background:linear-gradient(140deg,#7c6cff,#35d0ff);color:#fff;
   display:grid;place-items:center;cursor:pointer;padding:0;
   box-shadow:0 14px 30px -18px rgba(4,6,20,.8);
   transition:transform .2s cubic-bezier(.2,.9,.2,1),background .16s,color .16s;
@@ -2946,7 +2946,10 @@ body.mode-other .chatHead,body.exam-mode .chatHead,body.set-on .chatHead{display
 .fmtDot svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.1;
   stroke-linecap:round;stroke-linejoin:round;transition:transform .28s cubic-bezier(.2,.9,.2,1)}
 .fmtDot:active{transform:scale(.92)}
-body.mode-chat .fmtDot{background:var(--vio);color:#0b0b14;border-color:transparent}
+.fmtDot:hover{filter:brightness(1.07)}
+.fmtDot:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+/* заливка — та же, что у логотипа в шапке: один цвет приложения везде */
+body.mode-chat .fmtDot{background:linear-gradient(140deg,#7c6cff,#35d0ff)}
 body.mode-chat .fmtDot svg{transform:rotate(-6deg) scale(1.06)}
 .fmtMenu{position:fixed;left:8px;bottom:calc(178px + env(safe-area-inset-bottom,0px));z-index:960;
   max-height:min(320px,60vh);overflow:auto;
@@ -2984,6 +2987,8 @@ body.dock-open .dockToggle{background:var(--vio);color:#0b0b14;border-color:tran
 body.dock-open .dockToggle .ic-plus{display:none}
 body:not(.dock-open) .dockToggle .ic-x{display:none}
 body.mode-other .dockToggle,body.exam-mode .dockToggle,body.set-on .dockToggle{display:none}
+/* 5.10.4: в чате «плюс» живёт внутри капсулы — справа он дублировал сам себя */
+body.mode-chat .dockToggle{display:none}
 .chatQuick{display:none}
 
 .chatQuick{display:none;gap:6px;overflow-x:auto;margin:8px 0 2px;padding-bottom:2px;scrollbar-width:none}
@@ -3938,7 +3943,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.10.3";
+const APP_VERSION="5.10.4";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -8442,6 +8447,14 @@ function solveRaw(input){
   if(!s) throw new Error("Введите уравнение или условие задачи.");
   const pct=solvePercentOf(s);
   if(pct) return pct;
+  /* 5.10.4: ученик ставит знак «=» и ждёт ответа: «25 − 20 =». Если слева нет
+     буквы, это пример, а не уравнение — решаем как пример. Так же пишут на листке. */
+  const eqTail=/^(.*?)=\s*$/.exec(s);
+  if(eqTail && /[a-zа-яё]/i.test(eqTail[1]) && eqTail[1].trim())
+    throw new Error("Справа от знака «=» пусто. Допишите, чему равно выражение, — например: "+
+      eqTail[1].trim()+" = 10. Если нужен просто ответ, уберите «=».");
+  if(eqTail && eqTail[1].trim() && !/[a-zа-яё]/i.test(eqTail[1])) s=eqTail[1].trim();
+
   /* 5.10.3: факториал. Раньше «5!» срезался как пунктуация и давал «5». */
   const fact=solveFactorial(s);
   if(fact) return fact;
@@ -8515,6 +8528,9 @@ function solveRaw(input){
   const hasEq=s.indexOf("=")>=0;
 
   if(!hasCyr){
+    /* равенство без букв — это проверка: «3·6 = 18». Уравнения тут нет,
+       и говорить «в уравнении нет неизвестного» бессмысленно. */
+    if(hasEq && !/[a-z]/i.test(s)) return solvePlain(s);
     if(hasEq) return solveEquationString(s);
     if(!/[a-z]/i.test(s)) return solvePlain(s);
     throw new Error("Похоже на выражение с буквой, но нет знака «=». Запишите уравнение целиком, например: 2x + 5 = 13.");
@@ -17686,8 +17702,14 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.10.3","d":"24.11","b":[
-    "Выбор формата — одна круглая кнопка, как у темы: тап переключает «Форма ⇄ Чат», удержание 0,45 с открывает меню «Форма · Чат · Очистить переписку». В кружке значок текущего режима, в чате кнопка подсвечена акцентом, над ней висит подпись «Чат»",
+  const CHANGES=[{"v":"5.10.4","d":"24.11","b":[
+    "Кнопка формата выкрашена как логотип: тот же градиент фиолетовый−голубой и белый значок. Один цвет приложения на всех кнопках",
+    "В чате остался один «плюс» — внутри поля ввода. Второй, справа от капсулы, убран: он делал то же самое",
+    "«25 − 20 =» решается как пример, а не выдаёт ошибку про уравнение. Знак «=» в конце — привычка с листка, и это нормально",
+    "«3·6 = 18» теперь проверка равенства («верно»), а не «в уравнении нет неизвестного»",
+    "Уравнение с пустой правой частью («2x + 5 =») объясняет, что дописать, вместо «Пустое выражение»"
+  ]},
+  {"v":"5.10.3","d":"24.11","b":    "Выбор формата — одна круглая кнопка, как у темы: тап переключает «Форма ⇄ Чат», удержание 0,45 с открывает меню «Форма · Чат · Очистить переписку». В кружке значок текущего режима, в чате кнопка подсвечена акцентом, над ней висит подпись «Чат»",
     "Полный прогон приложения на ширине 320, 360 и 390 px в девяти темах: горизонтальной прокрутки нет ни на одном экране, ошибок в консоли нет",
     "Сетки «в две колонки» больше не выпирают за экран: кнопка «Новая задача» на узком телефоне растягивала страницу на 16 px",
     "Тач-цели доведены до 44 px: тема, очистка поля, ползунки, чипы тем, кнопки настроек, реакции в чате",
