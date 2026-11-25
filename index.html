@@ -2346,9 +2346,10 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
   touch-action:manipulation;transition:.16s;
 }
 .dockb .ic{width:22px;height:22px}
-/* 5.13.2: кнопка наборов формул — та же круглая кнопка капсулы, внутри знак набора */
-.fxnav b{font:700 17px/1 Georgia,"Times New Roman",serif;letter-spacing:.3px}
-.dockb.fxnav.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);color:#fff}
+/* 5.13.3: клавиша смены набора — внутри сетки калькулятора */
+.key.set{background:linear-gradient(135deg,#7c6cff,#35d0ff);color:#fff;border-color:transparent;
+  font:700 15px/1.1 Georgia,"Times New Roman",serif}
+.key.set:active{transform:translateY(1px)}
 .dockb:active{transform:translateY(1px)}
 .dockb.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);border-color:transparent;color:#fff}
 body.light .dockbar{background:#fffdf8;box-shadow:0 14px 28px -18px rgba(40,40,60,.5)}
@@ -3833,11 +3834,6 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
     <button type="button" class="dockb" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
       <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
     </button>
-    <!-- 5.13.2: наборы формул переключаются кнопкой здесь, на главном экране,
-         а не строкой вкладок внутри панели. Тап — следующий набор. -->
-    <button type="button" class="dockb fxnav" id="fxnav" title="Формулы: дроби, корни, буквы, геометрия" aria-label="Формулы: сменить набор" aria-expanded="false">
-      <b id="fxnavLbl">ƒx</b>
-    </button>
   </div>
   <aside class="cheat" id="cheat" aria-label="Шпаргалка с формулами">
     <div class="cheat-head">
@@ -4021,7 +4017,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.13.2";
+const APP_VERSION="5.13.3";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -10387,6 +10383,21 @@ let kbSet=0;
 function kbBuild(){
   if(!kbEl) return;
   kbEl.innerHTML="";
+  /* 5.13.3: смена набора — первой клавишей внутри калькулятора.
+     На ней знак СЛЕДУЮЩЕГО набора: сразу видно, что будет дальше. */
+  const setKey=document.createElement("button");
+  setKey.type="button";
+  setKey.className="key set";
+  setKey.title="Следующий набор: "+KB_TPL[(kbSet+1)%KB_TPL.length].n;
+  setKey.setAttribute("aria-label", setKey.title);
+  setKey.innerHTML="ƒx › "+((KB_TPL[(kbSet+1)%KB_TPL.length].k==="num")? "123"
+    : (KB_TPL[(kbSet+1)%KB_TPL.length].k==="tpl")? "√"
+    : (KB_TPL[(kbSet+1)%KB_TPL.length].k==="abc")? "x²" : "°");
+  setKey.addEventListener("click", function(){
+    kbSet=(kbSet+1)%KB_TPL.length; kbBuild(); haptic(5);
+  });
+  kbEl.appendChild(setKey);
+
   const set=KB_TPL[kbSet];
   const keys=set.keys || KB_KEYS.map(function(k){ return {l:k[0], v:k[1], tpl:0}; });
   keys.forEach(function(k){
@@ -10406,34 +10417,7 @@ function kbBuild(){
     kbEl.appendChild(b);
   });
 
-  paintFxNav();
 }
-/* кнопка ƒx: открывает шаблоны и листает наборы; подпись показывает текущий */
-const fxNav=document.getElementById("fxnav");
-const fxLbl=document.getElementById("fxnavLbl");
-const FX_MARK={0:"ƒx", 1:"√", 2:"x²", 3:"°"};
-window.__paintFx=function(){
-  if(fxLbl) fxLbl.textContent=FX_MARK[kbSet]||"ƒx";
-  if(fxNav){
-    fxNav.classList.toggle("on", lsGet("kb","0")==="1" && kbSet>0);
-    fxNav.setAttribute("aria-expanded", lsGet("kb","0")==="1"? "true":"false");
-  }
-};
-function paintFxNav(){
-  if(fxLbl) fxLbl.textContent=FX_MARK[kbSet]||"ƒx";
-  if(fxNav){
-    const on=lsGet("kb","0")==="1" && kbSet>0;
-    fxNav.classList.toggle("on", on);
-    fxNav.setAttribute("aria-expanded", lsGet("kb","0")==="1"? "true":"false");
-  }
-}
-function fxNext(){
-  const open=lsGet("kb","0")==="1";
-  if(!open){ kbSet=1; lsSet("kb","1"); syncKb(); kbBuild(); return; }
-  kbSet = kbSet>=KB_TPL.length-1 ? 0 : kbSet+1;
-  kbBuild(); haptic(5);
-}
-if(fxNav) fxNav.addEventListener("click", fxNext);
 if(kbEl) kbBuild();
 /* ---- чистка вставки: из PDF и мессенджеров прилетают неразрывные пробелы,
    типографские минусы и знаки деления. Движок их понимает, но неразрывный
@@ -10499,7 +10483,7 @@ function syncKb(){
     btnKbNav.setAttribute("aria-expanded", on? "true":"false");
   }
   document.body.classList.toggle("kb-on", on);
-  try{ if(window.__paintFx) window.__paintFx(); }catch(e){}
+
   /* 5.13.1: высота панели клавиатуры → переменная, чтобы кнопка формата
      встала над ней, а не поверх клавиш */
   try{
@@ -17896,7 +17880,10 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.13.2","d":"24.11","b":[
+  const CHANGES=[{"v":"5.13.3","d":"25.11","b":[
+    "Кнопка смены наборов формул теперь внутри калькулятора — первой клавишей в сетке. На ней виден следующий набор: «ƒx › √», «ƒx › x²», «ƒx › 123». Из нижней капсулы кнопка убрана: там остались только способы ввода"
+  ]},
+{"v":"5.13.2","d":"24.11","b":[
     "Наборы формул переключаются кнопкой в нижней капсуле, строки вкладок в калькуляторе больше нет. На кнопке виден знак текущего набора: ƒx, √, x², °. Тап — следующий набор",
     "Кнопка «Готово» в калькуляторе убрана: отправка и так по стрелке",
     "Крестик закрытия капсулы больше не висит ниже её центра — выровнен по капсуле",
