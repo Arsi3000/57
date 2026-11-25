@@ -4320,6 +4320,111 @@ body[data-theme] #out .rlabel,body[data-theme] #out .snum{color:var(--ink-dim)!i
 body[data-theme] #out .eq{background:var(--hair-2)!important;border:0!important;
   border-left:2px solid var(--acc)!important;box-shadow:none!important}
 body[data-theme="neon"]{--ink:#e6fff9;--ink-soft:#a8e8de;--ink-dim:#6fc4b8}
+
+/* ===== 5.16.0 «Знакомство» — онбординг ===== */
+.ob{position:fixed;inset:0;z-index:970;display:flex;flex-direction:column;
+  background:var(--paper);color:var(--ink);
+  opacity:0;visibility:hidden;transition:opacity .28s var(--ease-io),visibility .28s}
+.ob.on{opacity:1;visibility:visible}
+.ob[hidden]{display:none}
+.ob *{box-sizing:border-box}
+.ob-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden;
+  background-image:radial-gradient(var(--hair) 1px,transparent 1px);background-size:22px 22px;opacity:.75}
+.ob-head{position:relative;display:flex;align-items:center;justify-content:space-between;
+  padding:calc(14px + env(safe-area-inset-top)) 20px 6px;gap:12px;flex:none}
+.ob-step{font:600 11px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.ob-skip{font-family:inherit;font-size:13px;font-weight:600;color:var(--ink-dim);
+  background:none;border:0;cursor:pointer;padding:10px 4px;min-height:44px}
+.ob-skip:hover{color:var(--acc)}
+.ob-view{position:relative;flex:1;overflow:hidden;min-height:0}
+.ob-track{display:flex;height:100%;transition:transform .42s var(--ease-io);will-change:transform}
+.ob-slide{flex:0 0 100%;height:100%;overflow-y:auto;overflow-x:hidden;display:flex;
+  scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+.ob-in{margin:auto;width:100%;max-width:520px;padding:8px 22px 20px;
+  display:flex;flex-direction:column;align-items:flex-start;text-align:left}
+.ob-eyebrow{font:600 11px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--acc);margin:0 0 10px}
+.ob h1{font-family:var(--serif);font-weight:400;font-size:clamp(30px,8.4vw,40px);line-height:1.06;
+  letter-spacing:-.028em;margin:0 0 12px;color:var(--ink);text-wrap:balance}
+.ob h1 em{font-style:italic;color:var(--acc)}
+.ob-lead{font-size:15px;line-height:1.6;color:var(--ink-soft);margin:0 0 22px;max-width:44ch;text-wrap:pretty}
+.ob-mark{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;
+  font-family:var(--serif);font-size:30px;color:#fff;background:var(--acc);
+  box-shadow:inset 0 .5px 0 rgba(255,255,255,.3),var(--sh-1);margin:0 0 20px}
+.ob-pills{display:flex;flex-wrap:wrap;gap:8px}
+.ob-pill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+  padding:8px 12px;border-radius:999px;background:var(--hair-2);border:.5px solid var(--hair);
+  color:var(--ink-soft)}
+.ob-pill .ic{width:15px;height:15px;stroke-width:1.6;color:var(--acc)}
+.ob-pill.lead{background:var(--acc-soft);border-color:transparent;color:var(--acc)}
+/* демо: лист */
+.ob-demo{width:100%;margin:0 0 20px}
+.ob-paper{position:relative;border:.5px solid var(--hair);border-radius:16px;
+  background:var(--paper-2);padding:26px 20px;min-height:112px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background-image:radial-gradient(var(--hair-2) 1px,transparent 1px);background-size:18px 18px}
+.ob-hw{position:relative;display:inline-block;line-height:1}
+.ob-hwtext{display:block;font-family:"Bradley Hand","Chalkboard SE","Segoe Print",cursive;
+  font-style:italic;font-size:40px;color:var(--ink);white-space:nowrap;
+  clip-path:inset(0 100% 0 0);animation:obWrite 6s var(--ease-io) infinite}
+@keyframes obWrite{0%,8%{clip-path:inset(0 100% 0 0)}50%,86%{clip-path:inset(0 0 0 0)}94%,100%{clip-path:inset(0 100% 0 0)}}
+.ob-caret{position:absolute;top:4px;bottom:4px;width:2px;border-radius:2px;background:var(--acc);
+  animation:obCaret 6s var(--ease-io) infinite;left:0}
+@keyframes obCaret{0%,8%{left:0;opacity:0}10%{opacity:1}50%{left:100%;opacity:1}56%,100%{opacity:0}}
+.ob-arrow{display:flex;justify-content:center;color:var(--acc);margin:10px 0;opacity:0;
+  animation:obArrow 6s var(--ease-io) infinite}
+@keyframes obArrow{0%,56%{opacity:0;transform:translateY(-3px)}62%,88%{opacity:.75;transform:none}95%,100%{opacity:0}}
+.ob-res{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
+  background:var(--hair-2);border:.5px solid var(--hair);opacity:0;
+  animation:obRes 6s var(--ease-io) infinite}
+@keyframes obRes{0%,56%{opacity:0;transform:translateY(6px)}62%,88%{opacity:1;transform:none}95%,100%{opacity:0}}
+.ob-res b{font-family:var(--serif);font-size:21px;font-weight:400;color:var(--ink)}
+.ob-res i{width:20px;height:20px;flex:none;border-radius:50%;background:var(--acc);color:#fff;
+  display:grid;place-items:center;font-size:11px;font-style:normal}
+/* демо: камера */
+.ob-cam{position:relative;border:.5px solid var(--hair);border-radius:16px;background:var(--paper-2);
+  height:150px;display:grid;place-items:center;overflow:hidden}
+.ob-corners{position:absolute;inset:18px}
+.ob-corners i{position:absolute;width:18px;height:18px;border:2px solid var(--acc);border-radius:2px}
+.ob-corners i:nth-child(1){top:0;left:0;border-right:0;border-bottom:0;border-radius:4px 0 0 0}
+.ob-corners i:nth-child(2){top:0;right:0;border-left:0;border-bottom:0;border-radius:0 4px 0 0}
+.ob-corners i:nth-child(3){bottom:0;left:0;border-right:0;border-top:0;border-radius:0 0 0 4px}
+.ob-corners i:nth-child(4){bottom:0;right:0;border-left:0;border-top:0;border-radius:0 0 4px 0}
+.ob-scan{position:absolute;left:18px;right:18px;height:1.5px;
+  background:linear-gradient(90deg,transparent,var(--acc),transparent);
+  animation:obScan 2.6s ease-in-out infinite}
+@keyframes obScan{0%,100%{top:22%}50%{top:78%}}
+.ob-camtext{font-family:var(--serif);font-size:19px;color:var(--ink-soft);letter-spacing:.01em}
+/* демо: шаги */
+.ob-steps{display:flex;flex-direction:column;gap:0}
+.ob-st{display:flex;gap:10px;padding-bottom:14px;position:relative}
+.ob-st b{flex:0 0 16px;text-align:right;font:400 12px/1.5 var(--serif);color:var(--ink-dim)}
+.ob-st span{font-size:14px;line-height:1.5;color:var(--ink-soft)}
+.ob-st span em{font-style:normal;color:var(--ink);font-weight:600}
+.ob-st:not(:last-child):after{content:"";position:absolute;left:22px;right:0;bottom:6px;height:1px;background:var(--hair)}
+/* список преимуществ */
+.ob-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;width:100%}
+.ob-list li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.5;
+  color:var(--ink-soft);padding:11px 13px;border-radius:12px;background:var(--hair-2);border:.5px solid var(--hair)}
+.ob-list li:before{content:"";flex:none;width:6px;height:6px;margin-top:6px;border-radius:50%;
+  background:var(--acc)}
+.ob-list b{color:var(--ink);font-weight:600}
+/* низ: точки + кнопка */
+.ob-foot{position:relative;flex:none;display:flex;align-items:center;gap:12px;
+  padding:10px 20px calc(20px + env(safe-area-inset-bottom))}
+.ob-prev{flex:none;width:48px;height:48px;border-radius:14px;border:.5px solid var(--hair);
+  background:var(--mat-2);color:var(--ink-soft);cursor:pointer;display:grid;place-items:center}
+.ob-prev[hidden]{visibility:hidden;display:grid}
+.ob-dots{display:flex;gap:6px;align-items:center;flex:1;justify-content:center}
+.ob-dots i{width:6px;height:6px;border-radius:50%;background:var(--hair);transition:.28s var(--ease-io)}
+.ob-dots i.on{width:22px;border-radius:99px;background:var(--acc)}
+.ob-next{flex:none;font-family:inherit;font-size:15px;font-weight:650;color:#fff;cursor:pointer;
+  padding:14px 22px;border-radius:14px;border:0;background:var(--acc);min-width:136px;
+  box-shadow:var(--sh-1);transition:transform .1s var(--ease-io),filter .2s}
+.ob-next:active{transform:scale(.97)}
+.ob-next:hover{filter:brightness(1.06)}
+body.light .ob-paper,body.light .ob-cam{background:var(--paper-2)}
 </style>
   <!-- 5.8.1: доска вмонтирована в фон тетради — без рамки и отдельного блока.
        Пишешь прямо на листе, решатель дописывает ответ ниже тем же пером. -->
@@ -4574,6 +4679,7 @@ body[data-theme="neon"]{--ink:#e6fff9;--ink-soft:#a8e8de;--ink-dim:#6fc4b8}
       <div class="setcard">
         <h4>Дальше</h4>
         <div class="row">
+          <button type="button" class="setbtn2" id="wnAbout">Знакомство заново</button>
           <button type="button" class="setbtn2" id="wnSettings">
             <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>Настройки
           </button>
@@ -4614,7 +4720,7 @@ body[data-theme="neon"]{--ink:#e6fff9;--ink-soft:#a8e8de;--ink-dim:#6fc4b8}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.15.1";
+const APP_VERSION="5.16.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18506,7 +18612,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
+  const CHANGES=[{"v":"5.16.0","d":"25.11","b":["Знакомство при первом запуске: пять экранов вместо пустого экрана — что умеет, четыре способа ввода, разбор по шагам, приватность","Живые демо внутри: камера с уголками и бегущей линией, рукописная строка с кареткой и распознанным ответом, шаги с номерами","Свайп, стрелки, Escape и точки-индикатор; «Пропустить» на любом шаге","Повторно открыть: «О приложении» → «Знакомство заново»","Оформление в той же системе: киноварь, антиква, волосяные линии, без эмодзи"]},{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
     "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
     "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
     "Все четыре набора одной высоты — при переключении панель не прыгает, клавиши не обрезаются",
@@ -23675,6 +23781,161 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
 })();
 
 </script>
+
+<!-- 5.16.0 знакомство -->
+<div class="ob" id="ob" hidden role="dialog" aria-modal="true" aria-label="Знакомство с Решателем">
+  <div class="ob-bg"></div>
+  <header class="ob-head">
+    <span class="ob-step" id="obStep">1 / 5</span>
+    <button type="button" class="ob-skip" id="obSkip">Пропустить</button>
+  </header>
+  <div class="ob-view">
+    <div class="ob-track" id="obTrack">
+
+      <div class="ob-slide"><div class="ob-in">
+        <div class="ob-mark">Р</div>
+        <div class="ob-eyebrow">Знакомство</div>
+        <h1>Я — <em>Решатель</em></h1>
+        <p class="ob-lead">Решу уравнение, разберу задачу по шагам, переведу единицы. Ответ допишу прямо на твоём листе.</p>
+        <div class="ob-pills">
+          <span class="ob-pill lead"><svg class="ic"><use href="#i-pen"/></svg>от руки</span>
+          <span class="ob-pill"><svg class="ic"><use href="#i-photo"/></svg>с фото</span>
+          <span class="ob-pill"><svg class="ic"><use href="#i-mic"/></svg>голосом</span>
+          <span class="ob-pill"><svg class="ic"><use href="#i-calc"/></svg>клавиатура</span>
+        </div>
+      </div></div>
+
+      <div class="ob-slide"><div class="ob-in">
+        <div class="ob-eyebrow">Способ ввода · 1 из 3</div>
+        <h1>Наведи <em>камеру</em></h1>
+        <p class="ob-lead">Сфотографируй пример из учебника или с доски — прочитаю и решу.</p>
+        <div class="ob-demo"><div class="ob-cam">
+          <div class="ob-corners"><i></i><i></i><i></i><i></i></div>
+          <div class="ob-scan"></div>
+          <div class="ob-camtext">3x − 7 = 14</div>
+        </div></div>
+        <ul class="ob-list">
+          <li><b>Печатный и рукописный</b> — с листа, тетради, экрана</li>
+          <li><b>Дроби и степени</b> — читает как в книге</li>
+        </ul>
+      </div></div>
+
+      <div class="ob-slide"><div class="ob-in">
+        <div class="ob-eyebrow">Способ ввода · 2 из 3</div>
+        <h1>Пиши <em>от руки</em></h1>
+        <p class="ob-lead">Лист открыт сразу: веди пальцем или стилусом, как в тетради.</p>
+        <div class="ob-demo">
+          <div class="ob-paper"><div class="ob-hw">
+            <span class="ob-hwtext">2x + 5 = 17</span><span class="ob-caret"></span>
+          </div></div>
+          <div class="ob-arrow"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 4v14M6 12l6 6 6-6"/></svg></div>
+          <div class="ob-res"><b>2x + 5 = 17</b><i>✓</i></div>
+        </div>
+        <ul class="ob-list">
+          <li><b>Любой почерк</b> — печатный, прописной, с наклоном</li>
+          <li><b>Ответ дописывается на листе</b>, рядом с примером</li>
+        </ul>
+      </div></div>
+
+      <div class="ob-slide"><div class="ob-in">
+        <div class="ob-eyebrow">Разбор</div>
+        <h1>Не ответ, а <em>решение</em></h1>
+        <p class="ob-lead">Показываю каждый шаг и объясняю, почему он такой. Не понял — объясню проще.</p>
+        <div class="ob-demo"><div class="ob-steps">
+          <div class="ob-st"><b>1</b><span>Переносим числа вправо: <em>2x = 12</em></span></div>
+          <div class="ob-st"><b>2</b><span>Делим обе части на 2</span></div>
+          <div class="ob-st"><b>3</b><span>Готово: <em>x = 6</em></span></div>
+        </div></div>
+        <ul class="ob-list">
+          <li><b>Слабые места</b> — покажу, что даётся труднее</li>
+          <li><b>Очередь ошибок</b> — разберу их по одной</li>
+        </ul>
+      </div></div>
+
+      <div class="ob-slide"><div class="ob-in">
+        <div class="ob-mark">∑</div>
+        <h1>Готово к <em>первому шагу</em></h1>
+        <p class="ob-lead">Каждый решённый пример — опыт и серия дней. Всё считается на этом устройстве.</p>
+        <ul class="ob-list">
+          <li><b>Без интернета</b> — считает и распознаёт офлайн</li>
+          <li><b>Без регистрации</b> — ни почты, ни пароля</li>
+          <li><b>Данные у тебя</b> — история не уходит на сервер</li>
+        </ul>
+      </div></div>
+
+    </div>
+  </div>
+  <footer class="ob-foot">
+    <button type="button" class="ob-prev" id="obPrev" aria-label="Назад" hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div class="ob-dots" id="obDots"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+    <button type="button" class="ob-next" id="obNext">Дальше</button>
+  </footer>
+</div>
+
+
+<script>/* 5.16.0 знакомство */
+(function(){
+  const box=document.getElementById('ob'); if(!box||box.dataset.on) return; box.dataset.on="1";
+  const track=document.getElementById('obTrack'), dots=[...document.querySelectorAll('#obDots i')];
+  const next=document.getElementById('obNext'), prev=document.getElementById('obPrev');
+  const step=document.getElementById('obStep'), skip=document.getElementById('obSkip');
+  const N=dots.length; let i=0, wasFocus=null;
+  const KEY="reshatel.onb";
+  function paint(){
+    track.style.transform='translateX(-'+(i*100)+'%)';
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    step.textContent=(i+1)+' / '+N;
+    prev.hidden=(i===0);
+    next.textContent=(i===N-1)?'Начать решать':'Дальше';
+  }
+  function go(k){ i=Math.max(0,Math.min(N-1,k)); paint(); }
+  function close(done){
+    box.classList.remove('on');
+    setTimeout(function(){ box.hidden=true; }, 300);
+    try{ localStorage.setItem(KEY, done? "1":"1"); }catch(e){}
+    if(wasFocus && wasFocus.focus) try{ wasFocus.focus(); }catch(e){}
+    try{ if(window.__noteBoard && window.__noteBoard.resize) window.__noteBoard.resize(); }catch(e){}
+  }
+  function open(){
+    wasFocus=document.activeElement;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    box.hidden=false; go(0);
+    requestAnimationFrame(function(){ box.classList.add('on'); });
+  }
+  next.addEventListener('click', function(){ if(i===N-1) close(true); else go(i+1); });
+  prev.addEventListener('click', function(){ go(i-1); });
+  skip.addEventListener('click', function(){ close(false); });
+  let sx=0, sy=0, drag=false;
+  track.addEventListener('touchstart', function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; drag=true; }, {passive:true});
+  track.addEventListener('touchend', function(e){
+    if(!drag) return; drag=false;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) go(i+(dx<0?1:-1));
+  }, {passive:true});
+  document.addEventListener('keydown', function(e){
+    if(box.hidden) return;
+    if(e.key==="ArrowRight") go(i+1);
+    else if(e.key==="ArrowLeft") go(i-1);
+    else if(e.key==="Escape") close(false);
+  });
+  window.__onboard=open;
+  // повтор из «О приложении»
+  document.addEventListener('click', function(e){
+    const b=e.target.closest && e.target.closest('#wnAbout');
+    if(b){ const wn=document.getElementById('whatsNew'); if(wn) wn.hidden=true; setTimeout(open,80); }
+  });
+  let seen=null; try{ seen=localStorage.getItem(KEY); }catch(e){}
+  if(!seen){ box.hidden=false; requestAnimationFrame(function(){ box.classList.add('on'); }); paint(); }
+  else { box.hidden=true; }
+  paint();
+})();
+</script>
+
 </body>
 
 </html>
