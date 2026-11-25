@@ -3234,6 +3234,239 @@ body.mode-chat .fconfirm{bottom:calc(124px + env(safe-area-inset-bottom,0px))}
 .solve.stop{background:var(--ink);color:var(--surface)}
 .solve.stop .ic{display:none}
 .solve.stop::after{content:"";width:12px;height:12px;border-radius:2px;background:currentColor}
+
+/* ============================================================
+   5.14.0 «ТИХАЯ БУМАГА» — визуальная система
+   Концепция C: днём тёплая бумага, ночью графит, один и тот же
+   акцент в обеих. Акцент — киноварь (японская печать ханко):
+   на экране всегда ОДИН насыщенный цвет, всё остальное — чернила
+   четырёх плотностей. Набор итальянский: ответ по левому краю,
+   антиква, крупно, тонкие линии вместо рамок.
+   ============================================================ */
+:root{
+  /* чернила: 4 плотности вместо десятка серых */
+  --ink:#f0ece5;
+  --ink-soft:#c2bcb2;
+  --ink-dim:#9a9488;
+  /* киноварь */
+  --acc:#e2704f;
+  --acc-deep:#c85a3c;
+  --acc-soft:rgba(226,112,79,.15);
+  --hair:rgba(240,236,229,.11);
+  --hair-2:rgba(240,236,229,.06);
+  --paper:#101216;
+  --paper-2:#15181e;
+  /* один акцент на всё: старые имена указывают на киноварь */
+  --vio:#e2704f;
+  --cyan:#e2704f;
+  --focus:#e2704f;
+  --serif:"Cambria Math","STIX Two Math",Georgia,"Times New Roman",serif;
+  /* шкала отступов 4 px — половина ощущения аккуратности */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  /* шкала кеглей: 11 13 15 18 24 34 44 */
+  --t-xs:11px; --t-s:13px; --t-m:15px; --t-l:18px; --t-xl:24px; --t-2xl:34px;
+}
+body.light{
+  --ink:#1b1815;
+  --ink-soft:#4a453f;
+  --ink-dim:#6b655c;
+  --acc:#b8432c;
+  --acc-deep:#9c3623;
+  --acc-soft:rgba(184,67,44,.10);
+  --hair:rgba(27,24,21,.13);
+  --hair-2:rgba(27,24,21,.07);
+  --paper:#f7f3ec;
+  --paper-2:#fdfbf6;
+  --vio:#b8432c; --cyan:#b8432c; --focus:#b8432c;
+}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-feature-settings:"kern" 1,"liga" 1;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+  letter-spacing:-.006em;
+}
+body.light{background:var(--paper)}
+
+/* -------- 1. ОТВЕТ — ГЕРОЙ. По левому краю, антиква, крупно -------- */
+.result,.result:after{all:unset}
+.result{display:block;position:relative;margin:var(--s5) 0 0;padding:var(--s5) 0 0;
+  border:0;border-top:1px solid var(--hair);border-radius:0;background:none;box-shadow:none}
+.rlabel{font:600 var(--t-xs)/1 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);margin:0 0 var(--s3)}
+.rval{font-family:var(--serif);font-size:var(--t-2xl);line-height:1.1;font-weight:400;
+  letter-spacing:-.015em;color:var(--ink);text-align:left}
+.rval .v{color:var(--ink);font-style:italic}
+.rval .approx{font-size:.55em;color:var(--ink-dim);font-style:normal}
+body.bigfont .rval{font-size:40px}
+.copy{margin-top:var(--s4);font:600 var(--t-xs)/1 -apple-system,BlinkMacSystemFont,sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-dim);
+  background:none;border:0;border-bottom:1px solid var(--hair);border-radius:0;padding:0 0 4px;cursor:pointer}
+.copy:hover{color:var(--acc);border-bottom-color:var(--acc)}
+.copy.done{color:var(--acc);border-bottom-color:var(--acc);background:none}
+
+/* -------- 2. КАРТОЧКА — СТРАНИЦА, А НЕ БЛОК С РАМКОЙ -------- */
+.card{background:none;border:0;border-radius:0;box-shadow:none;
+  padding:var(--s5) 0 var(--s6);animation:rise .18s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.cardhead{border-bottom:1px solid var(--hair);padding-bottom:var(--s3);margin-bottom:var(--s5)}
+.kind{font-size:var(--t-xs);letter-spacing:.14em;text-transform:uppercase;font-weight:650;color:var(--acc)}
+.kind .dot{background:var(--acc);box-shadow:none;width:5px;height:5px}
+
+/* -------- 3. ШАГИ: НОМЕР В ПОЛЕ, ЛИНИИ ВМЕСТО РАМОК -------- */
+.steps > li{gap:var(--s4);padding-bottom:var(--s5)}
+.steps > li:not(:last-child):after{left:7px;top:34px;width:1px;background:var(--hair)}
+.snum{width:15px;height:auto;border-radius:0;background:none;border:0;box-shadow:none;
+  font-family:var(--serif);font-size:var(--t-s);font-weight:400;color:var(--ink-dim);
+  justify-content:flex-start;padding-top:3px}
+.sbody{padding-top:2px}
+.sh{font:600 var(--t-m)/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  letter-spacing:-.005em;color:var(--ink);margin:0 0 var(--s2)}
+.sb{font-size:var(--t-m);line-height:1.72;color:var(--ink-soft)}
+.sb b{color:var(--ink);font-weight:650}
+.sb i{color:var(--ink-soft)}
+.sb ul li.mid{border-top:1px solid var(--hair-2)}
+
+/* -------- 4. ФОРМУЛЫ: БУМАГА, НЕ ГРАДИЕНТ -------- */
+.eq{font-family:var(--serif);font-size:var(--t-l);line-height:1.65;color:var(--ink);
+  background:var(--hair-2);border:0;border-left:2px solid var(--acc);
+  border-radius:0;padding:var(--s3) var(--s4);margin:var(--s3) 0;letter-spacing:0}
+.eq.big{font-size:var(--t-xl);padding:var(--s4) var(--s5);background:var(--hair-2);
+  border:0;border-left:2px solid var(--acc);box-shadow:none}
+.eq .v{color:var(--acc);font-style:italic}
+
+/* -------- 5. РИТМ: поля, воздух -------- */
+.app{padding:var(--s6) var(--s5) var(--s7)}
+.card > * + *{margin-top:0}
+.sb p{margin:0 0 var(--s2)}
+.steps-title{margin:var(--s5) 0 var(--s3);letter-spacing:.14em;text-transform:uppercase;font-size:var(--t-xs)}
+
+/* -------- 6. ФОН: тонкая бумага, без свечений -------- */
+.bg .orb{display:none}
+.grid{background-image:radial-gradient(rgba(240,236,229,.10) 1px,transparent 1px);
+  background-size:22px 22px;opacity:.5;
+  mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 72%);
+  -webkit-mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 72%)}
+body.light .grid{background-image:radial-gradient(rgba(27,24,21,.13) 1px,transparent 1px);opacity:.55}
+
+/* -------- 7. ДВИЖЕНИЕ: 140 мс, без отскока -------- */
+:root{--ease:cubic-bezier(.2,.8,.2,1)}
+button,.card,.cb,.key,.fmtDot,.dockb,.cmode{transition-timing-function:var(--ease)!important;
+  transition-duration:.14s!important}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* -------- 8. ИКОНКИ: ОДНА ТОЛЩИНА -------- */
+.ic,.dockb .ic,.fmtDot svg,.kbFoot button svg{stroke-width:1.6}
+svg .ic,.ic path,.ic use{stroke-width:1.6}
+
+/* -------- 9. ФОКУС: КИНОВАРЬ -------- */
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--acc);outline-offset:2px;box-shadow:none}
+.searchbar textarea{caret-color:var(--acc)}
+
+/* -------- 10. КАПСУЛА ВВОДА И НИЖНЯЯ НАВИГАЦИЯ -------- */
+.searchbar{background:var(--paper-2);border:1px solid var(--hair);box-shadow:none}
+#q{font-size:var(--t-l);letter-spacing:-.01em}
+.solve{background:var(--acc);color:#fff;border:0}
+.solve:hover{filter:brightness(1.06)}
+.fmtDot{background:var(--acc);color:#fff;box-shadow:none}
+body.mode-chat .fmtDot{background:var(--acc)}
+body.dock-open .dockToggle{background:var(--acc);color:#fff}
+body.dock-open .chatPlus{background:var(--acc);color:#fff}
+.dockbar{background:var(--paper-2);border:1px solid var(--hair);box-shadow:0 14px 34px -24px rgba(0,0,0,.5)}
+.dockb{background:none;border:1px solid var(--hair)}
+.dockb.on{background:var(--acc);color:#fff;border-color:transparent}
+body.light .dockb{background:none;color:var(--ink)}
+body.light .dockb.on{background:var(--acc);color:#fff}
+.key.set{background:var(--acc);color:#fff}
+.key.bot{background:var(--acc-soft);border-color:transparent}
+
+/* -------- 11. ЛИСТ: КЛЕТКА ТОЧКАМИ, БУМАГА -------- */
+#nbWrite{background:var(--paper-2);border:1px solid var(--hair);border-radius:var(--r)}
+#nbWrite.idle{background:var(--paper-2)}
+
+/* -------- 12. ЧАТ: РЕПЛИКИ — ПУЗЫРИ, РЕШЕНИЕ — СТРАНИЦА -------- */
+.cb .ctxt{font-size:var(--t-m);line-height:1.65}
+.cb .ck{font-size:var(--t-xs);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* -------- 13. ПЕРЕОПРЕДЕЛЕНИЯ СВЕТЛОЙ ТЕМЫ (старые правила win по
+   специфичности — гасим их здесь, тем же селектором и позже) -------- */
+body.light .result{background:none;border:0;border-top:1px solid var(--hair);box-shadow:none}
+body.light .rval{color:var(--ink)}
+body.light .rlabel{color:var(--ink-dim)}
+body.light .copy{color:var(--ink-dim);background:none;border:0;border-bottom:1px solid var(--hair)}
+body.light .copy:hover{color:var(--acc);border-bottom-color:var(--acc)}
+body.light .snum{background:none;border:0;color:var(--ink-dim)}
+body.light .steps>li:not(:last-child):after{background:var(--hair)}
+body.light .sh{color:var(--ink)}
+body.light .kind{color:var(--acc)}
+body.light .kind .dot{background:var(--acc)}
+body.light .eq{background:var(--hair-2);border:0;border-left:2px solid var(--acc);color:var(--ink)}
+body.light .eq .v{color:var(--acc)}
+body.light .searchbar{background:var(--paper-2);border-color:var(--hair);box-shadow:none}
+body.light .searchbar:focus-within{border-color:var(--acc);box-shadow:none}
+body.light .solve{background:var(--acc);box-shadow:none}
+body.light .chip{background:none;border-color:var(--hair);color:var(--ink-soft)}
+body.light .chip:hover{border-color:var(--acc);color:var(--acc);background:none}
+body.light .card{background:none;border:0;box-shadow:none}
+body.light .cardhead{border-color:var(--hair)}
+body.light .sb{color:var(--ink-soft)}
+body.light .sb b{color:var(--ink)}
+body.light header h1 em{background:none;-webkit-text-fill-color:var(--acc);color:var(--acc)}
+body.light .sub{color:var(--ink-dim)}
+
+/* -------- 14. СКИНЫ ОСТАЮТСЯ, НО ПОДЧИНЯЮТСЯ СИСТЕМЕ:
+   меняют только акцент и температуру бумаги, не ломая типографику -------- */
+body[data-theme="neon"]{--acc:#33e2c4;--acc-soft:rgba(51,226,196,.13);--paper:#06090d;--paper-2:#0b1016}
+body[data-theme="neon"] .rval{color:var(--ink);text-shadow:none}
+body[data-theme="acid"]{--acc:#b6e02c;--acc-soft:rgba(182,224,44,.14);--paper:#0c0d08;--paper-2:#14160f}
+body[data-theme="retro"]{--acc:#c98a4b;--acc-soft:rgba(201,138,75,.15);--paper:#12100c;--paper-2:#1a1711}
+body[data-theme="retro"] .rval{color:var(--ink)}
+body[data-theme="matrix"]{--acc:#4de07a;--acc-soft:rgba(77,224,122,.13)}
+body[data-theme="terminal"]{--acc:#5ee39b;--acc-soft:rgba(94,227,155,.13)}
+body[data-theme="synth"]{--acc:#ff5fa8;--acc-soft:rgba(255,95,168,.14)}
+body.warm .rval{color:var(--ink)}
+body.warm{--acc:#c2703f;--acc-soft:rgba(194,112,63,.14)}
+/* свечения от скинов гасим: они спорили с тонкой линией */
+body[data-theme] .rval,body[data-theme] .eq,body[data-theme] .snum{text-shadow:none!important;box-shadow:none}
+body[data-theme] .eq{background:var(--hair-2);border:0;border-left:2px solid var(--acc)}
+
+/* -------- 15. ЗНАК И ЗАГОЛОВОК: ПЕЧАТЬ ХАНКО, ОДИН ЦВЕТ -------- */
+.mark{background:var(--acc);border-radius:10px;color:#fff;
+  box-shadow:none;font-family:var(--serif);font-weight:400}
+header h1 em{background:none;-webkit-text-fill-color:var(--acc);color:var(--acc)}
+body[data-theme="retro"] header h1 em{background:none;-webkit-text-fill-color:var(--acc);color:var(--acc);text-shadow:none}
+body[data-theme="retro"] header h1{text-shadow:none;color:var(--ink)}
+header h1{font-weight:600;letter-spacing:-.02em;font-size:26px}
+.sub{font-size:var(--t-s);letter-spacing:.01em;color:var(--ink-dim)}
+
+/* -------- 16. КЛАВИАТУРА: КЛАВИШИ КАК КЛАВИШИ, А НЕ ПЛАШКИ -------- */
+.key{background:var(--hair-2);border:1px solid var(--hair);border-radius:8px;
+  font-size:16px;min-height:46px;color:var(--ink);letter-spacing:0}
+.key:hover{background:var(--hair);border-color:var(--acc-soft)}
+.key:active{background:var(--acc-soft);transform:none}
+.key.bot{background:var(--acc-soft);border-color:transparent;color:var(--acc);font-size:13px}
+.key.op{color:var(--acc)}
+body.light .key{background:var(--paper-2);border-color:var(--hair);color:var(--ink)}
+body.light .key:hover{background:#fff;border-color:var(--acc)}
+body.light .key.bot{background:var(--acc-soft);color:var(--acc);border-color:transparent}
+
+/* -------- 17. СВЕТЛАЯ ТЕМА: ТЁПЛАЯ КЛЕТКА ВМЕСТО СИНЕЙ -------- */
+body.light .bg .grid{background-image:linear-gradient(90deg,rgba(120,105,88,.10) 1px,transparent 1px),
+  linear-gradient(rgba(120,105,88,.10) 1px,transparent 1px);background-size:28px 28px}
+body.light .bg:after{background:rgba(184,67,44,.14)}
+
+/* -------- 18. ТИШИНА В ПУСТОТЕ: ПОДСКАЗКИ И ПЛЕЙСХОЛДЕРЫ -------- */
+::placeholder{color:var(--ink-dim);opacity:.75}
+.empty,.nores{color:var(--ink-dim);font-size:var(--t-m);line-height:1.6}
+
+/* -------- 19. ПОЛОСА ПРОКРУТКИ: ТОНКАЯ, В ЦВЕТ ЧЕРНИЛ -------- */
+*{scrollbar-width:thin;scrollbar-color:var(--hair) transparent}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body>
@@ -4032,7 +4265,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.13.4";
+const APP_VERSION="5.14.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -17924,7 +18157,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.13.4","d":"25.11","b":[
+  const CHANGES=[{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
     "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
     "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
     "Все четыре набора одной высоты — при переключении панель не прыгает, клавиши не обрезаются",
