@@ -563,11 +563,26 @@ body.light .cvline select option{background:#fff;color:#1a2038}
   .steps-wrap[hidden]{display:none}
 
   /* ---------- экранная клавиатура ---------- */
-  .keyboard{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:0 0 20px}
+  /* 5.13.4: обычная сетка калькулятора 6×5: четыре ряда цифр и постоянный
+     нижний ряд с дробью, корнем, степенью, модулем, процентами и сменой набора */
+  .keyboard{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:0 0 20px}
   .keyboard[hidden]{display:none}
-  .key{font-family:inherit;font-size:16px;padding:12px 0;min-height:44px;color:var(--ink);
-    background:var(--glass);border:1px solid var(--line);border-radius:var(--r-sm);
-    cursor:pointer;transition:.13s}
+  .key{font-family:inherit;font-size:15px;line-height:1.1;padding:10px 2px;min-height:44px;
+    color:var(--ink);background:var(--glass);border:1px solid var(--line);border-radius:11px;
+    cursor:pointer;transition:.13s;overflow:hidden;white-space:nowrap;text-align:center}
+  .key.tpl{font-size:12px;letter-spacing:-.2px}
+  .key sup{font-size:.7em;vertical-align:super}
+  .key sub{font-size:.7em;vertical-align:sub}
+  /* нижний ряд — чуть теплее фоном, чтобы читался как «частые» */
+  .key.bot{background:rgba(124,108,255,.09);border-color:rgba(124,108,255,.28)}
+  /* смена набора: текущий знак + следующий, справа в нижнем ряду */
+  .key.set{background:linear-gradient(135deg,#7c6cff,#35d0ff);color:#fff;border-color:transparent;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+    font-weight:700;padding:6px 2px}
+  .key.set .setNow{font:700 15px/1 Georgia,"Times New Roman",serif}
+  .key.set .setNext{font:600 9.5px/1 inherit;opacity:.8}
+  .key.set .setNext:before{content:"› "}
+  body.light .key.bot{background:rgba(51,102,255,.08);border-color:rgba(51,102,255,.25)}
   .key:hover{background:rgba(124,108,255,.16);border-color:rgba(124,108,255,.45)}
   .key:active{transform:translateY(1px)}
   .key.acc{color:#b3a8ff;font-weight:650}
@@ -1750,7 +1765,7 @@ body.light .key.hint{background:#e7e6ff;border-color:#b6b0f5;color:#241f4d}
 .streak{font-size:12px} .fx-toggle{padding:8px 12px;font-size:12px}
 .helpcard>summary{padding:16px 16px} .helpcard .hint{display:none} .helpbody{padding:0 16px 16px}
 .modesw{width:100%;margin:16px 0 16px;display:flex;flex-wrap:nowrap; overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch; scrollbar-width:none;-ms-overflow-style:none} .modesw::-webkit-scrollbar{display:none} .modebtn{flex:0 0 auto;justify-content:center;padding:8px 8px;font-size:12px;gap:4px} .modebtn .mi{font-size:12px} #cvin,.cvout{font-size:28px} .convbox{padding:16px 16px 16px;border-radius:var(--r-lg)} .cvline{gap:8px} .cvline select{font-size:14px;padding:8px 28px 8px 8px;max-width:50%} .cvrel{font-size:12px}
-.keyboard{grid-template-columns:repeat(6,1fr);gap:8px} .key{font-size:14px;padding:8px 0} .sheetpaper{padding:24px 16px;border-radius:var(--r)} .sheettitle{font-size:18px} .sheettasks{font-size:14px;line-height:1.9} .histitem{grid-template-columns:38px 1fr} .ha{display:none}
+.keyboard{grid-template-columns:repeat(6,minmax(0,1fr));gap:5px} .key{font-size:14px;padding:9px 1px;min-height:42px} .key.tpl{font-size:11.5px} .sheetpaper{padding:24px 16px;border-radius:var(--r)} .sheettitle{font-size:18px} .sheettasks{font-size:14px;line-height:1.9} .histitem{grid-template-columns:38px 1fr} .ha{display:none}
 .mic{width:38px;height:38px;font-size:16px}
 .mascot{width:56px;height:62px;bottom:66px;right:8px;transition:opacity .3s,transform .3s} .mascot.mini{opacity:.35;transform:scale(.82)} .mascot .bubble{right:52px;bottom:18px;font-size:12px;max-width:150px;padding:8px 8px} .mascot .bubble.on{opacity:1}
 .hudbar{gap:4px;margin-top:9px} .pill{height:30px;padding:0 8px;font-size:12px;border-radius:var(--r-sm)} .pill b{font-size:12px} .pill.lvl{min-width:0;padding:0 8px 0 4px;gap:4px} .pill .lvnum{width:18px;height:18px;font-size:12px;border-radius:var(--r-sm)} .pill .lvtxt{display:inline;font-size:12px} .pill .pillbar{width:26px} .pill.dashbtn{padding:0 8px} .dashcard{padding:16px 16px;border-radius:var(--r)} .dashbig b{font-size:28px} .dashgrid{grid-template-columns:1fr;gap:8px}
@@ -4017,7 +4032,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.13.3";
+const APP_VERSION="5.13.4";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -10256,11 +10271,22 @@ document.querySelectorAll(".themebtn").forEach(function(b){
 
 /* ---------- экранная клавиатура ---------- */
 const kbEl=document.getElementById("keyboard");
+/* 5.13.4: обычный калькулятор 6×4 плюс постоянный нижний ряд.
+   Частые шаблоны (дробь, корень, степень, модуль, проценты) всегда внизу
+   справа, а последней клавишей ряда — смена набора. Так смена всегда видна. */
 const KB_KEYS=[
   ["7","7"],["8","8"],["9","9"],["÷",":"],["⌫","__bksp__"],["C","__clearfield__"],
   ["4","4"],["5","5"],["6","6"],["×","·"],["(","("],[")",")"],
-  ["1","1"],["2","2"],["3","3"],["−","−"],["x","x"],["²","²"],
-  ["0","0"],[",",","],["+","+"],["=","="],["/","/"],["√","√"]
+  ["1","1"],["2","2"],["3","3"],["−","−"],["+","+"],["=","="],
+  ["0","0"],[",",","],["x","x"],["y","y"],["^","^"],["·","·"]
+];
+/* нижний ряд: одинаковый во всех наборах */
+const KB_BOTTOM=[
+  {l:"□/□", v:"/", tpl:1},
+  {l:"√□",  v:"√", tpl:1},
+  {l:"□²",  v:"^2", tpl:1},
+  {l:"|□|", v:"||", tpl:1, caret:-1},
+  {l:"%",   v:"%",  tpl:0}
 ];
 /* вставка с учётом парных скобок: «(» сразу даёт «()», курсор внутри;
    backspace между пустыми скобками убирает обе — иначе остаётся «(» и
@@ -10350,32 +10376,43 @@ window.__kbHints=kbHints;
    Идея из «Яндекс Репетитора AI» в МЭШ: клавиша вставляет не символ,
    а конструкцию, и курсор сразу встаёт, куда вписывать число. */
 const KB_TPL=[
-  {k:"num", n:"цифры", keys:null},
-  {k:"tpl", n:"дроби · корни", keys:[
-    {l:"□/□", v:"/", tpl:1},
-    {l:"√□", v:"√", tpl:1},
-    {l:"□²", v:"^2", tpl:1, caret:-2},
-    {l:"□°", v:"^", tpl:1, caret:-1},
-    {l:"|□|", v:"||", tpl:1, caret:-1},
-    {l:"x²", v:"x^2", tpl:1, caret:-2},
-    {l:"x³", v:"x^3", tpl:1, caret:-2},
-    {l:"x₁", v:"x1", tpl:1},
-    {l:"(a+b)²", v:"(a+b)^2", tpl:1, caret:-2},
-    {l:"a²−b²", v:"a^2-b^2", tpl:1},
-    {l:"1/2", v:"1/2", tpl:0},
-    {l:"0,5", v:"0,5", tpl:0}
+  {k:"num", n:"цифры", mark:"123", keys:null},
+  {k:"tpl", n:"дроби · корни", mark:"√", keys:[
+    {l:"x²", v:"x^2", tpl:1}, {l:"x³", v:"x^3", tpl:1},
+    {l:"x⁴", v:"x^4", tpl:1}, {l:"x₁", v:"x1", tpl:1},
+    {l:"(a+b)²", v:"(a+b)^2", tpl:1}, {l:"(a−b)²", v:"(a-b)^2", tpl:1},
+    {l:"a²−b²", v:"a^2-b^2", tpl:1}, {l:"√(□)", v:"√(", tpl:1},
+    {l:"|x|", v:"|x|", tpl:1}, {l:"(□)", v:"()", tpl:1, caret:-1},
+    {l:"1/2", v:"1/2", tpl:0}, {l:"1/3", v:"1/3", tpl:0},
+    {l:"2/3", v:"2/3", tpl:0}, {l:"3/4", v:"3/4", tpl:0},
+    {l:"0,5", v:"0,5", tpl:0}, {l:"0,25", v:"0,25", tpl:0},
+    {l:"0,75", v:"0,75", tpl:0}, {l:"1,5", v:"1,5", tpl:0},
+    {l:"□³", v:"^3", tpl:1}, {l:"□⁴", v:"^4", tpl:1},
+    {l:"≈", v:"≈", tpl:0}, {l:"·", v:"·", tpl:0},
+    {l:":", v:":", tpl:0}, {l:"√", v:"√", tpl:0}
   ]},
-  {k:"abc", n:"буквы", keys:[
+  {k:"abc", n:"буквы", mark:"x²", keys:[
     {l:"x", v:"x", tpl:0}, {l:"y", v:"y", tpl:0}, {l:"a", v:"a", tpl:0},
-    {l:"b", v:"b", tpl:0}, {l:"sin", v:"sin(", tpl:0}, {l:"cos", v:"cos(", tpl:0},
-    {l:"tg", v:"tg(", tpl:0}, {l:"π", v:"π", tpl:0}, {l:"log", v:"log(", tpl:0},
-    {l:"ln", v:"ln(", tpl:0}, {l:"≠", v:"≠", tpl:0}, {l:"≤", v:"≤", tpl:0}
+    {l:"b", v:"b", tpl:0}, {l:"x²", v:"x^2", tpl:1}, {l:"y²", v:"y^2", tpl:1},
+    {l:"a²", v:"a^2", tpl:1}, {l:"b²", v:"b^2", tpl:1},
+    {l:"(a+b)²", v:"(a+b)^2", tpl:1}, {l:"(a−b)²", v:"(a-b)^2", tpl:1},
+    {l:"x₁", v:"x1", tpl:1}, {l:"y₁", v:"y1", tpl:1},
+    {l:"√x", v:"√x", tpl:1}, {l:"|x|", v:"|x|", tpl:1},
+    {l:"sin", v:"sin(", tpl:0}, {l:"cos", v:"cos(", tpl:0},
+    {l:"tg", v:"tg(", tpl:0}, {l:"π", v:"π", tpl:0},
+    {l:"log", v:"log(", tpl:0}, {l:"ln", v:"ln(", tpl:0},
+    {l:"≠", v:"≠", tpl:0}, {l:"≤", v:"≤", tpl:0},
+    {l:"≥", v:"≥", tpl:0}, {l:"x·y", v:"x*y", tpl:0}
   ]},
-  {k:"geo", n:"геометрия", keys:[
+  {k:"geo", n:"геометрия", mark:"°", keys:[
     {l:"∠", v:"∠", tpl:0}, {l:"°", v:"°", tpl:0}, {l:"△", v:"△", tpl:0},
-    {l:"⊥", v:"⊥", tpl:0}, {l:"∥", v:"∥", tpl:0}, {l:"см", v:" см", tpl:0},
-    {l:"м", v:" м", tpl:0}, {l:"км", v:" км", tpl:0}, {l:"см²", v:" см²", tpl:0},
-    {l:"м²", v:" м²", tpl:0}, {l:"кг", v:" кг", tpl:0}, {l:"л", v:" л", tpl:0}
+    {l:"⊥", v:"⊥", tpl:0}, {l:"∥", v:"∥", tpl:0}, {l:"◯", v:"◯", tpl:0},
+    {l:"см", v:" см", tpl:0}, {l:"м", v:" м", tpl:0}, {l:"км", v:" км", tpl:0},
+    {l:"мм", v:" мм", tpl:0}, {l:"дм", v:" дм", tpl:0}, {l:"га", v:" га", tpl:0},
+    {l:"см²", v:" см²", tpl:0}, {l:"м²", v:" м²", tpl:0}, {l:"дм²", v:" дм²", tpl:0},
+    {l:"см³", v:" см³", tpl:0}, {l:"м³", v:" м³", tpl:0}, {l:"л", v:" л", tpl:0},
+    {l:"кг", v:" кг", tpl:0}, {l:"т", v:" т", tpl:0}, {l:"г", v:" г", tpl:0},
+    {l:"ч", v:" ч", tpl:0}, {l:"мин", v:" мин", tpl:0}, {l:"с", v:" с", tpl:0}
   ]}
 ];
 let kbSet=0;
@@ -10383,28 +10420,19 @@ let kbSet=0;
 function kbBuild(){
   if(!kbEl) return;
   kbEl.innerHTML="";
-  /* 5.13.3: смена набора — первой клавишей внутри калькулятора.
-     На ней знак СЛЕДУЮЩЕГО набора: сразу видно, что будет дальше. */
-  const setKey=document.createElement("button");
-  setKey.type="button";
-  setKey.className="key set";
-  setKey.title="Следующий набор: "+KB_TPL[(kbSet+1)%KB_TPL.length].n;
-  setKey.setAttribute("aria-label", setKey.title);
-  setKey.innerHTML="ƒx › "+((KB_TPL[(kbSet+1)%KB_TPL.length].k==="num")? "123"
-    : (KB_TPL[(kbSet+1)%KB_TPL.length].k==="tpl")? "√"
-    : (KB_TPL[(kbSet+1)%KB_TPL.length].k==="abc")? "x²" : "°");
-  setKey.addEventListener("click", function(){
-    kbSet=(kbSet+1)%KB_TPL.length; kbBuild(); haptic(5);
-  });
-  kbEl.appendChild(setKey);
-
   const set=KB_TPL[kbSet];
   const keys=set.keys || KB_KEYS.map(function(k){ return {l:k[0], v:k[1], tpl:0}; });
-  keys.forEach(function(k){
+
+  function keyFace(k){
+    return String(k.l)
+      .replace(/\^(\d)/g,"<sup>$1</sup>")
+      .replace(/([₁-₉])/g,"<sub>$1</sub>");
+  }
+  function addKey(k, cls){
     const b=document.createElement("button");
     b.type="button";
-    b.className="key"+(["?",'x²√()'].some(function(ch){ return ch && k.l.indexOf(ch)>=0; })? " acc":"")+(k.tpl? " tpl":"");
-    b.innerHTML=k.l.replace(/\^(\d)/g,"<sup>$1</sup>").replace(/([₀-₉])/g,"<sub>$1</sub>");
+    b.className="key"+(cls? " "+cls:"")+(k.tpl? " tpl":"");
+    b.innerHTML=keyFace(k);
     let lastTap=0;
     b.addEventListener("pointerdown", function(e){ e.preventDefault(); });
     b.addEventListener("click", function(e){
@@ -10412,11 +10440,27 @@ function kbBuild(){
       const now=Date.now();
       if(now-lastTap<70) return;
       lastTap=now;
-      kbInsert(k.tpl? {tpl:k.v, caret:k.caret} : k.v);
+      kbInsert(k.tpl? {tpl:k.v, caret:k.caret||0} : k.v);
     });
     kbEl.appendChild(b);
-  });
+  }
 
+  keys.forEach(function(k){ addKey(k); });
+
+  /* постоянный нижний ряд: частые шаблоны + смена набора последней справа */
+  KB_BOTTOM.forEach(function(k){ addKey(k, "bot"); });
+
+  const next=KB_TPL[(kbSet+1)%KB_TPL.length];
+  const setKey=document.createElement("button");
+  setKey.type="button";
+  setKey.className="key set";
+  setKey.title="Следующий набор: "+next.n;
+  setKey.setAttribute("aria-label", "Сменить набор. Сейчас: "+set.n+". Далее: "+next.n);
+  setKey.innerHTML='<span class="setNow">'+set.mark+'</span><span class="setNext">'+next.mark+'</span>';
+  setKey.addEventListener("click", function(){
+    kbSet=(kbSet+1)%KB_TPL.length; kbBuild(); haptic(5);
+  });
+  kbEl.appendChild(setKey);
 }
 if(kbEl) kbBuild();
 /* ---- чистка вставки: из PDF и мессенджеров прилетают неразрывные пробелы,
@@ -17880,7 +17924,13 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.13.3","d":"25.11","b":[
+  const CHANGES=[{"v":"5.13.4","d":"25.11","b":[
+    "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
+    "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
+    "Все четыре набора одной высоты — при переключении панель не прыгает, клавиши не обрезаются",
+    "Наборы дополнены до ровных рядов: в «дробях» появились x⁴, □³, □⁴, √(□), |x|, (□) и готовые дроби; в «буквах» — квадраты букв и формулы сокращённого умножения; в «геометрии» — мм, дм, га, т, г, объёмы и время"
+  ]},
+{"v":"5.13.3","d":"25.11","b":[
     "Кнопка смены наборов формул теперь внутри калькулятора — первой клавишей в сетке. На ней виден следующий набор: «ƒx › √», «ƒx › x²», «ƒx › 123». Из нижней капсулы кнопка убрана: там остались только способы ввода"
   ]},
 {"v":"5.13.2","d":"24.11","b":[
