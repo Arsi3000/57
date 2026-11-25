@@ -2346,6 +2346,9 @@ body.light .stepmore{background:rgba(20,164,108,.07);border-color:rgba(20,164,10
   touch-action:manipulation;transition:.16s;
 }
 .dockb .ic{width:22px;height:22px}
+/* 5.13.2: кнопка наборов формул — та же круглая кнопка капсулы, внутри знак набора */
+.fxnav b{font:700 17px/1 Georgia,"Times New Roman",serif;letter-spacing:.3px}
+.dockb.fxnav.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);color:#fff}
 .dockb:active{transform:translateY(1px)}
 .dockb.on{background:linear-gradient(135deg,#7c6cff,#35d0ff);border-color:transparent;color:#fff}
 body.light .dockbar{background:#fffdf8;box-shadow:0 14px 28px -18px rgba(40,40,60,.5)}
@@ -2975,7 +2978,9 @@ body.dock-open .dockbar{transform:translateY(0);opacity:1;pointer-events:auto}
 body.dock-open .chatHead{transform:translateX(-140%);opacity:0;pointer-events:none}
 body.dock-open .chatQuick{opacity:0;pointer-events:none}
 /* правая круглая кнопка вызова способов ввода */
-.dockToggle{position:fixed;right:8px;bottom:calc(62px + env(safe-area-inset-bottom,0px));
+/* 5.13.2: крестик по центру капсулы: её высота 62 px (7+48+7), кнопка 48 →
+   отступ 69, иначе крестик висел на 7 px ниже центра */
+.dockToggle{position:fixed;right:8px;bottom:calc(69px + env(safe-area-inset-bottom,0px));
   z-index:943;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);
   background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;
   padding:0;box-shadow:0 14px 30px -18px rgba(4,6,20,.8);
@@ -3580,12 +3585,13 @@ window.__esc=function(t){
    штрих растягивался вслед за листом: цифры «разъезжались» прямо под пальцем.
    Теперь лист меняет высоту мгновенно, одним кадром. */
 #nbWrite.idle{height:96px !important;min-height:0 !important;max-height:none !important}
-#nbWrite.idle:after{content:"Лист ждёт записи — коснись и пиши, ответ допишу сам";
-  position:absolute;left:0;right:0;top:calc(50% + 14px);text-align:center;pointer-events:none;
+/* 5.13.2: подсказка «лист ждёт записи» — один раз, пока человек ни разу не писал.
+   Пунктирная линия убрана: она читалась как поле для ввода текста, а это лист. */
+#nbWrite.idle:after{content:"";}
+#nbWrite.idle.hint:after{content:"Лист ждёт записи — коснись и пиши, ответ допишу сам";
+  position:absolute;left:0;right:0;top:calc(50% - 7px);text-align:center;pointer-events:none;
   font-size:11.5px;line-height:1.3;color:var(--ink-dim);opacity:.72}
-/* пунктирная строка-ориентир: без неё узкая полоса читалась как пустое место */
-#nbWrite.idle:before{content:"";position:absolute;left:8px;right:8px;top:calc(50% + 6px);
-  border-top:1px dashed var(--line);pointer-events:none;opacity:.9}
+#nbWrite.idle:before{content:none}
 body.light #nbWrite.idle:after,body.warm #nbWrite.idle:after{color:#6c7280}
 @media (max-width:900px) and (orientation:landscape){
   /* в горизонтали экран низкий: доска забирает не всё, иначе ответ уходит
@@ -3827,6 +3833,11 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
     <button type="button" class="dockb" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
       <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
     </button>
+    <!-- 5.13.2: наборы формул переключаются кнопкой здесь, на главном экране,
+         а не строкой вкладок внутри панели. Тап — следующий набор. -->
+    <button type="button" class="dockb fxnav" id="fxnav" title="Формулы: дроби, корни, буквы, геометрия" aria-label="Формулы: сменить набор" aria-expanded="false">
+      <b id="fxnavLbl">ƒx</b>
+    </button>
   </div>
   <aside class="cheat" id="cheat" aria-label="Шпаргалка с формулами">
     <div class="cheat-head">
@@ -4010,7 +4021,7 @@ body:not(.light):not(.warm) .nb-line.last .nb-cap{color:#51e69e}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="5.13.1";
+const APP_VERSION="5.13.2";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -10376,19 +10387,6 @@ let kbSet=0;
 function kbBuild(){
   if(!kbEl) return;
   kbEl.innerHTML="";
-  /* переключатель наборов — первой строкой, во всю ширину */
-  const row=document.createElement("div");
-  row.className="kbSetRow";
-  KB_TPL.forEach(function(x,i){
-    const b=document.createElement("button");
-    b.type="button";
-    b.className=(i===kbSet? "on":"");
-    b.textContent=x.n;
-    b.addEventListener("click", function(){ kbSet=i; kbBuild(); haptic(4); });
-    row.appendChild(b);
-  });
-  kbEl.appendChild(row);
-
   const set=KB_TPL[kbSet];
   const keys=set.keys || KB_KEYS.map(function(k){ return {l:k[0], v:k[1], tpl:0}; });
   keys.forEach(function(k){
@@ -10408,17 +10406,34 @@ function kbBuild(){
     kbEl.appendChild(b);
   });
 
-  /* «Готово» и очистка — прямо в сетке, чтобы не искать их вне калькулятора */
-  const done=document.createElement("button");
-  done.type="button";
-  done.className="key wide";
-  done.textContent="Готово";
-  done.addEventListener("click", function(){
-    lsSet("kb","0"); syncKb();
-    if(q.value.trim()){ const f=document.getElementById("form"); if(f){ if(f.requestSubmit) f.requestSubmit(); else f.dispatchEvent(new Event("submit",{cancelable:true,bubbles:true})); } }
-  });
-  kbEl.appendChild(done);
+  paintFxNav();
 }
+/* кнопка ƒx: открывает шаблоны и листает наборы; подпись показывает текущий */
+const fxNav=document.getElementById("fxnav");
+const fxLbl=document.getElementById("fxnavLbl");
+const FX_MARK={0:"ƒx", 1:"√", 2:"x²", 3:"°"};
+window.__paintFx=function(){
+  if(fxLbl) fxLbl.textContent=FX_MARK[kbSet]||"ƒx";
+  if(fxNav){
+    fxNav.classList.toggle("on", lsGet("kb","0")==="1" && kbSet>0);
+    fxNav.setAttribute("aria-expanded", lsGet("kb","0")==="1"? "true":"false");
+  }
+};
+function paintFxNav(){
+  if(fxLbl) fxLbl.textContent=FX_MARK[kbSet]||"ƒx";
+  if(fxNav){
+    const on=lsGet("kb","0")==="1" && kbSet>0;
+    fxNav.classList.toggle("on", on);
+    fxNav.setAttribute("aria-expanded", lsGet("kb","0")==="1"? "true":"false");
+  }
+}
+function fxNext(){
+  const open=lsGet("kb","0")==="1";
+  if(!open){ kbSet=1; lsSet("kb","1"); syncKb(); kbBuild(); return; }
+  kbSet = kbSet>=KB_TPL.length-1 ? 0 : kbSet+1;
+  kbBuild(); haptic(5);
+}
+if(fxNav) fxNav.addEventListener("click", fxNext);
 if(kbEl) kbBuild();
 /* ---- чистка вставки: из PDF и мессенджеров прилетают неразрывные пробелы,
    типографские минусы и знаки деления. Движок их понимает, но неразрывный
@@ -10484,6 +10499,7 @@ function syncKb(){
     btnKbNav.setAttribute("aria-expanded", on? "true":"false");
   }
   document.body.classList.toggle("kb-on", on);
+  try{ if(window.__paintFx) window.__paintFx(); }catch(e){}
   /* 5.13.1: высота панели клавиатуры → переменная, чтобы кнопка формата
      встала над ней, а не поверх клавиш */
   try{
@@ -17880,7 +17896,13 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"5.13.1","d":"24.11","b":[
+  const CHANGES=[{"v":"5.13.2","d":"24.11","b":[
+    "Наборы формул переключаются кнопкой в нижней капсуле, строки вкладок в калькуляторе больше нет. На кнопке виден знак текущего набора: ƒx, √, x², °. Тап — следующий набор",
+    "Кнопка «Готово» в калькуляторе убрана: отправка и так по стрелке",
+    "Крестик закрытия капсулы больше не висит ниже её центра — выровнен по капсуле",
+    "На листе убрана пунктирная линия: она читалась как поле для текста. Подпись «Лист ждёт записи» показывается один раз — после первого штриха больше не появляется"
+  ]},
+{"v":"5.13.1","d":"24.11","b":[
     "Шаблоны формул теперь внутри калькулятора, отдельной кнопки «ƒx» нет: над клавишами четыре набора — цифры, дроби и корни, буквы, геометрия. Клавиша вставляет конструкцию, курсор встаёт туда, где писать число. «Готово» — прямо в сетке клавиш",
     "Кнопка смены формата больше не наезжает на клавиши: при открытом калькуляторе она поднимается над панелью, и режим можно переключить не закрывая клавиатуру",
     "«C» на калькуляторе больше не уводит курсор на верх поля: поле схлопывается до одной строки, прокрутка сбрасывается"
@@ -19977,6 +19999,8 @@ window.__LEARN={
     if(on) idleLock=false;
     const was=w.classList.contains("idle");
     w.classList.toggle("idle", !!on && !idleLock);
+    /* 5.13.2: подсказку показываем, только пока человек ни разу не писал */
+    try{ w.classList.toggle("hint", !!on && !idleLock && localStorage.getItem("reshatel.nbWrote")!=="1"); }catch(e){}
     /* размер холста меняем в том же кадре, что и класс — иначе на один кадр
        остаётся холст старой высоты, и красная линия тетради дёргается */
     if(was!==(!!on && !idleLock)) sizeCanvas();
@@ -19992,6 +20016,12 @@ window.__LEARN={
   function hideFly(save){
     if(fly && !fly.hidden) fly.hidden=true;
     if(save){ try{ localStorage.setItem("reshatel.nbHint","off"); }catch(e){} }
+  }
+  /* 5.13.2: первый штрих — и подпись на листе больше не нужна */
+  function markWrote(){
+    try{ if(localStorage.getItem("reshatel.nbWrote")!=="1") localStorage.setItem("reshatel.nbWrote","1"); }catch(e){}
+    const wb=document.getElementById("nbWrite");
+    if(wb) wb.classList.remove("hint");
   }
   function clearSol(){
     if(!sol) return;
@@ -20010,6 +20040,7 @@ window.__LEARN={
        новому (472) — штрих уезжал вверх и растягивался. */
     const wb=document.getElementById("nbWrite");
     if(wb && wb.classList.contains("idle")){ idleLock=true; wb.classList.remove("idle"); }
+    markWrote();
     /* размер холста пересчитываем прямо здесь, до первой точки: после снятия
        класса раскладка могла ещё не примениться, и pos() взял бы старый
        прямоугольник. sizeCanvas читает getBoundingClientRect — это и есть
