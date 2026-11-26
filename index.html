@@ -3597,10 +3597,18 @@ window.__esc=function(t){
 <!-- ================= B4 (4.9.0): нижняя панель для телефона =================
      На десктопе скрыта целиком (display:none), на телефоне заменяет верхние вкладки:
      четыре раздела под большим палец + «Ещё» для конвертера и класса. -->
-<button type="button" class="actBtn" id="actBtn" aria-label="Клавиатура">
-    <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
-    <span id="actLbl">Клавиатура</span>
-  </button>
+<div class="actDock" id="actDock">
+    <button type="button" class="actMini" id="actUndo" hidden aria-label="Отменить штрих" title="Отменить штрих">
+      <svg class="ic" aria-hidden="true"><use href="#i-undo"/></svg>
+    </button>
+    <button type="button" class="actMini" id="actClear" hidden aria-label="Стереть всё" title="Стереть всё">
+      <svg class="ic" aria-hidden="true"><use href="#i-trash"/></svg>
+    </button>
+    <button type="button" class="actBtn" id="actBtn" aria-label="Клавиатура">
+      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
+      <span id="actLbl">Клавиатура</span>
+    </button>
+  </div>
   <nav class="bottomnav" id="bottomnav" aria-label="Разделы приложения">
   <button type="button" class="bnav on" data-goto="solve" aria-current="page">
     <svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg><span>Решить</span>
@@ -3628,6 +3636,16 @@ window.__esc=function(t){
                 stroke-width="2.15" stroke-linejoin="round" stroke-linecap="round"/>
         </svg>
       </button>
+      <!-- 6.1.1: режим «форма/чат» вернулся наверх одним кружком: нажатие переключает,
+         удержание открывает меню. Рядом — шпаргалка. В капсуле ввода этим местам тесно. -->
+      <button type="button" class="topRound" id="fmtToggle" aria-pressed="false"
+        aria-label="Режим: форма. Переключить на чат" title="Режим: форма / чат (удержание — меню)">
+        <svg class="ic" aria-hidden="true"><use href="#i-pen"/></svg>
+      </button>
+      <button type="button" class="topRound" id2="cheat" id="cheatBtn" aria-label="Шпаргалка с формулами" aria-expanded="false" aria-controls="cheat"
+            title="Шпаргалка с формулами" aria-label="Шпаргалка с формулами">
+      <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg>
+    </button>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
         <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
       </button>
@@ -4647,8 +4665,7 @@ body.dock-open .dockbar{opacity:1!important;visibility:visible!important;transfo
 .actBtn:active{transform:scale(.96)}
 .actBtn:hover{filter:brightness(1.06)}
 /* когда действие делает кто-то другой — кнопка уходит: лист, чат, настройки */
-body.mode-chat .actBtn,body.set-on .actBtn,
-body.nb-writing .actBtn,body.dock-open .actBtn{display:none!important}
+body.dock-open .actDock{display:none!important}
 
 /* 6) наклейка темы на карточке убрана — она дублировала шапку */
 #themeSticker{display:none!important}
@@ -4658,6 +4675,47 @@ body.nb-writing .actBtn,body.dock-open .actBtn{display:none!important}
 /* ответ длинный — плавающая кнопка не должна накрывать последнюю строку */
 #out{padding-bottom:72px}
 .nb-sol{padding-bottom:8px}
+
+/* ============ 6.1.1: правки по отзыву ============ */
+/* кружки в шапке: режим и шпаргалка */
+.topRound{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  display:grid;place-items:center;padding:0;cursor:pointer;
+  background:var(--hair-2);border:.5px solid var(--hair);color:var(--ink-soft);
+  transition:background var(--t-base),color var(--t-base),transform 100ms var(--ease-io)}
+.topRound .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.topRound:hover{color:var(--ink);border-color:var(--acc)}
+.topRound:active{transform:scale(.94)}
+.topRound[aria-expanded="true"]{background:var(--acc);color:#fff;border-color:transparent}
+body.mode-chat #fmtToggle{background:var(--acc);color:#fff;border-color:transparent}
+
+/* в чате у поля свой «плюс» — второй, наш, убираем */
+body.mode-chat #methodBtn{display:none!important}
+
+/* нижняя капсула: «Отменить · Стереть» появляются, когда на листе есть штрихи */
+.actDock{position:fixed;right:12px;bottom:calc(78px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:8px;z-index:958}
+body.set-on .actDock{display:none!important}
+.actDock .actBtn{position:static;box-shadow:var(--sh-2)}
+.actMini{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  display:grid;place-items:center;padding:0;cursor:pointer;
+  background:var(--mat);border:.5px solid var(--hair);color:var(--ink-soft);
+  box-shadow:var(--sh-1);transition:transform 100ms var(--ease-io),color var(--t-base)}
+.actMini .ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7}
+.actMini:active{transform:scale(.94)}
+.actMini:hover{color:var(--acc);border-color:var(--acc)}
+.actMini[hidden]{display:none!important}
+
+/* капсула на самом листе больше не нужна: её работу делает нижняя */
+#nbActs{display:none!important}
+/* ответ не должен уезжать под капсулу */
+#out{padding-bottom:84px}
+/* в чате кнопка тоже нужна: выбрал клавиатуру — чем отправлять? Она встаёт
+   над строкой ввода, чтобы не спорить с «плюсом» поля */
+body.mode-chat .actDock{display:flex!important;bottom:calc(146px + env(safe-area-inset-bottom,0px));right:10px}
+body.mode-chat .actMini{display:none!important}
+/* знак слева, три кружка справа — не растягиваем их по всей ширине */
+header .brand{gap:8px!important}
+header .brand .mark{margin-right:auto!important}
 </style>
   <!-- 5.8.1: доска вмонтирована в фон тетради — без рамки и отдельного блока.
        Пишешь прямо на листе, решатель дописывает ответ ниже тем же пером. -->
@@ -4753,10 +4811,7 @@ body.nb-writing .actBtn,body.dock-open .actBtn{display:none!important}
        Слева направо: шпаргалка, фото, микрофон, клавиатура. Поле ввода
        вернулось наверх — там его видно сразу и не надо тянуться. -->
   <div class="dockbar" id="dockBar" role="toolbar" aria-label="Способы ввода">
-    <button type="button" class="cheatbtn dockb" id="cheatBtn" aria-expanded="false" aria-controls="cheat"
-            title="Шпаргалка с формулами" aria-label="Шпаргалка с формулами">
-      <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg><span class="dl">Шпаргалка</span>
-    </button>
+    
     <button type="button" class="dockb" id="pasteBtn" title="Вставить из буфера и решить" aria-label="Вставить из буфера">
       <svg class="ic" aria-hidden="true"><use href="#i-paste"/></svg><span class="dl">Вставить</span>
     </button>
@@ -4953,7 +5008,7 @@ body.nb-writing .actBtn,body.dock-open .actBtn{display:none!important}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="6.1.0";
+const APP_VERSION="6.1.1";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18845,7 +18900,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"6.1.0","d":"26.11","b":["Один экран: на стартовом экране было 18 нажимаемых целей, стало 8. Всё, что дублировало другое, убрано — ничего не спрятано за лишним тапом.","Шапка: знак приложения и шестерёнка. Верхние вкладки убраны — разделы живут внизу, с подписями.","В капсуле ввода вместо стрелки «решить» — кружок способа ввода: фото, голос, клавиатура, вставить, шпаргалка. Отправка — Enter на клавиатуре, как в любом поле.","Внизу одна кнопка действия, и она всегда в одном месте: поле пустое — «Клавиатура», есть текст — «Решить», есть штрихи — «Проверить».","На листе — капсула «Отменить · Стереть · Проверить»: появляется с первым штрихом и уходит, когда лист снова чистый.","Форма и чат переехали в меню кружка: отдельной кнопки на экране больше нет."]},
+  const CHANGES=[{"v":"6.1.1","d":"26.11","b":["Режим «форма / чат» вернулся наверх одним кружком: нажатие переключает, удержание — меню. Рядом кружок шпаргалки.","В чате у поля ввода больше нет второго «плюса»: способ ввода там один — из самого поля.","Кнопка «Решить» внизу видна всегда, в том числе когда пишешь от руки. Пишешь — рядом с ней появляются «Отменить» и «Стереть», и капсула на листе больше не нужна.","В чате кнопка встаёт над строкой ввода: выбрал клавиатуру — отправляешь той же кнопкой."]},{"v":"6.1.0","d":"26.11","b":["Один экран: на стартовом экране было 18 нажимаемых целей, стало 8. Всё, что дублировало другое, убрано — ничего не спрятано за лишним тапом.","Шапка: знак приложения и шестерёнка. Верхние вкладки убраны — разделы живут внизу, с подписями.","В капсуле ввода вместо стрелки «решить» — кружок способа ввода: фото, голос, клавиатура, вставить, шпаргалка. Отправка — Enter на клавиатуре, как в любом поле.","Внизу одна кнопка действия, и она всегда в одном месте: поле пустое — «Клавиатура», есть текст — «Решить», есть штрихи — «Проверить».","На листе — капсула «Отменить · Стереть · Проверить»: появляется с первым штрихом и уходит, когда лист снова чистый.","Форма и чат переехали в меню кружка: отдельной кнопки на экране больше нет."]},
     {"v":"6.0.2","d":"25.11","b":["Рамка вокруг ответа убрана окончательно: ни линии, ни плашки, ни подчёркивания у «Копировать»","Ответ стоит вплотную к полю: лист ограничен 240 px и сжимается по записи — пустого экрана между полем и ответом больше нет","«О приложении» больше не просвечивает шапкой: фон плотный, посторонние элементы скрыты","Капсулы «Ответ / По шагам / Проще / Похожая»: текст внутри пилюли, ничего не вылезает","Кнопки «проще» и озвучки больше не наезжают на заголовок шага"]},{"v":"6.0.0","d":"25.11","b":["«Копировать» у ответа снова удобно нажимать: зона 44 px, подчёркивание осталось тихим","Номер шага вернулся в левое поле: заголовок, абзац и ответ снова на одной вертикали","Автотесты поймали три реальных дефекта — все исправлены"]},{"v":"5.16.1","d":"25.11","b":["Ответ снова стоит сразу под записью: лист после решения сжимается по последней строке, а не занимает пол-экрана","Рамка вокруг ответа убрана во всех местах — и под полем, и под рукописным листом: одна волосяная линия и крупная антиква","«Копировать» стала тихой подписью вместо зелёной кнопки-плашки"]},{"v":"5.16.0","d":"25.11","b":["Знакомство при первом запуске: пять экранов вместо пустого экрана — что умеет, четыре способа ввода, разбор по шагам, приватность","Живые демо внутри: камера с уголками и бегущей линией, рукописная строка с кареткой и распознанным ответом, шаги с номерами","Свайп, стрелки, Escape и точки-индикатор; «Пропустить» на любом шаге","Повторно открыть: «О приложении» → «Знакомство заново»","Оформление в той же системе: киноварь, антиква, волосяные линии, без эмодзи"]},{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
     "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
     "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
@@ -24241,9 +24296,12 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
     const acts=document.getElementById('nbActs');
     const writing=!!(acts && !acts.hidden);
     document.body.classList.toggle('nb-writing', writing);
+    const u=document.getElementById('actUndo'), c=document.getElementById('actClear');
+    if(u) u.hidden = !writing;
+    if(c) c.hidden = !writing;
     const typed=(q.value||'').trim().length>0;
     const st = writing? 'check' : (typed? 'solve' : 'kbd');
-    if(st==='check'){ lbl.textContent='Проверить'; act.setAttribute('aria-label','Проверить написанное'); }
+    if(st==='check'){ lbl.textContent='Решить'; act.setAttribute('aria-label','Решить написанное от руки'); }
     else if(st==='solve'){ lbl.textContent='Решить'; act.setAttribute('aria-label','Решить'); }
     else { lbl.textContent='Клавиатура'; act.setAttribute('aria-label','Открыть клавиатуру'); }
     const use=act.querySelector('use');
@@ -24256,39 +24314,48 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
     else if(st==='solve'){ try{ document.getElementById('form').requestSubmit(); }catch(e){} }
     else { const k=document.getElementById('kbnav'); if(k) k.click(); }
   });
+  const bu=document.getElementById('actUndo'), bc=document.getElementById('actClear');
+  if(bu) bu.addEventListener('click', function(){ const b=document.getElementById('nbUndo'); if(b) b.click(); setState(); });
+  if(bc) bc.addEventListener('click', function(){ const b=document.getElementById('nbClear'); if(b) b.click(); setState(); });
   q.addEventListener('input', setState);
   const actsEl=document.getElementById('nbActs');
   if(actsEl) new MutationObserver(setState).observe(actsEl,{attributes:true,attributeFilter:['hidden']});
   setState();
   window.__actState=setState;
-
-  /* --- форма / чат: два пункта в том же меню, отдельной кнопки больше нет --- */
-  const bar=document.getElementById('dockBar');
-  const fm=document.getElementById('fmtMenu');
-  if(bar && fm){
-    const sep=document.createElement('div'); sep.className='dsep'; bar.appendChild(sep);
-    [['form','Форма','#i-pen'],['chat','Чат','#i-speak']].forEach(function(c){
-      const b=document.createElement('button');
-      b.type='button'; b.className='dockb'; b.setAttribute('role','menuitemradio');
-      b.setAttribute('aria-label', c[1]);
-      b.dataset.cmodePick=c[0];
-      b.innerHTML='<svg class="ic" aria-hidden="true"><use href="'+c[2]+'"/></svg><span class="dl">'+c[1]+'</span>';
-      b.addEventListener('click', function(){
-        const t=fm.querySelector('[data-cmode="'+c[0]+'"]');
-        if(t) t.click();
-        if(window.__closeDock) window.__closeDock();
-      });
-      bar.appendChild(b);
+  /* --- 6.1.1: режим форма/чат — один кружок в шапке, нажатие переключает --- */
+  (function(){
+    const ft=document.getElementById('fmtToggle');
+    const fm=document.getElementById('fmtMenu');
+    if(!ft||!fm) return;
+    function paint(){
+      const chat=document.body.classList.contains('mode-chat');
+      ft.setAttribute('aria-pressed', chat?'true':'false');
+      ft.setAttribute('aria-label', chat? 'Режим: чат. Переключить на форму' : 'Режим: форма. Переключить на чат');
+      const u=ft.querySelector('use'); if(u) u.setAttribute('href', chat? '#i-speak' : '#i-pen');
+    }
+    let hold=null, held=false;
+    ft.addEventListener('pointerdown', function(){
+      held=false; clearTimeout(hold);
+      hold=setTimeout(function(){ held=true;
+        fm.classList.add('on'); ft.setAttribute('aria-expanded','true');
+        try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){}
+      }, 450);
     });
-    const mark=function(){
-      const on=document.body.classList.contains('mode-chat')?'chat':'form';
-      bar.querySelectorAll('[data-cmode-pick]').forEach(function(b){
-        b.setAttribute('aria-checked', b.dataset.cmodePick===on?'true':'false');
-      });
-    };
-    new MutationObserver(mark).observe(document.body,{attributes:true,attributeFilter:['class']});
-    mark();
-  }
+    ft.addEventListener('pointerup', function(){ clearTimeout(hold); });
+    ft.addEventListener('pointercancel', function(){ clearTimeout(hold); });
+    ft.addEventListener('click', function(e){
+      e.preventDefault();
+      if(held){ held=false; return; }
+      const chat=document.body.classList.contains('mode-chat');
+      const t=fm.querySelector('[data-cmode="'+(chat?'form':'chat')+'"]');
+      if(t) t.click();
+      paint();
+    });
+    new MutationObserver(paint).observe(document.body,{attributes:true,attributeFilter:['class']});
+    paint();
+  })();
+
+
 })();
 </script>
 </body>
