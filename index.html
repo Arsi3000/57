@@ -5041,7 +5041,7 @@ body.kb-on .bottomnav{visibility:hidden}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="6.1.2";
+const APP_VERSION="6.2.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -7979,20 +7979,55 @@ function mPathRate(low, text){
   return {kind:"Задача на движение (путь и время)", steps:steps, answer:n2s(S2)+" "+S0.u};
 }
 
+/* 26.11.2026 (P0 после сверки с nerdamer): «60 и 40 км/ч» — это ДВЕ скорости,
+   а не одна. Раньше регулярка брала только то число, что стоит вплотную к «км/ч»,
+   и из «поезда навстречу: 60 и 40 км/ч» выходило 200:40 = 5 ч вместо 2 ч.
+   Собираем все числа, перечисленные перед единицей скорости через «и» или запятую. */
+function motionSpeeds(text){
+  const out=[];
+  const re=/((?:\d+(?:[.,]\d+)?\s*(?:,\s*|и\s+)?)+)\s*(км\/ч|км\/час|км в час|м\/с)/gi;
+  let m;
+  while((m=re.exec(text))){
+    const unit=/м\/с/i.test(m[2])? "м/с" : "км/ч";
+    const nums=[...m[1].matchAll(/\d+(?:[.,]\d+)?/g)];
+    nums.forEach(x=>out.push({v:parseNum(x[0]), u:unit}));
+  }
+  return out;
+}
+
 function mMotion(low,t){
   if(!/(км\/ч|км в час|м\/с|скорост|проех|прошл|прошёл|прошел|пройд|проплы|пролет|ползл|едет|идёт|шел|двига)/.test(low)) return null;
   if(/(обратно|туда и|по течению|против течения)/.test(low)) return null;
 
+  const allSp=motionSpeeds(t);
   /* 8.8.1 двое движутся навстречу (или в разные стороны): скорости складываются */
-  if(/(навстреч|друг другу|сближ|в противоположн|в разные стороны)/.test(low)){
-    const sp=[];
-    const rv=/(\d+(?:[.,]\d+)?)\s*(?:км\/ч|км\/час|км в час)/gi;
-    let mv;
-    while((mv=rv.exec(t))) sp.push(parseNum(mv[1]));
+  const meet=/(навстреч|друг другу|сближ|в противоположн|в разные стороны|встрет)/.test(low);
+  const catchUp=/(догон|вдогон|вслед|догоняет|убегает)/.test(low);
+  if(meet || catchUp){
+    const sp2=allSp.map(x=>x.v);
     const dm=/(\d+(?:[.,]\d+)?)\s*км(?![\/а-яё])/i.exec(t);
-    if(sp.length>=2 && dm){
-      const S=parseNum(dm[1]), v1=sp[0], v2=sp[1];
+    if(sp2.length>=2 && dm){
+      const S=parseNum(dm[1]);
+      const v1=Math.max(sp2[0],sp2[1]), v2=Math.min(sp2[0],sp2[1]);
       if(S>0 && v1>0 && v2>0){
+        if(catchUp){
+          const D=v1-v2;
+          if(D<=0) return null;
+          const T=S/D;
+          const mins=Math.round(T*60), hh=Math.floor(mins/60), mm=mins%60;
+          const hm=(mm>0 && hh>0)? (hh+" ч "+mm+" мин") : (hh>0? null : (mm+" мин"));
+          return {kind:"Задача на движение вдогонку", steps:[
+            {h:"Что происходит", b:"<p>Одно тело догоняет другое. За час расстояние между ними уменьшается на разность скоростей — это скорость сближения при движении вдогонку.</p>"+
+              eq("v сближ. = v₁ − v₂", true)},
+            {h:"Что известно", b:eq("S = "+n2s(S)+" км,&nbsp;&nbsp; v₁ = "+n2s(v1)+" км/ч,&nbsp;&nbsp; v₂ = "+n2s(v2)+" км/ч")},
+            {h:"Скорость сближения", b:eq("v сближ. = "+n2s(v1)+" − "+n2s(v2)+" = "+n2s(D)+" км/ч", true)+
+              "<p>При движении в одном направлении скорости вычитаем: быстрый сокращает разрыв медленно, только за счёт преимущества в скорости.</p>"},
+            {h:"Находим время", b:eq("t = S : v сближ. = "+n2s(S)+" : "+n2s(D)+" = "+n2s(T)+" ч", true)+
+              (hm? "<p>В часах и минутах это "+hm+".</p>":"")},
+            {h:"Проверяем", b:eq(n2s(v1)+" · "+n2s(T)+" − "+n2s(v2)+" · "+n2s(T)+" = "+n2s(v1*T-v2*T)+" км", true)+
+              "<p>Быстрый проехал на "+n2s(S)+" км больше — ровно на столько он отставал. Сходится.</p>"}
+          ], answer:n2s(T)+" ч"+(hm? " ("+hm+")":"")};
+        }
         const V=v1+v2, T=S/V;
         /* часы с минутами для ответа */
         const mins=Math.round(T*60), hh=Math.floor(mins/60), mm=mins%60;
@@ -8012,6 +8047,10 @@ function mMotion(low,t){
       }
     }
   }
+
+  /* две скорости, но тип движения не назван: одной из них ответить нельзя,
+     а угадывать — значит уверенно соврать. Честнее сказать «не понял». */
+  if(allSp.length>=2) return null;
 
   const scan=[...t.matchAll(/(\d+(?:[.,]\d+)?)\s*(км\/ч|км\/час|км|м\/с|минут[а-яё]*|мин|час[а-яё]*|ч)(?![а-яё])/gi)]
     .map(m=>({v:parseNum(m[1]), u:m[2].toLowerCase()}));
@@ -9003,7 +9042,11 @@ function mWater(low, t){
   const vPo=near(idxPo);
   const vPr=near(idxPr);
   const vOwn=near(low.search(/собственн/));
-  const vTek=near(low.search(/скорост[а-яё]*\s+течени|течение\s+(?:реки\s+)?(\d)|течения/));
+  /* 26.11.2026: «против течения» — это НЕ скорость течения. Раньше поиск цеплялся
+     за слово «течения» в обороте «против течения», и скорость течения оказывалась
+     равна собственной: лодка 12 км/ч при течении 3 давала «против течения 0 км/ч».
+     Теперь ищем только явное «течение 3 км/ч» / «скорость течения 3». */
+  const vTek=near(low.search(/скорост[а-яё]*\s+течени|течение\s+(?:реки\s+)?\d/));
 
   const base={h:"Что происходит", b:"<p>По течению река помогает: скорости складываются. Против течения мешает: скорость течения вычитается.</p>"+
     eq("v по теч. = v собств. + v теч.&nbsp;&nbsp;&nbsp; v прот. = v собств. − v теч.", true)};
@@ -9019,6 +9062,7 @@ function mWater(low, t){
   }
 
   if(vOwn!==null && vTek!==null){
+    if(!(vTek>0) || vTek>=vOwn) return null;   /* течение не может быть быстрее лодки */
     return {kind:"Задача на движение по воде", steps:[base,
       {h:"Что известно", b:eq("v собств. = "+gn(vOwn)+" км/ч,&nbsp; v теч. = "+gn(vTek)+" км/ч")},
       {h:"По течению", b:eq("v по теч. = "+gn(vOwn)+" + "+gn(vTek)+" = "+gn(vOwn+vTek)+" км/ч")},
@@ -9537,6 +9581,12 @@ function solveRaw(input){
   if(!s) throw new Error("Введите уравнение или условие задачи.");
   s=s.replace(/^(реши|решите|вычисли|вычислите|найди|найдите|посчитай|посчитайте|помоги решить|сколько будет|посчитай)(?![а-яёa-z])[:\s]*/i,"").trim();
   s=s.replace(/^систем[уыа]?\s+(уравнени[а-яё]*\s*)?/i,"").trim();
+  /* 6.2.0: систему часто пишут через запятую — «x+y=5, x-y=1». Раньше такая
+     запись уходила в обычное уравнение и падала с «ровно один знак =».
+     Запятая между уравнениями (после неё не цифра) — это разделитель. */
+  if((s.match(/=/g)||[]).length>=2){
+    s=s.replace(/(?<=\S)\s*,\s*(?=[-−+a-zA-Z(])/g,"; ").replace(/;\s*;/g,";");
+  }
   /* хвостовая пунктуация: «2+2?», «5 км в метры.»
      5.10.3: «!» после цифры или скобки — это факториал, а не пунктуация:
      раньше «5!» молча превращалось в «5» и давало неверный ответ. */
@@ -9545,6 +9595,21 @@ function solveRaw(input){
   /* «найди x: 5x-10=0» — после команды осталась буква с двоеточием */
   s=s.replace(/^[a-zа-яё]\s*:\s*/i,"").trim();
   if(!s) throw new Error("Введите уравнение или условие задачи.");
+
+  /* 6.2.0: пропорции «3:x = 6:8» и «сколько процентов 30 от 150» */
+  if(typeof window.__propSolve==="function"){
+    /* prepText режет «3:» в начале как номер задания — пробуем и исходную запись */
+    const pr=window.__propSolve(s)||window.__propSolve(String(input||"").trim());
+    if(pr) return pr;
+    const pc=window.__percentOf(s);   if(pc) return pc;
+  }
+
+  /* 6.2.0: корни и дробные степени — √(9+16), √2·√8, 27^(1/3).
+     Раньше это были отказы, хотя ответы целые. */
+  if((s.indexOf("√")>=0 || /\^\s*\(\s*1\s*\//.test(s)) && typeof window.__radSolve==="function"){
+    const rd=window.__radSolve(s);
+    if(rd) return rd;
+  }
   const pct=solvePercentOf(s);
   if(pct) return pct;
   /* 5.10.4: ученик ставит знак «=» и ждёт ответа: «25 − 20 =». Если слева нет
@@ -9621,6 +9686,12 @@ function solveRaw(input){
   const conv=solveConvert(s);
   if(conv) return conv;
 
+  /* 6.2.0: |x-3| = 2 — два случая. Раньше был отказ «непонятный символ |» */
+  if(s.indexOf("|")>=0 && typeof window.__modSolve==="function"){
+    const md=window.__modSolve(s);
+    if(md) return md;
+  }
+
   const sub=solveSubstitution(s);
   if(sub) return sub;
 
@@ -9633,6 +9704,10 @@ function solveRaw(input){
     if(hasEq && !/[a-z]/i.test(s)) return solvePlain(s);
     if(hasEq) return solveEquationString(s);
     if(!/[a-z]/i.test(s)) return solvePlain(s);
+    /* 6.2.0: «2x+3x», «(x+1)(x-1)» — это не уравнение, а выражение, которое
+       просят упростить. Раньше на него был отказ, теперь считаем. */
+    const simp=(typeof window.__simplify==="function")? window.__simplify(s) : null;
+    if(simp) return simp;
     throw new Error("Похоже на выражение с буквой, но нет знака «=». Запишите уравнение целиком, например: 2x + 5 = 13.");
   }
 
@@ -9654,6 +9729,18 @@ function solveRaw(input){
     throw new Error("Похоже на перевод единиц, но я не знаю такие единицы. "+
       "Перевожу длину (мм, см, дм, м, км), массу (мг, г, кг, ц, т), "+
       "скорость (км/ч, м/с, м/мин, км/мин, км/с) и время (с, мин, ч, сут, нед).");
+  }
+
+  /* 6.2.0: «В классе 30 учеников, 40% девочки. Сколько девочек?» — часть от
+     целого в текстовой задаче. Проверяем последним: если выше не справились. */
+  if(typeof window.__percentPart==="function" && /%/.test(s)){
+    const pt=window.__percentPart(s);
+    if(pt) return pt;
+  }
+  /* 6.2.0: совместная работа — «первая за 6 часов, вторая за 12» */
+  if(typeof window.__workRate==="function"){
+    const wk=window.__workRate(s);
+    if(wk) return wk;
   }
 
   throw new Error("Условие не распознано. Попробуйте переформулировать или сразу записать уравнение.");
@@ -24477,6 +24564,761 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
   }
 
   setState();
+})();
+</script>
+<script>/* ============================================================
+   6.2.0: УПРОЩЕНИЕ ВЫРАЖЕНИЙ (P1 после сверки с nerdamer)
+   Раньше на «2x+3x» приложение отвечало «нет знака =» — а это
+   самое частое, что пишут в 5–7 классе. Здесь небольшой полиноми-
+   альный движок: раскрывает скобки, приводит подобные, считает
+   степени. Работает с дробями точно, без плавающей запятой.
+   ============================================================ */
+(function(){
+  function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ const t=a%b; a=b; b=t; } return a||1; }
+  function fr(n,d){
+    d=(d===undefined)?1:d;
+    if(d===0) return null;
+    if(d<0){ n=-n; d=-d; }
+    const g=gcd(Math.round(n),Math.round(d));
+    return {n:Math.round(n)/g, d:Math.round(d)/g};
+  }
+  const fadd=(a,b)=>fr(a.n*b.d+b.n*a.d, a.d*b.d);
+  const fsub=(a,b)=>fr(a.n*b.d-b.n*a.d, a.d*b.d);
+  const fmul=(a,b)=>fr(a.n*b.n, a.d*b.d);
+  const fdiv=(a,b)=> b.n===0? null : fr(a.n*b.d, a.d*b.n);
+  const fneg=a=>({n:-a.n, d:a.d});
+  const fnum=a=>a.n/a.d;
+
+  /* нормировка записи: кириллица, типографские знаки, ·, :, запятая */
+  function prep(src){
+    let t=String(src||"");
+    t=t.replace(/[−–—]/g,"-").replace(/[·×]/g,"*").replace(/÷/g,"/");
+    t=t.replace(/[хХ]/g,"x").replace(/[уУ]/g,"y");
+    t=t.replace(/(\d),(\d)/g,"$1.$2");
+    t=t.replace(/\s+/g,"");
+    return t;
+  }
+
+  function tokenize(t){
+    const out=[]; let i=0;
+    while(i<t.length){
+      const c=t[i];
+      if(/\d/.test(c) || (c==="." && /\d/.test(t[i+1]||""))){
+        let j=i; while(j<t.length && /[\d.]/.test(t[j])) j++;
+        out.push({t:"num", v:t.slice(i,j)}); i=j; continue;
+      }
+      if(/[a-zA-Z]/.test(c)){ out.push({t:"var", v:c.toLowerCase()}); i++; continue; }
+      if("+-*/^()".includes(c)){ out.push({t:c}); i++; continue; }
+      return null;                      /* чужой символ — не наше дело */
+    }
+    return out;
+  }
+
+  const EMPTY=()=>new Map();
+  function keyOf(vars){
+    return Object.keys(vars).sort().map(k=>k+"^"+vars[k]).join("*");
+  }
+  function parseKey(k){
+    const vars={};
+    if(!k) return vars;
+    k.split("*").forEach(p=>{ const [v,e]=p.split("^"); vars[v]=+e||1; });
+    return vars;
+  }
+  function mono(k, coef){
+    const vars=parseKey(k), norm=keyOf(vars);   /* «x» и «x^1» — один и тот же моном */
+    const m=new Map();
+    if(coef.n!==0) m.set(norm, {vars:vars, coef:coef});
+    return m;
+  }
+  function padd(A,B){
+    const C=new Map(A);
+    B.forEach((term,k)=>{
+      if(C.has(k)){
+        const c=fadd(C.get(k).coef, term.coef);
+        if(c.n===0) C.delete(k); else C.set(k,{vars:term.vars,coef:c});
+      } else C.set(k, term);
+    });
+    return C;
+  }
+  function pneg(A){ const C=new Map(); A.forEach((t,k)=>C.set(k,{vars:t.vars,coef:fneg(t.coef)})); return C; }
+  function pscale(A,f){
+    if(f.n===0) return EMPTY();
+    const C=new Map();
+    A.forEach((t,k)=>{ const c=fmul(t.coef,f); if(c.n!==0) C.set(k,{vars:t.vars,coef:c}); });
+    return C;
+  }
+  function pmul(A,B){
+    let C=EMPTY();
+    A.forEach((a,ka)=>B.forEach((b,kb)=>{
+      const vars={...a.vars};
+      Object.keys(b.vars).forEach(v=>{ vars[v]=(vars[v]||0)+b.vars[v]; });
+      const total=Object.values(vars).reduce((s,x)=>s+x,0);
+      if(total>8) throw new Error("степень слишком большая");
+      const c=fmul(a.coef,b.coef);
+      if(c.n!==0) C=padd(C, mono(keyOf(vars), c));
+    }));
+    if(C.size>1) C.forEach((t,k)=>{
+      const total=Object.values(t.vars).reduce((s,x)=>s+x,0);
+      if(total>8) throw new Error("степень слишком большая");
+    });
+    return C;
+  }
+  function ppow(A,n){
+    let R=mono("", fr(1));
+    for(let i=0;i<n;i++){ R=pmul(R,A); if(R.size>60) throw new Error("слишком много членов"); }
+    return R;
+  }
+
+  /* рекурсивный спуск: сумма → произведение → степень → атом */
+  function Parser(tokens){
+    let i=0;
+    const peek=()=>tokens[i];
+    const next=()=>tokens[i++];
+    function atom(){
+      const tk=next();
+      if(!tk) throw new Error("выражение оборвалось");
+      if(tk.t==="num"){
+        const v=tk.v;
+        if(v.includes(".")){
+          const [a,b]=v.split(".");
+          return mono("", fr(+(a+(b||"")), Math.pow(10,(b||"").length)));
+        }
+        return mono("", fr(+v));
+      }
+      if(tk.t==="var"){
+        if(peek() && peek().t==="^"){ /* x^2 обработается в pow */ }
+        return mono(tk.v, fr(1));
+      }
+      if(tk.t==="("){
+        const e=expr();
+        const c=next();
+        if(!c || c.t!==")") throw new Error("не закрыта скобка");
+        return e;
+      }
+      if(tk.t==="-") return pneg(atom());
+      if(tk.t==="+") return atom();
+      throw new Error("неожиданный символ");
+    }
+    function pow(){
+      let base=atom();
+      if(peek() && peek().t==="^"){
+        next();
+        let neg=false;
+        if(peek() && peek().t==="-"){ next(); neg=true; }
+        const tk=next();
+        if(!tk || tk.t!=="num" || tk.v.includes(".")) throw new Error("показатель не целый");
+        const n=+tk.v;
+        if(neg || n>8) throw new Error("отрицательная или большая степень");
+        base=ppow(base,n);
+      }
+      return base;
+    }
+    function term(){
+      let left=pow();
+      for(;;){
+        const tk=peek();
+        if(!tk) break;
+        if(tk.t==="*"){ next(); left=pmul(left,pow()); continue; }
+        if(tk.t==="/"){
+          next();
+          const right=pow();
+          /* делим только на число: на выражение с буквами — не наш случай */
+          if(!(right.size===1 && right.has(""))) throw new Error("деление на выражение с буквой");
+          const f=right.get("").coef;
+          left=pscale(left, fdiv(fr(1), f));
+          continue;
+        }
+        if(tk.t==="num" || tk.t==="var" || tk.t==="("){ left=pmul(left,pow()); continue; }  /* 2x, 3(x+1), (x+1)(x-1) */
+        break;
+      }
+      return left;
+    }
+    function expr(){
+      let left=term();
+      for(;;){
+        const tk=peek();
+        if(!tk || (tk.t!=="+" && tk.t!=="-")) break;
+        next();
+        const right=term();
+        left = tk.t==="+"? padd(left,right) : padd(left,pneg(right));
+      }
+      return left;
+    }
+    const res=expr();
+    if(i<tokens.length) throw new Error("лишние символы");
+    return res;
+  }
+
+  /* печать: по убыванию степени, аккуратные знаки и дроби */
+  function pstr(P){
+    if(P.size===0) return "0";
+    const items=[...P.values()].sort((a,b)=>{
+      const da=Object.values(a.vars).reduce((s,x)=>s+x,0), db=Object.values(b.vars).reduce((s,x)=>s+x,0);
+      if(db!==da) return db-da;
+      const va=keyOf(a.vars), vb=keyOf(b.vars);
+      return va<vb? -1 : va>vb? 1 : 0;
+    });
+    let out="";
+    items.forEach((t,idx)=>{
+      const neg=t.coef.n<0;
+      const abs={n:Math.abs(t.coef.n), d:t.coef.d};
+      const one=(abs.n===1 && abs.d===1);
+      let coefStr = one? "" : (abs.d===1? String(abs.n) : abs.n+"/"+abs.d);
+      let varStr = Object.keys(t.vars).sort().map(v=>{
+        const e=t.vars[v];
+        return e===1? v : v+"^"+e;
+      }).join("");
+      if(coefStr && varStr) coefStr+="";       /* 2x, а не 2·x */
+      if(!coefStr && !varStr) coefStr="1";
+      if(idx===0) out += (neg? "-":"") + coefStr + varStr;
+      else out += (neg? " - ":" + ") + coefStr + varStr;
+    });
+    return out;
+  }
+
+  /* значение в точке — для честной проверки подстановкой */
+  function evalAt(P, pt){
+    let sum=0;
+    P.forEach(t=>{
+      let v=fnum(t.coef);
+      Object.keys(t.vars).forEach(k=>{ v*=Math.pow(pt[k]||0, t.vars[k]); });
+      sum+=v;
+    });
+    return sum;
+  }
+  function polyVars(P){
+    const s=new Set();
+    P.forEach(t=>Object.keys(t.vars).forEach(v=>s.add(v)));
+    return [...s];
+  }
+
+  window.__simplify = function(src){
+    let t;
+    try{ t=prep(src); }catch(e){ return null; }
+    if(!/[a-zA-Z]/.test(t)) return null;
+    if(t.includes("=")) return null;
+    if(t.length>120) return null;
+    const tokens=tokenize(t);
+    if(!tokens || !tokens.length) return null;
+    let P;
+    try{ P=Parsersafe(tokens); }catch(e){ return null; }
+    if(!P || P.size===0) return null;
+
+    const vars=polyVars(P);
+    if(vars.length>2) return null;               /* две переменные — предел */
+
+    const result=pstr(P);
+    const srcStr=src.trim();
+    if(result===prep(srcStr)) return {kind:"Упрощение выражения", steps:[
+      {h:"Уже проще некуда", b:"<p>Выражение уже в простейшем виде — приводить нечего.</p>"+"<div class=\"eq big\">"+esc(srcStr)+"</div>"}
+    ], answer:result};
+
+    /* проверка подстановкой: подставляем числа в исходное и в ответ */
+    let check=null;
+    const uniq=vars.length? vars : ["x"];
+    const pt={}; uniq.forEach(v=>{ pt[v]=2; });
+    try{
+      const srcPoly=Parsersafe(tokenize(t));
+      const a=evalAt(srcPoly, pt), b=evalAt(P, pt);
+      if(Math.abs(a-b)<1e-9){
+        check="<p>Проверка: подставим "+uniq.map(v=>v+" = 2").join(", ")+". Исходное даёт "+
+          n2s(Math.round(a*1e6)/1e6)+", упрощённое — "+n2s(Math.round(b*1e6)/1e6)+". Совпало.</p>";
+      }
+    }catch(e){}
+
+    const hadParen=/\(/.test(t);
+    const steps=[];
+    steps.push({h:"Что делаем", b:"<p>Упростить — значит раскрыть скобки и привести подобные слагаемые: сложить всё, что с одинаковыми буквами и степенями.</p>"});
+    if(hadParen) steps.push({h:"Раскрываем скобки", b:"<p>Умножаем каждое слагаемое одной скобки на каждое слагаемое другой. Знак перед скобкой меняет знаки всех слагаемых внутри.</p>"});
+    steps.push({h:"Приводим подобные", b:"<div class=\"eq big\">"+esc(srcStr)+" = "+esc(result)+"</div>"});
+    if(check) steps.push({h:"Проверяем", b:check});
+
+    return {kind:"Упрощение выражения", steps:steps, answer:result};
+  };
+  function Parsersafe(tokens){ return Parser(tokens); }
+
+  /* разбор выражения в полином — нужен другим модулям (модуль, системы) */
+  window.__polyParse = function(src){
+    try{
+      const t=prep(src);
+      const P=Parsersafe(tokenize(t));
+      const terms=[...P.values()].map(x=>({coef:x.coef, vars:x.vars}));
+      return {terms:terms, vars:polyVars(P)};
+    }catch(e){ return null; }
+  };
+
+  /* esc и n2s объявлены в основном скрипте; подстрахуемся */
+  function esc(x){ return typeof window.__esc==="function"? window.__esc(x) : String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  function n2s(v){ return (typeof window.__n2s==="function")? window.__n2s(v) : String(Math.round(v*1000)/1000).replace(".",","); }
+})();
+</script>
+<script>/* ============================================================
+   6.2.0: УРАВНЕНИЯ С МОДУЛЕМ (P2 после сверки с nerdamer)
+   «|x-3| = 2» раньше давало «Непонятный символ |».
+   Схема школьная: |A| = c — это два случая, A = c и A = −c.
+   ============================================================ */
+(function(){
+  const fr=(n,d)=>{ d=d||1; if(d<0){n=-n;d=-d;} const g=(function g(a,b){a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t;}return a||1;})(Math.round(n),Math.round(d));
+    return {n:Math.round(n)/g, d:Math.round(d)/g}; };
+  const num=f=>f.n/f.d;
+  function gn(v){ const r=Math.round(v*1e6)/1e6; return String(r).replace(".",","); }
+
+  function esc(x){ return String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  const eq=(t,big)=>"<div class=\"eq"+(big?" big":"")+"\">"+t+"</div>";
+
+  /* линейный вид: Poly → {a, b, v} для одной переменной */
+  function linear(P, v){
+    if(!P) return null;
+    let a=null, b=null;
+    for(const t of P.terms){
+      const vars=Object.keys(t.vars);
+      if(vars.length===0){ b=(b||0)+num(t.coef); continue; }
+      if(vars.length===1 && vars[0]===v && t.vars[v]===1){ a=(a||0)+num(t.coef); continue; }
+      return null;               /* степени, произведения, др. буквы — не наш случай */
+    }
+    return {a:a||0, b:b||0};
+  }
+
+  function solveLinear(a, b, c){
+    /* a·x + b = c  →  x = (c − b) / a */
+    if(Math.abs(a)<1e-12) return null;
+    return (c-b)/a;
+  }
+
+  window.__modSolve = function(src){
+    let t=String(src||"");
+    if(!t.includes("|")) return null;
+    t=t.replace(/[−–—]/g,"-").replace(/[·×]/g,"*").replace(/[хХ]/g,"x");
+
+    const m=/^(.*?)\|([^|]+)\|(.*)$/.exec(t);
+    if(!m) return null;
+    const before=m[1].trim(), inside=m[2].trim(), after=m[3].trim();
+
+    /* правая часть: «= 2» или «= 2 + 1» */
+    const tail=/^=\s*(.+)$/.exec(after);
+    if(!tail) return null;
+    const rightExpr=tail[1].trim();
+    if(!rightExpr) return null;
+
+    /* множитель перед модулем: 2|x| = 6 → |x| = 3 */
+    let k=1;
+    if(before){
+      const kb=/^([-−]?\d+(?:[.,]\d+)?)$/.exec(before);
+      if(!kb) return null;                 /* «x + |y|» так просто не решаем */
+      k=parseFloat(kb[1].replace(",","."));
+      if(!k) return null;
+    }
+
+    const vars=(t.match(/[a-zA-Z]/g)||[]);
+    if(!vars.length) return null;
+    const v=vars.includes("x")||vars.includes("X")? "x" : vars[0].toLowerCase();
+
+    const left=window.__polyParse(inside);
+    const right=window.__polyParse(rightExpr);
+    if(!left||!right) return null;
+    const L=linear(left,v), R=linear(right,v);
+    if(!L||!R) return null;
+    if(Math.abs(R.a)>1e-12) return null;    /* переменная и справа — не наш случай */
+
+    /* k·|A| = c  →  |A| = c/k */
+    const c=R.b/k;
+    const A=(x)=>L.a*x+L.b;
+
+    const steps=[];
+    steps.push({h:"Что такое модуль", b:"<p>Модуль — это расстояние на числовой прямой, поэтому он не бывает отрицательным. Уравнение |A| = c распадается на два обычных:</p>"+
+      eq("A = c&nbsp;&nbsp;&nbsp;или&nbsp;&nbsp;&nbsp;A = −c")+
+      "<p>Второй случай — потому что до нуля одинаково далеко и вправо, и влево.</p>"});
+
+    if(k!==1){
+      steps.push({h:"Убираем множитель", b:eq(gn(k)+" · |"+esc(inside)+"| = "+gn(R.b)+"&nbsp;&nbsp;→&nbsp;&nbsp;|"+esc(inside)+"| = "+gn(c))});
+    }
+
+    if(c<0){
+      steps.push({h:"Смотрим на знак", b:eq("|"+esc(inside)+"| = "+gn(c), true)+
+        "<p>Слева модуль — он не может быть отрицательным. Справа отрицательное число. Значит решений нет.</p>"});
+      return {kind:"Уравнение с модулем", steps:steps, answer:"корней нет"};
+    }
+
+    if(Math.abs(c)<1e-12){
+      const x=solveLinear(L.a, L.b, 0);
+      steps.push({h:"Модуль равен нулю", b:eq(esc(inside)+" = 0", true)+
+        "<p>Расстояние до нуля равно нулю только у самого нуля — один корень.</p>"});
+      return {kind:"Уравнение с модулем", steps:steps, answer:v+" = "+gn(x)};
+    }
+
+    const x1=solveLinear(L.a, L.b, c);
+    const x2=solveLinear(L.a, L.b, -c);
+    if(x1===null||x2===null) return null;
+
+    const insideStr=esc(inside);
+    steps.push({h:"Первый случай", b:eq(insideStr+" = "+gn(c), true)+
+      "<p>Решаем как обычное уравнение.</p>"+
+      (Math.abs(L.a-1)<1e-12 && Math.abs(L.b)<1e-12
+        ? eq(v+" = "+gn(x1), true)
+        : eq(v+" = "+gn(x1), true))});
+    steps.push({h:"Второй случай", b:eq(insideStr+" = "+gn(-c), true)+
+      (Math.abs(L.a-1)<1e-12 && Math.abs(L.b)<1e-12
+        ? eq(v+" = "+gn(x2), true)
+        : eq(v+" = "+gn(x2), true))});
+    steps.push({h:"Проверяем", b:"<p>Подставим оба корня в исходное уравнение:</p>"+
+      eq("|"+esc(inside.replace(new RegExp(v,"g"), "("+gn(x1)+")"))+"| = "+gn(Math.abs(A(x1))))+
+      eq("|"+esc(inside.replace(new RegExp(v,"g"), "("+gn(x2)+")"))+"| = "+gn(Math.abs(A(x2)))+
+      "&nbsp;&nbsp;— совпало")});
+
+    const roots=[x1,x2].sort((a,b)=>a-b);
+    return {kind:"Уравнение с модулем", steps:steps,
+      answer:v+"₁ = "+gn(roots[0])+",  "+v+"₂ = "+gn(roots[1])};
+  };
+})();
+</script>
+<script>/* ============================================================
+   6.2.0: КОРНИ И ДРОБНЫЕ СТЕПЕНИ (P2 после сверки с nerdamer)
+   «√(9+16)», «√2·√8», «27^(1/3)» раньше были отказом.
+   Считаем точно, в виде k√r, без плавающей запятой.
+   ============================================================ */
+(function(){
+  function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ const t=a%b; a=b; b=t; } return a||1; }
+  function fr(n,d){ d=(d===undefined)?1:d; if(d===0) return null; if(d<0){n=-n;d=-d;}
+    const g=gcd(Math.round(n),Math.round(d)); return {n:Math.round(n)/g, d:Math.round(d)/g}; }
+  const fmul=(a,b)=>fr(a.n*b.n,a.d*b.d), fdiv=(a,b)=> b.n===0?null:fr(a.n*b.d,a.d*b.n);
+  const fadd=(a,b)=>fr(a.n*b.d+b.n*a.d,a.d*b.d), fsub=(a,b)=>fr(a.n*b.d-b.n*a.d,a.d*b.d);
+  const isInt=a=>a.d===1;
+
+  /* k·√r → вынести полные квадраты: √8 = 2√2 */
+  function norm(k,r){
+    if(r===0) return {k:fr(0), r:1};
+    let out=fr(1);
+    let rest=r;
+    for(let d=2; d*d<=rest; d++){
+      while(rest%(d*d)===0){ rest/=d*d; out=fmul(out, fr(d)); }
+    }
+    return {k:fmul(k,out), r:rest};
+  }
+  const one={k:fr(1),r:1};
+  const rmul=(a,b)=>norm(fmul(a.k,b.k), a.r*b.r);
+  const rdiv=(a,b)=>{
+    if(b.k.n===0) throw new Error("деление на ноль");
+    /* k1√r1 / k2√r2 = (k1/k2)·√(r1/r2) — домножаем, чтобы убрать корень из знаменателя */
+    const k=fdiv(a.k,b.k);
+    let r=a.r, den=b.r;
+    const squared=fr(r*den, den*den);       /* r1/r2 = r1·r2 / r2² → √ = √(r1·r2)/r2 */
+    return norm(fmul(k, fr(1,den)), r*den);
+  };
+  const radd=(a,b)=>{
+    const x=norm(a.k,a.r), y=norm(b.k,b.r);
+    if(x.r!==y.r) throw new Error("разные корни");
+    return {k:fadd(x.k,y.k), r:x.r};
+  };
+  const rsub=(a,b)=>{
+    const x=norm(a.k,a.r), y=norm(b.k,b.r);
+    if(x.r!==y.r) throw new Error("разные корни");
+    return {k:fsub(x.k,y.k), r:x.r};
+  };
+  const rneg=a=>({k:{n:-a.k.n,d:a.k.d}, r:a.r});
+
+  function str(a){
+    const x=norm(a.k,a.r);
+    const k=x.k;
+    const knum = isInt(k)? String(k.n) : (k.n+"/"+k.d);
+    const kabs = isInt(k)? String(Math.abs(k.n)) : (Math.abs(k.n)+"/"+k.d);
+    if(x.r===1) return knum;
+    if(k.n===1) return "√"+x.r;
+    if(k.n===-1) return "−√"+x.r;
+    return kabs+"√"+x.r;
+  }
+
+  /* --- парсер: числа, √, * : / + - и скобки --- */
+  function tokenize(t){
+    const out=[]; let i=0;
+    while(i<t.length){
+      const c=t[i];
+      if(/\d/.test(c) || (c==="."&&/\d/.test(t[i+1]||""))){
+        let j=i; while(j<t.length && /[\d.]/.test(t[j])) j++;
+        out.push({t:"num", v:t.slice(i,j)}); i=j; continue;
+      }
+      if("√*:+-/()^".includes(c)){ out.push({t:c}); i++; continue; }
+      return null;
+    }
+    return out;
+  }
+  function parse(tokens){
+    let i=0;
+    const peek=()=>tokens[i], next=()=>tokens[i++];
+    function atom(){
+      const tk=next();
+      if(!tk) throw new Error("оборвалось");
+      if(tk.t==="num") return {k:fr(parseFloat(tk.v)), r:1};
+      if(tk.t==="√"){
+        const a=atom();
+        if(a.r!==1) throw new Error("двойной корень");
+        return norm(fr(1), Math.round(a.k.n/a.k.d));
+      }
+      if(tk.t==="("){ const e=expr(); if(!peek()||peek().t!==")") throw new Error("скобка"); next(); return e; }
+      if(tk.t==="-") return rneg(atom());
+      if(tk.t==="+") return atom();
+      throw new Error("символ");
+    }
+    function term(){
+      let left=atom();
+      for(;;){
+        const tk=peek(); if(!tk) break;
+        if(tk.t==="^"){                       /* (√5)^2 — корень в квадрате */
+          next();
+          const e=atom();
+          const n=e.r===1? Math.round(e.k.n/e.k.d) : null;
+          if(n===null || n<0 || n>12) throw new Error("степень");
+          let acc={k:fr(1), r:1};
+          for(let q=0;q<n;q++) acc=rmul(acc,left);
+          left=acc; continue;
+        }
+        if(tk.t==="*"){ next(); left=rmul(left,atom()); continue; }
+        if(tk.t===":" || tk.t==="/"){ next(); left=rdiv(left,atom()); continue; }
+        if(tk.t==="num" || tk.t==="√" || tk.t==="("){ left=rmul(left,atom()); continue; }
+        break;
+      }
+      return left;
+    }
+    function expr(){
+      let left=term();
+      for(;;){
+        const tk=peek(); if(!tk||(tk.t!=="+"&&tk.t!=="-")) break;
+        next();
+        const right=term();
+        left = tk.t==="+"? radd(left,right) : rsub(left,right);
+      }
+      return left;
+    }
+    const r=expr();
+    if(i<tokens.length) throw new Error("лишнее");
+    return r;
+  }
+
+  /* точный корень n-й степени из целого */
+  function exactRoot(N, n){
+    if(N<0) return (n%2===1)? -exactRoot(-N,n) : null;
+    let lo=0, hi=Math.ceil(Math.pow(N,1/n))+2;
+    while(lo<=hi){
+      const mid=Math.floor((lo+hi)/2);
+      const p=Math.pow(mid,n);
+      if(p===N) return mid;
+      if(p<N) lo=mid+1; else hi=mid-1;
+    }
+    if(N===0) return 0;
+    if(N===1) return 1;
+    return null;
+  }
+
+  function esc(x){ return String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  const eq=(t,big)=>"<div class=\"eq"+(big?" big":"")+"\">"+t+"</div>";
+
+  window.__radSolve = function(src){
+    let t=String(src||"").trim();
+    if(!t) return null;
+    t=t.replace(/[−–—]/g,"-").replace(/[·×]/g,"*").replace(/÷/g,"/").replace(/,/g,".").replace(/\s+/g,"");
+
+    /* --- дробная степень: 27^(1/3), 16^(1/4) --- */
+    const pw=/^(-?\d+(?:\.\d+)?)\^\(\s*1\s*\/\s*(\d+)\s*\)$/.exec(t);
+    if(pw){
+      const N=parseFloat(pw[1]), n=parseInt(pw[2],10);
+      const r=exactRoot(N, n);
+      if(r===null) return null;
+      return {kind:"Корень", steps:[
+        {h:"Что значит дробная степень", b:"<p>Степень 1/n — это корень n-й степени:</p>"+eq("a^(1/n) = ⁿ√a", true)},
+        {h:"Считаем", b:eq("⁰√"+pw[1]+" → ищем число, которое в степени "+n+" даёт "+pw[1])+eq("√ = "+r, true)},
+        {h:"Проверяем", b:eq(r+"^"+n+" = "+Math.pow(r,n))+"<p>Совпало с подкоренным числом.</p>"}
+      ], answer:String(r)};
+    }
+
+    if(!t.includes("√")) return null;
+    const tokens=tokenize(t);
+    if(!tokens) return null;
+    let val;
+    try{ val=parse(tokens); }catch(e){ return null; }
+
+    const out=norm(val.k, val.r);
+    const text=str(val);
+    if(out.r===1 && isInt(out.k) && Math.abs(out.k.n)<=1){
+      /* ничего интересного: √1 = 1 */
+    }
+    const steps=[];
+    steps.push({h:"Что делаем", b:"<p>Корень — это действие, обратное возведению в квадрат. Из-под корня выносим полные квадраты, а корни перемножаем и делим как обычные множители.</p>"+
+      eq("√a · √b = √(a · b)&nbsp;&nbsp;&nbsp; √a : √b = √(a : b)", true)});
+    /* показываем, что под корнем стало, если это полезно */
+    if(/√\s*\(/.test(t.replace(/\s/g,""))){
+      steps.push({h:"Считаем под корнем", b:"<p>Сначала выполняем действия внутри корня, потом извлекаем.</p>"+eq(esc(src.trim())+" = "+esc(text))});
+    }
+    steps.push({h:"Упрощаем корни", b:eq(esc(src.trim())+" = "+esc(text), true)+
+      (out.r!==1 && out.k.n!==1 && out.k.n!==-1
+        ? "<p>Из подкоренного числа выделили полный квадрат: √"+out.r+" остаётся, множитель вышел перед корнем.</p>"
+        : "")});
+
+    return {kind:"Корни", steps:steps, answer:text};
+  };
+})();
+</script>
+<script>/* ============================================================
+   6.2.0: ПРОПОРЦИИ И ПРОЦЕНТЫ (P3)
+   «3:x = 6:8» падало на «÷», «сколько процентов 30 от 150» не
+   распознавалось, хотя это школьная база.
+   ============================================================ */
+(function(){
+  function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){const t=a%b;a=b;b=t;} return a||1; }
+  function fr(n,d){ d=(d===undefined)?1:d; if(d===0) return null; if(d<0){n=-n;d=-d;}
+    const g=gcd(Math.round(n),Math.round(d)); return {n:Math.round(n)/g, d:Math.round(d)/g}; }
+  function fstr(f){
+    if(f.d===1) return String(f.n);
+    return f.n+"/"+f.d;
+  }
+  function esc(x){ return String(x).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  const eq=(t,big)=>"<div class=\"eq"+(big?" big":"")+"\">"+t+"</div>";
+
+  function parseNum(t){
+    t=String(t).replace(",",".").replace("−","-").trim();
+    if(/^-?\d+$/.test(t)) return fr(parseInt(t,10));
+    let m=/^(-?\d+)\/(\d+)$/.exec(t); if(m) return fr(parseInt(m[1]),parseInt(m[2]));
+    m=/^(-?\d+(?:\.\d+)?)$/.exec(t); if(m) return fr(Math.round(parseFloat(m[1])*1e6),1e6);
+    return null;
+  }
+
+  /* ---------- пропорция: a:b = c:d (или a:b :: c:d) ---------- */
+  window.__propSolve = function(src){
+    let t=String(src||"").replace(/[−–—]/g,"-").replace(/\s+/g,"");
+    if(!t.includes(":")) return null;
+    const m=/^([^:]+):([^:]+)[=:]{1,2}([^:]+):([^:]+)$/.exec(t);
+    if(!m) return null;
+    const parts=m.slice(1,5).map(function(x){ return x.replace(/\//g,"/"); });
+    /* неизвестная ровно одна */
+    let v=null, cnt=0;
+    parts.forEach(function(p){ if(/[a-zA-Zа-яё]/.test(p)){ cnt++; v=p; } });
+    if(cnt!==1) return null;
+    const V=v.replace(/[^a-zA-Zа-яё]/g,"");
+    const A=parts[0]===v? null : parseNum(parts[0]);
+    const B=parts[1]===v? null : parseNum(parts[1]);
+    const C=parts[2]===v? null : parseNum(parts[2]);
+    const D=parts[3]===v? null : parseNum(parts[3]);
+    if([A,B,C,D].filter(function(x){return !x;}).length!==1) return null;
+    /* a:b = c:d противолежащие умножаются: a·d = b·c */
+    let x;
+    if(!B) x=fr(A.n*D.n, A.d*C.n===0? 1 : 1);      /* b = a·d / c */
+    if(!B){ /* b = (a·d)/c */ const num=fr(A.n*D.n, A.d*D.d), den=C; x=fr(num.n*den.d, num.d*den.n); }
+    if(!A){ const num=fr(B.n*C.n, B.d*C.d); x=fr(num.n*D.d, num.d*D.n); }   /* a = b·c/d */
+    if(!D){ const num=fr(B.n*C.n, B.d*C.d); x=fr(num.n*A.d, num.d*A.n); }   /* d = b·c/a */
+    if(!C){ const num=fr(A.n*D.n, A.d*D.d); x=fr(num.n*B.d, num.d*B.n); }   /* c = a·d/b */
+    if(!x) return null;
+    const steps=[
+      {h:"Что такое пропорция", b:"<p>Пропорция — равенство двух отношений. Произведение крайних членов равно произведению средних:</p>"+
+        eq("a : b = c : d&nbsp;&nbsp;⇔&nbsp;&nbsp;a · d = b · c", true)},
+      {h:"Переписываем без двоеточий", b:eq(esc(parts[0])+" : "+esc(parts[1])+" = "+esc(parts[2])+" : "+esc(parts[3]))+
+        "<p>Двоеточие — это деление, поэтому пропорцию можно записать дробями.</p>"+eq(esc(parts[0])+"/"+esc(parts[1])+" = "+esc(parts[2])+"/"+esc(parts[3]))},
+      {h:"Умножаем накрест", b:eq(esc(parts[0])+" · "+esc(parts[3])+" = "+esc(parts[1])+" · "+esc(parts[2]))+
+        "<p>Неизвестное остаётся с одной стороны, известные числа переносим.</p>"},
+      {h:"Ответ", b:eq(V+" = "+fstr(x), true)+
+        (x.d!==1? "<p>≈ "+String(Math.round(x.n/x.d*1000)/1000).replace(".",",")+"</p>" : "")}
+    ];
+    return {kind:"Пропорция", steps:steps, answer:V+" = "+fstr(x)};
+  };
+
+  /* ---------- «сколько процентов A от B» ---------- */
+  window.__percentOf = function(src){
+    let t=String(src||"").replace(/[−–—]/g,"-").replace(/\s+/g," ").trim();
+    const m=/^(?:сколько\s+)?процент(?:ов|а)?\s+(?:составля(?:ет|ют)\s+)?(-?\d+(?:[.,]\d+)?)\s*(?:от|из)\s+(-?\d+(?:[.,]\d+)?)/i.exec(t);
+    if(!m) return null;
+    const A=parseFloat(m[1].replace(",",".")), B=parseFloat(m[2].replace(",","."));
+    if(!B) return null;
+    const r=A/B*100;
+    const rr=Math.round(r*1e6)/1e6;
+    const steps=[
+      {h:"Что ищем", b:"<p>Спрашивают, сколько процентов составляет число "+m[1]+" от числа "+m[2]+". Процент — это сотая часть, значит делим одно на другое и умножаем на 100.</p>"+
+        eq("проценты = (часть : целое) · 100", true)},
+      {h:"Подставляем", b:eq("("+m[1]+" : "+m[2]+") · 100 = "+String(Math.round(A/B*1000)/1000).replace(".",",")+" · 100")},
+      {h:"Считаем", b:eq(String(m[1])+" — это "+String(rr).replace(".",",")+" % от "+m[2], true)}
+    ];
+    return {kind:"Проценты", steps:steps, answer:String(rr).replace(".",",")+" %"};
+  };
+
+  /* ---------- совместная работа: «первая за 6 часов, вторая за 12» ---------- */
+  window.__workRate = function(src){
+    const t=String(src||"").replace(/\s+/g," ").trim();
+    if(!/час|дн|минут/i.test(t)) return null;
+    if(!/вместе|совместн|одновременн|оба/i.test(t)) return null;
+    let got=[];
+    /* «за 4 и 6 часов», «за 6 часов ... за 12 (часов подразумевается)» */
+    const unitRe=/(час[а-яё]*|дн[а-яё]*|минут[а-яё]*)/i;
+    const u=(t.match(unitRe)||[])[1];
+    const both=/за\s+(\d+(?:[.,]\d+)?)\s*и\s*(\d+(?:[.,]\d+)?)\s*(час[а-яё]*|дн[а-яё]*|минут[а-яё]*)/i.exec(t);
+    if(both && u){
+      got=[{n:parseFloat(both[1].replace(",",".")), unit:both[3].toLowerCase()},
+           {n:parseFloat(both[2].replace(",",".")), unit:both[3].toLowerCase()}];
+    }else{
+      const re=/за\s+(\d+(?:[.,]\d+)?)/gi;
+      let m;
+      while((m=re.exec(t)) && got.length<3) got.push({n:parseFloat(m[1].replace(",",".")), unit:(u||"час").toLowerCase()});
+    }
+    if(got.length<2||got.length>3) return null;
+    /* единицы приводим к первой */
+    const base=got[0].unit;
+    const toBase=function(g){
+      if(g.unit[0]===base[0]) return g.n;
+      if(/час/.test(base)&&/минут/.test(g.unit)) return g.n/60;
+      if(/минут/.test(base)&&/час/.test(g.unit)) return g.n*60;
+      if(/час/.test(base)&&/дн/.test(g.unit)) return g.n*24;
+      if(/дн/.test(base)&&/час/.test(g.unit)) return g.n/24;
+      return g.n;
+    };
+    const times=got.map(toBase);
+    let sum=0; times.forEach(function(x){ sum+=1/x; });
+    const res=1/sum;
+    const rr=Math.round(res*1e6)/1e6;
+    const sumStr=times.map(function(x){ return "1/"+String(x).replace(".",","); }).join(" + ");
+    const steps=[
+      {h:"Главная мысль", b:"<p>В задачах на работу весь объём принимают за 1. Если исполнитель делает всю работу за t часов, то за час он делает 1/t часть.</p>"+
+        eq("скорость работы = 1 / время", true)},
+      {h:"Сколько делает каждый за час", b: times.map(function(x,i){
+          return eq("за "+String(got[i].n).replace(".",",")+" "+got[i].unit+" → 1/"+String(x).replace(".",",")+" работы в час");
+        }).join("")},
+      {h:"Складываем", b:eq(sumStr+" = "+String(Math.round(sum*1000)/1000).replace(".",","))+
+        "<p>Вместе за час они делают эту долю работы — значит весь объём займёт 1, делённое на неё.</p>"},
+      {h:"Ответ", b:eq("1 : "+String(Math.round(sum*1000)/1000).replace(".",",")+" = "+String(rr).replace(".",","), true)+
+        "<p>Проверка: за "+String(rr).replace(".",",")+" ч первый сделает "+String(Math.round(rr/times[0]*1000)/1000).replace(".",",")+
+        " работы, второй — "+String(Math.round(rr/times[1]*1000)/1000).replace(".",",")+", вместе ровно 1.</p>"}
+    ];
+    /* склонение: 1 час, 2 часа, 5 часов, 2,4 часа */
+    const plural=function(x, one, few, many){
+      const n=Math.abs(x);
+      const whole=Math.round(n)===n;
+      if(whole){ const k=n%100; if(k>=11&&k<=14) return many; const d=n%10;
+        if(d===1) return one; if(d>=2&&d<=4) return few; return many; }
+      return few;
+    };
+    const unitWord=/дн/.test(base)? plural(rr,"день","дня","дней")
+      : (/минут/.test(base)? plural(rr,"минута","минуты","минут")
+      : plural(rr,"час","часа","часов"));
+    return {kind:"Задача на работу", steps:steps, answer:String(rr).replace(".",",")+" "+unitWord};
+  };
+
+  /* ---------- «Mahina 40% девочки»: часть от целого в тексте ---------- */
+  window.__percentPart = function(src){
+    let t=String(src||"").replace(/\s+/g," ").trim();
+    const m=/(\d+(?:[.,]\d+)?)\s*%/.exec(t);
+    if(!m) return null;
+    /* целое — самое крупное число в тексте, кроме процента */
+    const nums=(t.replace(m[0]," ").match(/\d+(?:[.,]\d+)?/g)||[]).map(function(x){return parseFloat(x.replace(",","."));});
+    if(!nums.length) return null;
+    const part=parseFloat(m[1].replace(",","."));
+    const whole=Math.max.apply(null, nums);
+    if(!whole) return null;
+    const rest=/остал|остат|осталось/i.test(t);
+    const r0=part/100*whole;
+    const r=rest? whole-r0 : r0;
+    const rr=Math.round(r*1e6)/1e6;
+    const steps=[
+      {h:"Что известно", b:"<p>Целое — "+whole+", доля — "+part+" %. Процент от числа берётся умножением на сотую часть.</p>"+
+        eq(String(part)+"% = "+String(part)+"/100")},
+      {h:"Считаем", b:eq(String(part)+"/100 · "+whole+" = "+String(rr).replace(".",","), true)},
+      {h:"Ответ", b:'<p class="ans">'+String(rr).replace(".",",")+'</p>'}
+    ];
+    return {kind:"Проценты", steps:steps, answer:String(rr).replace(".",",")};
+  };
 })();
 </script>
 </body>
