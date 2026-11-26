@@ -3597,7 +3597,11 @@ window.__esc=function(t){
 <!-- ================= B4 (4.9.0): нижняя панель для телефона =================
      На десктопе скрыта целиком (display:none), на телефоне заменяет верхние вкладки:
      четыре раздела под большим палец + «Ещё» для конвертера и класса. -->
-<nav class="bottomnav" id="bottomnav" aria-label="Разделы приложения">
+<button type="button" class="actBtn" id="actBtn" aria-label="Клавиатура">
+    <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
+    <span id="actLbl">Клавиатура</span>
+  </button>
+  <nav class="bottomnav" id="bottomnav" aria-label="Разделы приложения">
   <button type="button" class="bnav on" data-goto="solve" aria-current="page">
     <svg class="ic" aria-hidden="true"><use href="#i-sigma"/></svg><span>Решить</span>
   </button>
@@ -3623,34 +3627,6 @@ window.__esc=function(t){
           <path d="M19 5H5l7 7-7 7h14" fill="none" stroke="currentColor"
                 stroke-width="2.15" stroke-linejoin="round" stroke-linecap="round"/>
         </svg>
-      </button>
-      <button type="button" class="hud-compound" id="hudOpen"
-        title="Прогресс, квесты и награды — открыть «Дэш»">
-        <span class="hud-lv" aria-hidden="true">
-          <span class="lvnum" id="lvlNum">1</span>
-          <span class="hud-xp"><i id="xpBar"></i></span>
-          <span class="hud-txt">уровень</span>
-        </span>
-        <span class="hud-dot" aria-hidden="true"></span>
-        <span class="hud-seg" title="Дней подряд">
-          <span class="hud-fire off" id="fireIco" aria-hidden="true"><svg class="ic"><use href="#i-fire"/></svg></span>
-          <b id="dayStreak">0</b><span class="hud-txt">серия</span>
-        </span>
-        <span class="hud-dot" aria-hidden="true"></span>
-        <span class="hud-seg" title="Квесты на сегодня">
-          <svg class="ic" aria-hidden="true"><use href="#i-quest"/></svg><b id="questNum">0/3</b><span class="hud-txt">квесты</span>
-        </span>
-        <span class="hud-dot hud-achv" aria-hidden="true"></span>
-        <span class="hud-seg hud-achv" title="Достижения">
-          <svg class="ic" aria-hidden="true"><use href="#i-cup"/></svg><b id="achvNum">0/8</b><span class="hud-txt">награды</span>
-        </span>
-      </button>
-      <!-- 5.3.0: тема переключается тут же, у шестерёнки.
-           Тап — следующая по кругу, удержание — список всех тем. -->
-      <button type="button" class="tcirc" id="themeBtn"
-        title="Тема: нажмите — следующая, удержите — выбрать из списка"
-        aria-label="Тема оформления" aria-expanded="false" aria-controls="themeList">
-        <span class="tcirc-in" aria-hidden="true"></span>
       </button>
       <button type="button" class="setbtn" id="setOpen" title="Настройки" aria-label="Настройки">
         <svg class="ic" aria-hidden="true"><use href="#i-gear"/></svg>
@@ -3818,8 +3794,9 @@ window.__esc=function(t){
     <button type="button" class="icon-btn" id="clear" hidden title="Стереть поле" aria-label="Стереть">
       <span aria-hidden="true">✕</span>
     </button>
-    <button class="solve" type="submit" title="Решить" aria-label="Решить">
-      <svg class="ic" aria-hidden="true"><use href="#i-arrow"/></svg>
+    <button type="button" class="methodBtn" id="methodBtn" aria-expanded="false"
+      aria-label="Способ ввода" title="Способ ввода: фото, голос, клавиатура, вставка, шпаргалка">
+      <svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
     </button>
     <input type="file" id="ocrFile" accept="image/*" hidden>
     <!-- 5.10.2: в режиме чата капсула стоит внизу, и слева в ней — «плюс»
@@ -4605,6 +4582,82 @@ body.set-on .dockToggle,body.set-on .fmtDot{visibility:hidden!important}
   border-left:0!important;border-right:0!important;box-shadow:none!important;
   background:none!important;background-image:none!important;padding:0!important;
   margin:0!important;border-radius:0!important}
+
+/* ============================================================
+   6.1.0 «ОДИН ЭКРАН»
+   Было 18 нажимаемых целей — стало 8. Ничего не потеряно,
+   просто убрано то, что дублировало другое.
+   ============================================================ */
+/* 1) верхние вкладки-дубли убраны: разделы живут внизу, с подписями */
+#modesw{display:none!important}
+
+/* 2) шапка: знак слева, шестерёнка справа. Прогресс — внутри «Учиться» */
+header .brand{justify-content:space-between;gap:10px;margin-bottom:4px}
+header .brand .mark{flex:none}
+
+/* 3) капсула ввода: поле + кружок способа ввода (вместо стрелки «решить») */
+.methodBtn{flex:none;width:44px;height:44px;min-height:44px;border-radius:50%;
+  display:grid;place-items:center;padding:0;cursor:pointer;
+  background:var(--hair-2);border:.5px solid var(--hair);color:var(--ink-soft);
+  transition:transform 100ms var(--ease-io),background var(--t-base),color var(--t-base)}
+.methodBtn .ic{width:20px;height:20px;stroke:var(--ink-soft);stroke-width:1.8}
+.methodBtn:hover{color:var(--ink);border-color:var(--acc)}
+.methodBtn[aria-expanded="true"]{background:var(--acc);border-color:transparent}
+.methodBtn[aria-expanded="true"] .ic{stroke:#fff;transform:rotate(45deg)}
+.methodBtn:active{transform:scale(.94)}
+/* прежний плавающий «плюс» больше не нужен — его работу делает кружок в поле */
+.dockToggle{display:none!important}
+
+/* 4) способы ввода — вертикальное меню под кружком, с подписями */
+.dockbar{position:fixed!important;top:auto!important;right:12px!important;
+  left:auto!important;bottom:auto!important;
+  display:flex!important;flex-direction:column!important;gap:2px!important;
+  padding:6px!important;margin:0!important;border-radius:18px!important;
+  background:var(--mat-2)!important;border:.5px solid var(--hair)!important;
+  box-shadow:var(--edge-hi),var(--sh-2)!important;
+  -webkit-backdrop-filter:var(--blur)!important;backdrop-filter:var(--blur)!important;
+  min-width:196px!important;width:auto!important;max-height:calc(100dvh - 24px)!important;overflow:auto!important;
+  opacity:0;visibility:hidden;transform:translateY(-6px) scale(.98);transform-origin:top right;
+  transition:opacity .16s var(--ease-io),transform .16s var(--ease-io),visibility .16s;
+  z-index:965!important}
+body.dock-open .dockbar{opacity:1!important;visibility:visible!important;transform:none!important}
+.dockbar .dockb{width:100%!important;height:46px!important;min-height:46px!important;
+  border-radius:12px!important;justify-content:flex-start!important;gap:10px!important;
+  padding:0 12px!important;background:none!important;border:0!important;
+  font:600 14px/1.2 -apple-system,BlinkMacSystemFont,sans-serif!important;
+  color:var(--ink)!important;display:flex!important;align-items:center!important}
+.dockbar .dockb .ic{width:20px;height:20px;stroke-width:1.6;color:var(--ink-soft);flex:none}
+.dockbar .dockb:hover,.dockbar .dockb:active{background:var(--hair-2)!important;color:var(--acc)!important}
+.dockbar .dockb:hover .ic{color:var(--acc)}
+.dockbar .dl{white-space:nowrap}
+.dockbar .cheatbtn{margin:0}
+.dockbar .dsep{height:1px;margin:5px 8px;background:var(--hair);flex:none}
+.dockbar .dockb[aria-checked="true"]{color:var(--acc)!important}
+.dockbar .dockb[aria-checked="true"] .ic{color:var(--acc)}
+
+/* 5) одна кнопка действия — всегда в одном месте, под большим пальцем */
+.actBtn{position:fixed;right:12px;bottom:calc(78px + env(safe-area-inset-bottom,0px));
+  display:inline-flex;align-items:center;gap:8px;
+  height:52px;min-height:52px;padding:0 18px 0 14px;border-radius:999px;
+  background:var(--acc);color:#fff;border:0;cursor:pointer;
+  font:650 15px/1 -apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:-.01em;
+  box-shadow:var(--sh-2);z-index:958;
+  transition:transform 100ms var(--ease-io),filter var(--t-base)}
+.actBtn .ic{width:22px;height:22px;stroke:#fff;stroke-width:1.8;flex:none}
+.actBtn:active{transform:scale(.96)}
+.actBtn:hover{filter:brightness(1.06)}
+/* когда действие делает кто-то другой — кнопка уходит: лист, чат, настройки */
+body.mode-chat .actBtn,body.set-on .actBtn,
+body.nb-writing .actBtn,body.dock-open .actBtn{display:none!important}
+
+/* 6) наклейка темы на карточке убрана — она дублировала шапку */
+#themeSticker{display:none!important}
+
+/* 7) прежний кружок «форма/чат» переехал в меню способов ввода */
+.fmtDot{display:none!important}
+/* ответ длинный — плавающая кнопка не должна накрывать последнюю строку */
+#out{padding-bottom:72px}
+.nb-sol{padding-bottom:8px}
 </style>
   <!-- 5.8.1: доска вмонтирована в фон тетради — без рамки и отдельного блока.
        Пишешь прямо на листе, решатель дописывает ответ ниже тем же пером. -->
@@ -4702,19 +4755,19 @@ body.set-on .dockToggle,body.set-on .fmtDot{visibility:hidden!important}
   <div class="dockbar" id="dockBar" role="toolbar" aria-label="Способы ввода">
     <button type="button" class="cheatbtn dockb" id="cheatBtn" aria-expanded="false" aria-controls="cheat"
             title="Шпаргалка с формулами" aria-label="Шпаргалка с формулами">
-      <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="#i-cat"/></svg><span class="dl">Шпаргалка</span>
     </button>
     <button type="button" class="dockb" id="pasteBtn" title="Вставить из буфера и решить" aria-label="Вставить из буфера">
-      <svg class="ic" aria-hidden="true"><use href="#i-paste"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="#i-paste"/></svg><span class="dl">Вставить</span>
     </button>
     <button type="button" class="dockb" id="ocr" title="Распознать задачу с фото" aria-label="Распознать задачу с фото">
-      <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="#i-photo"/></svg><span class="dl">Фото</span>
     </button>
     <button type="button" class="dockb" id="mic" title="Сказать задачу голосом" aria-label="Голосовой ввод">
-      <svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg><span class="dl">Голосом</span>
     </button>
     <button type="button" class="dockb" id="kbnav" title="Клавиатура: цифры и знаки" aria-label="Экранная клавиатура" aria-expanded="false">
-      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg>
+      <svg class="ic" aria-hidden="true"><use href="#i-calc"/></svg><span class="dl">Клавиатура</span>
     </button>
   </div>
   <aside class="cheat" id="cheat" aria-label="Шпаргалка с формулами">
@@ -4900,7 +4953,7 @@ body.set-on .dockToggle,body.set-on .fmtDot{visibility:hidden!important}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="6.0.2";
+const APP_VERSION="6.1.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -18792,7 +18845,8 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v":"6.0.2","d":"25.11","b":["Рамка вокруг ответа убрана окончательно: ни линии, ни плашки, ни подчёркивания у «Копировать»","Ответ стоит вплотную к полю: лист ограничен 240 px и сжимается по записи — пустого экрана между полем и ответом больше нет","«О приложении» больше не просвечивает шапкой: фон плотный, посторонние элементы скрыты","Капсулы «Ответ / По шагам / Проще / Похожая»: текст внутри пилюли, ничего не вылезает","Кнопки «проще» и озвучки больше не наезжают на заголовок шага"]},{"v":"6.0.0","d":"25.11","b":["«Копировать» у ответа снова удобно нажимать: зона 44 px, подчёркивание осталось тихим","Номер шага вернулся в левое поле: заголовок, абзац и ответ снова на одной вертикали","Автотесты поймали три реальных дефекта — все исправлены"]},{"v":"5.16.1","d":"25.11","b":["Ответ снова стоит сразу под записью: лист после решения сжимается по последней строке, а не занимает пол-экрана","Рамка вокруг ответа убрана во всех местах — и под полем, и под рукописным листом: одна волосяная линия и крупная антиква","«Копировать» стала тихой подписью вместо зелёной кнопки-плашки"]},{"v":"5.16.0","d":"25.11","b":["Знакомство при первом запуске: пять экранов вместо пустого экрана — что умеет, четыре способа ввода, разбор по шагам, приватность","Живые демо внутри: камера с уголками и бегущей линией, рукописная строка с кареткой и распознанным ответом, шаги с номерами","Свайп, стрелки, Escape и точки-индикатор; «Пропустить» на любом шаге","Повторно открыть: «О приложении» → «Знакомство заново»","Оформление в той же системе: киноварь, антиква, волосяные линии, без эмодзи"]},{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
+  const CHANGES=[{"v":"6.1.0","d":"26.11","b":["Один экран: на стартовом экране было 18 нажимаемых целей, стало 8. Всё, что дублировало другое, убрано — ничего не спрятано за лишним тапом.","Шапка: знак приложения и шестерёнка. Верхние вкладки убраны — разделы живут внизу, с подписями.","В капсуле ввода вместо стрелки «решить» — кружок способа ввода: фото, голос, клавиатура, вставить, шпаргалка. Отправка — Enter на клавиатуре, как в любом поле.","Внизу одна кнопка действия, и она всегда в одном месте: поле пустое — «Клавиатура», есть текст — «Решить», есть штрихи — «Проверить».","На листе — капсула «Отменить · Стереть · Проверить»: появляется с первым штрихом и уходит, когда лист снова чистый.","Форма и чат переехали в меню кружка: отдельной кнопки на экране больше нет."]},
+    {"v":"6.0.2","d":"25.11","b":["Рамка вокруг ответа убрана окончательно: ни линии, ни плашки, ни подчёркивания у «Копировать»","Ответ стоит вплотную к полю: лист ограничен 240 px и сжимается по записи — пустого экрана между полем и ответом больше нет","«О приложении» больше не просвечивает шапкой: фон плотный, посторонние элементы скрыты","Капсулы «Ответ / По шагам / Проще / Похожая»: текст внутри пилюли, ничего не вылезает","Кнопки «проще» и озвучки больше не наезжают на заголовок шага"]},{"v":"6.0.0","d":"25.11","b":["«Копировать» у ответа снова удобно нажимать: зона 44 px, подчёркивание осталось тихим","Номер шага вернулся в левое поле: заголовок, абзац и ответ снова на одной вертикали","Автотесты поймали три реальных дефекта — все исправлены"]},{"v":"5.16.1","d":"25.11","b":["Ответ снова стоит сразу под записью: лист после решения сжимается по последней строке, а не занимает пол-экрана","Рамка вокруг ответа убрана во всех местах — и под полем, и под рукописным листом: одна волосяная линия и крупная антиква","«Копировать» стала тихой подписью вместо зелёной кнопки-плашки"]},{"v":"5.16.0","d":"25.11","b":["Знакомство при первом запуске: пять экранов вместо пустого экрана — что умеет, четыре способа ввода, разбор по шагам, приватность","Живые демо внутри: камера с уголками и бегущей линией, рукописная строка с кареткой и распознанным ответом, шаги с номерами","Свайп, стрелки, Escape и точки-индикатор; «Пропустить» на любом шаге","Повторно открыть: «О приложении» → «Знакомство заново»","Оформление в той же системе: киноварь, антиква, волосяные линии, без эмодзи"]},{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
     "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
     "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
     "Все четыре набора одной высоты — при переключении панель не прыгает, клавиши не обрезаются",
@@ -23552,7 +23606,7 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
      и лист остаётся свободным. Касание внутри продлевает: пока выбираешь,
      панель не исчезает под пальцем. Как только способ выбран — закрывается
      сразу, без ожидания. */
-  const DOCK_MS=1200;
+  const DOCK_MS=4000;
   let dockT=null;
   function armDock(){
     clearTimeout(dockT);
@@ -23577,6 +23631,8 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
     else openDock();
   }
   dt.addEventListener("click", toggleDock);
+  window.__toggleDock=toggleDock;
+  window.__closeDock=closeDock;
   /* плюс внутри капсулы делает то же самое: в чате способ ввода вызывается
      из самого поля, как в мессенджере, а не отдельной кнопкой сбоку */
   const cp=$("chatPlus");
@@ -24139,6 +24195,102 @@ const I_FORM='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h
 })();
 </script>
 
+
+<script>/* 6.1.0 «Один экран»: кружок способа ввода и одна кнопка действия */
+(function(){
+  const q=document.getElementById('q');
+  const mb=document.getElementById('methodBtn');
+  const act=document.getElementById('actBtn');
+  const lbl=document.getElementById('actLbl');
+  if(!q||!act) return;
+
+  /* --- кружок способа ввода: раскрывает меню прямо под собой --- */
+  function sync(){ if(mb) mb.setAttribute('aria-expanded', document.body.classList.contains('dock-open')?'true':'false'); }
+  function place(){
+    const bar=document.getElementById('dockBar');
+    if(!bar||!mb) return;
+    const r=mb.getBoundingClientRect();
+    const h=bar.offsetHeight||360;
+    const room=window.innerHeight-r.bottom-8;
+    /* не влезает вниз — раскрываем вверх, чтобы меню не ушло под край */
+    const up = room < h && r.top-8 > h;
+    let top = up? r.top-8-h : r.bottom+8;
+    top = Math.max(8, Math.min(top, window.innerHeight-h-8));
+    /* в таблице стилей у меню top/bottom стоят с !important — пишем так же */
+    bar.style.setProperty('top', Math.round(top)+'px', 'important');
+    bar.style.setProperty('right', Math.round(window.innerWidth-r.right)+'px', 'important');
+    bar.style.setProperty('bottom', 'auto', 'important');
+    bar.style.setProperty('left', 'auto', 'important');
+    bar.style.transformOrigin = up? 'bottom right' : 'top right';
+  }
+  if(mb){
+    mb.addEventListener('click', function(e){
+      e.preventDefault(); place();
+      if(window.__toggleDock) window.__toggleDock();
+      setTimeout(sync,0);
+    });
+    new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:['class']});
+    /* позицию считаем один раз при открытии: если пересчитывать на прокрутке,
+       меню «уезжает» из-под пальца ровно в момент, когда до него тянутся */
+    window.addEventListener('resize', function(){ if(document.body.classList.contains('dock-open')) place(); });
+  }
+
+  /* --- единственная кнопка действия --- */
+  const I={kbd:'#i-calc',solve:'#i-arrow',check:'#i-tests'};
+  function setState(){
+    const acts=document.getElementById('nbActs');
+    const writing=!!(acts && !acts.hidden);
+    document.body.classList.toggle('nb-writing', writing);
+    const typed=(q.value||'').trim().length>0;
+    const st = writing? 'check' : (typed? 'solve' : 'kbd');
+    if(st==='check'){ lbl.textContent='Проверить'; act.setAttribute('aria-label','Проверить написанное'); }
+    else if(st==='solve'){ lbl.textContent='Решить'; act.setAttribute('aria-label','Решить'); }
+    else { lbl.textContent='Клавиатура'; act.setAttribute('aria-label','Открыть клавиатуру'); }
+    const use=act.querySelector('use');
+    if(use) use.setAttribute('href', I[st]);
+    act.dataset.st=st;
+  }
+  act.addEventListener('click', function(){
+    const st=act.dataset.st;
+    if(st==='check'){ const b=document.getElementById('nbCheck'); if(b) b.click(); }
+    else if(st==='solve'){ try{ document.getElementById('form').requestSubmit(); }catch(e){} }
+    else { const k=document.getElementById('kbnav'); if(k) k.click(); }
+  });
+  q.addEventListener('input', setState);
+  const actsEl=document.getElementById('nbActs');
+  if(actsEl) new MutationObserver(setState).observe(actsEl,{attributes:true,attributeFilter:['hidden']});
+  setState();
+  window.__actState=setState;
+
+  /* --- форма / чат: два пункта в том же меню, отдельной кнопки больше нет --- */
+  const bar=document.getElementById('dockBar');
+  const fm=document.getElementById('fmtMenu');
+  if(bar && fm){
+    const sep=document.createElement('div'); sep.className='dsep'; bar.appendChild(sep);
+    [['form','Форма','#i-pen'],['chat','Чат','#i-speak']].forEach(function(c){
+      const b=document.createElement('button');
+      b.type='button'; b.className='dockb'; b.setAttribute('role','menuitemradio');
+      b.setAttribute('aria-label', c[1]);
+      b.dataset.cmodePick=c[0];
+      b.innerHTML='<svg class="ic" aria-hidden="true"><use href="'+c[2]+'"/></svg><span class="dl">'+c[1]+'</span>';
+      b.addEventListener('click', function(){
+        const t=fm.querySelector('[data-cmode="'+c[0]+'"]');
+        if(t) t.click();
+        if(window.__closeDock) window.__closeDock();
+      });
+      bar.appendChild(b);
+    });
+    const mark=function(){
+      const on=document.body.classList.contains('mode-chat')?'chat':'form';
+      bar.querySelectorAll('[data-cmode-pick]').forEach(function(b){
+        b.setAttribute('aria-checked', b.dataset.cmodePick===on?'true':'false');
+      });
+    };
+    new MutationObserver(mark).observe(document.body,{attributes:true,attributeFilter:['class']});
+    mark();
+  }
+})();
+</script>
 </body>
 
 </html>
