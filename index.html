@@ -14628,7 +14628,12 @@ const V4UI=(function(){
       if(q && String(x.q).toLowerCase().indexOf(q)<0 && String(x.a).toLowerCase().indexOf(q)<0) return false;
       return true;
     };
-    const list=everything.filter(match).slice().reverse();
+    /* порядок задаём явно: новые дни сверху. Полагаться на порядок записи нельзя —
+       история могла прийти из старой версии или из резервной копии. */
+    const list=everything.filter(match).slice().sort(function(a,b){
+      if(a.d!==b.d) return a.d<b.d? 1 : -1;
+      return String(a.t||"")<String(b.t||"")? 1 : -1;
+    });
     const todayShown=all.filter(match).length;
     const badge=$("histbtn");
     if(badge) badge.textContent="История ("+all.length+")";
