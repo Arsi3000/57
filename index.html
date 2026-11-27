@@ -3810,6 +3810,8 @@ window.__esc=function(t){
 
       <div class="cvmiddle">
         <button type="button" class="cvswap" id="cvswap" title="Поменять единицы местами">↑↓</button>
+        <!-- 6.6.0: между полями — не просто «↑↓», а видимый коэффициент:
+             стрелка вниз и во сколько раз меняется число. Так видно направление. -->
         <span class="cvrel" id="cvrel"></span>
       </div>
 
@@ -3817,8 +3819,17 @@ window.__esc=function(t){
         <div class="cvout" id="cvout">—</div>
         <select id="cvto" aria-label="В какую единицу"></select>
       </div>
+
+      <!-- 6.6.0: «покрутить» — значение на слайдере. Единицы начинают чувствоваться,
+           а не только читаться числом. -->
+      <div class="cvslider">
+        <input type="range" id="cvrange" min="0" max="1000" value="500"
+               aria-label="Покрутить значение" title="Покрутить значение">
+        <div class="cvscale"><span id="cvmin">0</span><span id="cvmax">100</span></div>
+      </div>
     </div>
 
+    <p class="cvlike" id="cvlike" hidden></p>
     <p class="cvhint" id="cvhint"></p>
 
     <details class="cvstepsbox">
@@ -4808,6 +4819,49 @@ body.light .ob-trybtn{color:#fff}
 .seal.seal-mini{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
   font-size:16px;border-radius:var(--r-pill);padding:0 8px}
 .stall{min-height:44px}
+
+/* ============ 6.6.0: история — дневник по дням ============ */
+.histday{margin:0 0 18px}
+.histdayh{display:flex;align-items:baseline;gap:9px;padding:2px 0 8px;
+  border-bottom:1px solid var(--line);margin-bottom:8px}
+.histdayh b{font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--acc)}
+.histdayh span{font-size:12px;color:var(--ink-dim)}
+.histitem{position:relative}
+/* ответ показываем целиком: обрезать его многоточием — терять смысл записи */
+.hans{font-size:12.5px;color:var(--acc);margin-top:3px;font-variant-numeric:tabular-nums;
+  white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+.hsame{flex:none;font-family:inherit;font-size:11.5px;font-weight:700;padding:8px 11px;min-height:36px;
+  border-radius:var(--r-pill);border:1px solid var(--line);background:transparent;
+  color:var(--ink-dim);cursor:pointer;white-space:nowrap}
+.hsame:hover{color:var(--acc);border-color:var(--acc);background:var(--acc-soft)}
+body.light .hans{color:var(--acc-deep)}
+@media (prefers-reduced-motion: reduce){ .hsame{transition:none} }
+
+/* ============ 6.6.0: конвертер «физический» ============ */
+.cvrel{display:inline-flex;align-items:center;gap:7px;font-variant-numeric:tabular-nums}
+.cvdir{font-size:15px;color:var(--acc);font-weight:800}
+.cvfac{font-size:13px;font-weight:750;color:var(--acc);letter-spacing:.01em;
+  padding:2px 8px;border-radius:var(--r-pill);background:var(--acc-soft);border:1px solid var(--acc)}
+.cvlike{margin:8px 0 0;font-size:13.5px;color:var(--ink-soft);display:flex;align-items:center;gap:7px}
+.cvlike::before{content:"≈";color:var(--acc);font-weight:800}
+.cvslider{margin:12px 0 0;display:grid;gap:4px}
+.cvslider input[type=range]{width:100%;height:34px;margin:0;background:transparent;
+  -webkit-appearance:none;appearance:none;cursor:pointer}
+.cvslider input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--acc-soft),var(--acc));border:1px solid var(--line)}
+.cvslider input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+  width:26px;height:26px;border-radius:50%;background:var(--acc);border:2px solid var(--acc-deep);
+  margin-top:-11px;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.cvslider input[type=range]::-moz-range-track{height:6px;border-radius:var(--r-pill);
+  background:linear-gradient(90deg,var(--acc-soft),var(--acc))}
+.cvslider input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;
+  background:var(--acc);border:2px solid var(--acc-deep)}
+.cvslider input[type=range]:disabled{opacity:.4}
+.cvslider input[type=range]:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.cvscale{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums}
+body.light .cvfac{color:var(--acc-deep)}
+@media (prefers-reduced-motion: reduce){ .cvslider input[type=range]{scroll-behavior:auto} }
 </style>
   <!-- 5.8.1: доска вмонтирована в фон тетради — без рамки и отдельного блока.
        Пишешь прямо на листе, решатель дописывает ответ ниже тем же пером. -->
@@ -5109,7 +5163,7 @@ body.light .ob-trybtn{color:#fff}
 /* ============================================================ */
 /*  0. ХРАНИЛИЩЕ, СХЕМА ДАННЫХ, ПЕРЕХВАТ ОШИБОК (B3, B4, B6)    */
 /* ============================================================ */
-const APP_VERSION="6.4.0";
+const APP_VERSION="6.6.0";
 try{ window.__APP_VERSION=APP_VERSION; }catch(e){}
 const STORE=(function(){
   const SCHEMA=5;
@@ -5557,10 +5611,13 @@ function stepType(h){
   if(/ответ|итог/.test(t)) return {k:"done", n:"ответ"};
   return null;
 }
-function stepsHtml(steps){
+function stepsHtml(steps, opts){
   const canSay=(typeof window!=="undefined" && window.__LEARN && window.__LEARN.canSpeak && window.__LEARN.canSpeak());
   /* localStorage напрямую: LS живёт внутри замыкания V4 и снаружи не виден */
-  const oneByOne = (function(){ try{ return localStorage.getItem("reshatel.stepsOne")!=="0"; }catch(e){ return true; } })();
+  const oneByOne = (function(){
+    if(opts && opts.one===false) return false;      /* конвертер: шагов мало, режим не нужен */
+    try{ return localStorage.getItem("reshatel.stepsOne")!=="0"; }catch(e){ return true; }
+  })();
   return '<ol class="steps" data-one="'+(oneByOne?"1":"0")+'">'+steps.map(function(st,i){
     const ex=explainFor(st.h);
     const say=plainText(st.h+" "+st.b);
@@ -9491,6 +9548,11 @@ const GEN_TYPES={
 };
 
 if(typeof window!=="undefined") window.__GEN_TYPES=GEN_TYPES;
+/* 6.6.0: генераторы нужны истории («решить похожее») — даём мостик наружу */
+if(typeof window!=="undefined"){
+  window.__genSheet=function(k,n,d){ try{ return genSheet(k,n,d); }catch(e){ return null; } };
+  window.__kindKeyOf=function(r){ try{ return kindKeyOf(r); }catch(e){ return "lin"; } };
+}
 
 function kindKeyOf(res){
   const k=res.kind||"";
@@ -10519,8 +10581,12 @@ const cvRel=document.getElementById("cvrel");
 const cvHint=document.getElementById("cvhint");
 const cvSteps=document.getElementById("cvsteps");
 const subLine=document.querySelector("header .sub");
-const SUB_SOLVE="Уравнение или условие задачи — и полный разбор по пунктам, с проверкой.";
+const SUB_SOLVE="Напишите уравнение или задачу — разберу по шагам и проверю ответ.";
 const SUB_CONV="Перевод единиц: длина, масса, площадь, объём, температура, давление, энергия, мощность, скорость, время, углы и валюта — с разбором, как это считается.";
+const cvLike=document.getElementById("cvlike");
+const cvRange=document.getElementById("cvrange");
+const cvMin=document.getElementById("cvmin");
+const cvMax=document.getElementById("cvmax");
 const cvExamples=document.getElementById("cvexamples");
 const convCat=document.getElementById("convcat");
 
@@ -10649,12 +10715,107 @@ function convOutText(f){
   return s.replace("≈ ","");
 }
 
+/* 6.6.0: коэффициент со стрелкой — «↓ × 1000» или «↓ ÷ 1000».
+   Раньше было только «1 км = 1000 м»: направление приходилось додумывать. */
+function convFactorHtml(uf, ut){
+  try{
+    const one=fromBase(catById(convCatId), ut, toBase(catById(convCatId), uf, F1()));
+    const v=one.val();
+    if(!isFinite(v) || Math.abs(v)<1e-12) return "";
+    if(Math.abs(v-1)<1e-9) return '<span class="cvdir">↓</span> <span class="cvfac">без изменений</span>';
+    /* множитель показываем как × k или × 1/k, чтобы не было «×0,001» */
+    if(Math.abs(v)>=1){
+      return '<span class="cvdir">↓</span> <span class="cvfac">× '+n2s(v,6)+'</span>';
+    }
+    const inv=1/v;
+    return '<span class="cvdir">↓</span> <span class="cvfac">÷ '+n2s(inv,6)+'</span>';
+  }catch(e){ return ""; }
+}
+
+/* 6.6.0: человеческое сравнение. Число «1050 м» само по себе мало что говорит,
+   «чуть больше километра» — говорит. Эталон задан в СВОЕЙ единице, поэтому
+   переводим его в целевую и сравниваем. */
+const CV_LIKE={
+  length:[{v:1,u:"км"},{v:100,u:"м"},{v:1,u:"м"},{v:10,u:"см"}],
+  mass:[{v:1,u:"т"},{v:1,u:"ц"},{v:1,u:"кг"},{v:100,u:"г"}],
+  area:[{v:1,u:"га"},{v:1,u:"ар"},{v:1,u:"м²"}],
+  volume:[{v:1,u:"м³"},{v:1,u:"л"},{v:200,u:"мл"}],
+  speed:[{v:1,u:"км/ч"},{v:1,u:"м/с"}],
+  time:[{v:1,u:"ч"},{v:1,u:"мин"},{v:1,u:"с"}],
+  energy:[{v:1,u:"кДж"},{v:1,u:"ккал"}],
+  power:[{v:1,u:"кВт"},{v:1,u:"Вт"}],
+  pressure:[{v:1,u:"атм"},{v:1,u:"бар"},{v:1,u:"кПа"}]
+};
+function convLikeText(ut, res){
+  const list=CV_LIKE[convCatId];
+  if(!list) return "";
+  const cat=catById(convCatId);
+  const v=res.val();
+  if(!isFinite(v)||v===0) return "";
+  /* выбираем самый крупный ориентир, который НЕ больше результата:
+     «5000 м — это 5 км» понятнее, чем «5000 м — это 5000 м» */
+  let pick=null;
+  list.forEach(function(k){
+    try{
+      const ur=unitByKey(convCatId, k.u);
+      if(!ur) return;
+      const ref=fromBase(cat, ut, toBase(cat, ur, new Frac(k.v,1))).val();
+      if(!isFinite(ref)||ref===0) return;
+      const n=Math.abs(v/ref);
+      if(n<1) return;
+      if(!pick || n<pick.n) pick={k:k, ref:ref, n:n};
+    }catch(e){}
+  });
+  if(!pick) return "";
+  const n=pick.n, u=pick.k.u;
+  /* слишком далеко от «человеческого» масштаба — сравнение не помогает */
+  if(n>1000) return "";
+  /* тавтология не нужна: «60 мин — это примерно 1 ч» ничего не добавляет */
+  const [, fromKey]=[null, (unitByKey(convCatId, cvFrom.value)||{}).key];
+  if(Math.abs(n-1)<0.06 && u===fromKey) return "";
+  const whole=Math.floor(n), frac=n-whole;
+  let txt;
+  if(Math.abs(n-Math.round(n))<0.02) txt=trimNum(Math.round(n))+" "+u;
+  else if(Math.abs(n-1)<0.06) txt="примерно 1 "+u;
+  else if(frac<0.08) txt="чуть больше "+trimNum(whole)+" "+u;
+  else if(frac>0.92) txt="почти "+trimNum(whole+1)+" "+u;
+  else txt=trimNum(n)+" "+u;
+  return txt;
+}
+function trimNum(x){
+  const r=Math.round(x*100)/100;
+  return String(r).replace(".",",");
+}
+
+function likeHide(){ if(cvLike){ cvLike.hidden=true; cvLike.textContent=""; } }
+
+/* 6.6.0: слайдер. Диапазон подбирается под единицу: миллиметры крутятся до сотни,
+   километры — до тысяч. Значение поля следует за ползунком. */
+function convSliderSync(){
+  if(!cvRange) return;
+  const uf=unitByKey(convCatId, cvFrom.value);
+  if(!uf){ cvRange.disabled=true; return; }
+  cvRange.disabled=false;
+  const v=parseConvValue(cvIn.value);
+  const cur=(v&&isFinite(v.val()))? v.val() : 1;
+  const hi=cvSliderMax(uf);
+  if(cvMin) cvMin.textContent="0";
+  if(cvMax) cvMax.textContent=trimNum(hi)+" "+uf.key;
+  cvRange.min=0; cvRange.max=1000;
+  cvRange.value=String(Math.round(Math.min(1,Math.max(0,cur/hi))*1000));
+}
+function cvSliderMax(uf){
+  /* 1000 «шагов» от нуля до разумного максимума этой единицы */
+  const base=(Math.abs(uf.fa? parseFloat(uf.fa):1)||1);
+  const order=Math.pow(10, Math.max(1, Math.round(Math.log10(base))));
+  return order*10;
+}
 function updateConv(){
   const uf=unitByKey(convCatId, cvFrom.value);
   const ut=unitByKey(convCatId, cvTo.value);
   const cat=catById(convCatId);
   cvHint.className="cvhint";
-  if(!uf || !ut){ cvOut.textContent="—"; cvRel.textContent=""; return; }
+  if(!uf || !ut){ cvOut.textContent="—"; cvRel.textContent=""; likeHide(); return; }
 
   const raw=cvIn.value;
   const val=parseConvValue(raw);
@@ -10662,6 +10823,7 @@ function updateConv(){
   if(val===null){
     cvOut.textContent="—";
     cvRel.textContent="";
+    likeHide();
     cvHint.textContent = raw.trim()? "Не понял число. Можно 5 · 2,5 · 1/2 · 2 1/2" : "";
     cvHint.classList.add("bad");
     cvSteps.innerHTML="";
@@ -10670,6 +10832,7 @@ function updateConv(){
   if(uf.key===ut.key){
     cvOut.innerHTML=fracAnswerHtml(val);
     cvRel.textContent="одна и та же единица";
+    likeHide();
     cvHint.textContent="Выберите разные единицы — сейчас слева и справа одно и то же.";
     cvHint.classList.add("bad");
     cvSteps.innerHTML="";
@@ -10680,7 +10843,8 @@ function updateConv(){
   if(cat && cat.kind==="approx"){
     const res=val.val()*uf.fa/ut.fa;
     cvOut.textContent=n2s(res,6);
-    cvRel.textContent="1 "+uf.key+" ≈ "+n2s(uf.fa/ut.fa,6)+" "+ut.key;
+    cvRel.innerHTML=convFactorHtml(uf,ut)||("1 "+uf.key+" ≈ "+n2s(uf.fa/ut.fa,6)+" "+ut.key);
+    likeHide();
     cvHint.textContent="Значение приближённое: π иррационально, точной десятичной записи нет.";
     renderConvSteps(raw.trim()+" "+uf.key+" в "+ut.key);
     return;
@@ -10694,7 +10858,9 @@ function updateConv(){
     const aTxt = (A.n===A.d)? "" : " · "+(A.d===1? String(A.n) : n2s(A.val(),4));
     const cV=C.val();
     const cTxt = Math.abs(cV)<1e-12? "" : (cV>0? " + ":" − ")+n2s(Math.abs(cV),4);
-    cvRel.textContent="шкала: "+ut.key+" = °C"+aTxt+cTxt;
+    /* 6.6.0: у температуры не множитель, а сдвиг нуля — «×33,8» тут врало бы */
+    cvRel.innerHTML='<span class="cvdir">шкала</span> <span class="cvfac">'+ut.key+' = °C'+aTxt+cTxt+'</span>';
+    likeHide();
     cvHint.textContent=(uf.note? uf.note[0].toUpperCase()+uf.note.slice(1)+". ":"")+
       (ut.note? ut.note[0].toUpperCase()+ut.note.slice(1)+".":"");
     renderConvSteps(raw.trim()+" "+uf.key+" в "+ut.key);
@@ -10705,7 +10871,11 @@ function updateConv(){
   const relOne=fromBase(cat,ut,toBase(cat,uf,F1()));
 
   cvOut.innerHTML=convOutHtml(res);
-  cvRel.textContent="1 "+uf.key+" = "+fmtSmart(relOne)+" "+ut.key;
+  cvRel.innerHTML=convFactorHtml(uf,ut)||("1 "+uf.key+" = "+fmtSmart(relOne)+" "+ut.key);
+  /* 6.6.0: «чуть больше километра» рядом с числом */
+  const like=convLikeText(ut, res);
+  if(like){ cvLike.textContent="это "+like; cvLike.hidden=false; }
+  else likeHide();
 
   const dec=fmtFracNice(res);
   const exact=Math.abs(res.val()-Math.round(res.val()*1e6)/1e6)<1e-12;
@@ -10729,7 +10899,7 @@ function updateConv(){
 function renderConvSteps(text){
   try{
     const r=solveConvert(text);
-    cvSteps.innerHTML = r? stepsHtml(r.steps) : "";
+    cvSteps.innerHTML = r? stepsHtml(r.steps, {one:false}) : "";
     cvSteps.querySelectorAll(".eq").forEach(colorizeMath);
   }catch(e){
     cvSteps.innerHTML='<p class="cvhint bad">'+esc(e.message)+"</p>";
@@ -10796,7 +10966,7 @@ convCat.addEventListener("click", function(e){
   if(!b) return;
   convCatId=b.getAttribute("data-cat");
   lsSet("convcat",convCatId);
-  syncConvCat(); resetUnits(); renderExamples(); syncFxBox(); updateConv();
+  syncConvCat(); resetUnits(); renderExamples(); syncFxBox(); updateConv(); convSliderSync();
 });
 
 /* обмен единиц местами */
@@ -10824,8 +10994,21 @@ document.getElementById("cvswap").addEventListener("click", function(){
 });
 
 cvIn.addEventListener("input", updateConv);
-cvFrom.addEventListener("change", updateConv);
-cvTo.addEventListener("change", updateConv);
+cvFrom.addEventListener("change", function(){ updateConv(); convSliderSync(); });
+cvTo.addEventListener("change", function(){ updateConv(); convSliderSync(); });
+
+/* 6.6.0: слайдер «покрутить». Тянем — число в поле меняется, пересчёт живой. */
+if(cvRange){
+  cvRange.addEventListener("input", function(){
+    const uf=unitByKey(convCatId, cvFrom.value);
+    if(!uf) return;
+    const hi=cvSliderMax(uf);
+    const v=(Number(cvRange.value)/1000)*hi;
+    const r=Math.round(v*1000)/1000;
+    cvIn.value=String(r).replace(".",",");
+    updateConv();
+  });
+}
 cvIn.addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); updateConv(); } });
 
 /* переключение режимов */
@@ -11067,7 +11250,7 @@ function setMode(mode){
     subLine.textContent = testsMode? SUB_TESTS : (classMode? SUB_CLASS : (dashMode? SUB_DASH : (convMode? SUB_CONV : SUB_SOLVE)));
     subLine.style.display = (testsMode||classMode||dashMode)? "none":"";
   }
-  if(convMode){ cvSteps.innerHTML=""; updateConv(); }
+  if(convMode){ cvSteps.innerHTML=""; updateConv(); convSliderSync(); }
   if(testsMode){
     if(TEST && !TEST.done) tRenderQuestion();
     else if(TEST && TEST.done) tFinish();
@@ -11108,7 +11291,7 @@ document.addEventListener("click", function(e){
 /* стартовая инициализация конвертера */
 applyFx();                       /* курсы валют из хранилища → в единицы */
 cryptoApply();                   /* и курсы криптовалют */
-syncConvCat(); resetUnits(); renderExamples(); syncFxBox();
+syncConvCat(); resetUnits(); renderExamples(); syncFxBox(); convSliderSync();
 /* при входе всегда открывается «Решатель»: MODE не восстанавливаем из памяти */
 setModeGroup("solve");
 
@@ -11233,7 +11416,7 @@ function plainHtml(html){
 function histRead(){
   try{ return JSON.parse(lsGet("hist","[]"))||[]; }catch(e){ return []; }
 }
-function histWrite(list){ try{ lsSet("hist", JSON.stringify(list.slice(-60))); }catch(e){} }
+function histWrite(list){ try{ lsSet("hist", JSON.stringify(list.slice(-300))); }catch(e){} }
 function histAdd(text, res){
   const list=histRead();
   const rec={d:todayKey(), t:new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"}),
@@ -14407,25 +14590,62 @@ const V4UI=(function(){
         break;
       }
     }
-    try{ lsSet("hist", JSON.stringify(list.slice(-60))); }catch(e){}
+    try{ lsSet("hist", JSON.stringify(list.slice(-300))); }catch(e){}
     renderHistV4();
   }
+  /* 6.6.0: история — дневник, а не лог. Группы по дням, сравнение с вчера,
+     у записи — «решить похожее». Раньше показывался только сегодняшний день,
+     и вчерашняя работа исчезала вместе с датой. */
+  function dayLabel(d){
+    const t=todayKey();
+    if(d===t) return "Сегодня";
+    const y=new Date(); y.setDate(y.getDate()-1);
+    const yk=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+    if(d===yk) return "Вчера";
+    const dt=new Date(d+"T12:00:00");
+    const days=Math.round((new Date(t+"T12:00:00")-dt)/86400000);
+    if(days>1 && days<7) return days===1? "Вчера" : days+" "+plural(days,"день","дня","дней")+" назад";
+    const M=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+    const parts=d.split("-");
+    return Number(parts[2])+" "+M[Number(parts[1])-1];
+  }
+  function plural(n,a,b,c){
+    const k=Math.abs(n)%100, d=Math.abs(n)%10;
+    if(k>=11&&k<=14) return c;
+    if(d===1) return a;
+    if(d>=2&&d<=4) return b;
+    return c;
+  }
+
   function renderHistV4(){
     const box=$("hist");
     if(!box) return;
-    const all=histReadAll().filter(function(x){ return x.d===todayKey(); });
+    const everything=histReadAll();
+    const all=everything.filter(function(x){ return x.d===todayKey(); });
     const q=histQuery.trim().toLowerCase();
-    const list=all.filter(function(x){
+    const match=function(x){
       if(histFilter && (x.tags||[]).indexOf(histFilter)<0) return false;
       if(q && String(x.q).toLowerCase().indexOf(q)<0 && String(x.a).toLowerCase().indexOf(q)<0) return false;
       return true;
-    }).reverse();
+    };
+    const list=everything.filter(match).slice().reverse();
+    const todayShown=all.filter(match).length;
     const badge=$("histbtn");
     if(badge) badge.textContent="История ("+all.length+")";
 
+    /* сравнение с вчера — «сегодня 7 · на 3 больше, чем вчера» */
+    const yk=(function(){ const y=new Date(); y.setDate(y.getDate()-1);
+      return y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0"); })();
+    const yest=everything.filter(function(x){ return x.d===yk; }).length;
+    let cmp="";
+    if(yest>0 && all.length!==yest){
+      const diff=all.length-yest;
+      cmp=" · "+(diff>0? "+"+diff : "−"+Math.abs(diff))+" к вчера";
+    }
+
     let html='<div class="histhead"><span>Сегодня — '+all.length+' '+
-      (all.length===1? "запись":"записей")+
-      (list.length!==all.length? ', показано '+list.length : '')+'</span>'+
+      plural(all.length,"запись","записи","записей")+cmp+
+      (list.length!==todayShown? ', показано '+list.length+' всего' : '')+'</span>'+
       '<button type="button" class="histclear" id="histclear">очистить</button></div>'+
       '<div class="hist-tools">'+
         '<input type="search" class="hist-search" id="histSearch" placeholder="поиск по истории" value="'+escAttr(histQuery)+'">'+
@@ -14435,14 +14655,37 @@ const V4UI=(function(){
       '</div>';
 
     if(!list.length){
-      html+='<div class="histempty">'+(all.length? "Ничего не нашлось — сбросьте фильтр." : "Сегодня ещё ничего не решали.")+'</div>';
+      html+='<div class="histempty">'+(everything.length? "Ничего не нашлось — сбросьте фильтр." : "Пока пусто. Решите первый пример — начну считать.")+'</div>';
     }else{
-      html+='<ul class="histlist">'+list.map(function(x){
-        const tags=(x.tags||[]);
-        return '<li><div class="histitem">'+
-          '<button type="button" class="hqbtn" data-q="'+escAttr(x.q)+'" style="background:none;border:0;padding:0;cursor:pointer;text-align:left;flex:1;min-width:0">'+
-            '<span class="hq" style="display:block">'+esc(x.q)+'</span>'+
-          '</button>'+
+      /* 6.6.0: группируем по дням. Внутри дня — порядок от новых к старым. */
+      const groups=[], gidx={};
+      list.forEach(function(x){
+        if(!gidx[x.d]){ gidx[x.d]={d:x.d, items:[]}; groups.push(gidx[x.d]); }
+        gidx[x.d].items.push(x);
+      });
+      html+=groups.map(function(g){
+        const n=g.items.length;
+        return '<div class="histday">'+
+          '<div class="histdayh"><b>'+dayLabel(g.d)+'</b>'+
+            '<span>'+n+' '+plural(n,"уравнение","уравнения","уравнений")+'</span>'+
+          '</div>'+
+          '<ul class="histlist">'+g.items.map(function(x){ return histRowHtml(x); }).join("")+'</ul>'+
+        '</div>';
+      }).join("");
+    }
+    box.innerHTML=html;
+    bindHist(box, list);
+  }
+
+  /* одна запись: пример, ответ, теги, «решить похожее» */
+  function histRowHtml(x){
+    const tags=(x.tags||[]);
+    return '<li><div class="histitem">'+
+      '<button type="button" class="hqbtn" data-q="'+escAttr(x.q)+'" style="background:none;border:0;padding:0;cursor:pointer;text-align:left;flex:1;min-width:0">'+
+        '<span class="hq" style="display:block">'+esc(x.q)+'</span>'+
+        '<span class="hans" style="display:block">'+esc(x.a||"")+'</span>'+
+      '</button>'+
+      '<button type="button" class="hsame" data-same="'+escAttr(x.q)+'" title="Тот же тип задачи с другими числами" aria-label="Решить похожую">похожая</button>'+
           '<span class="htags">'+tags.map(function(t){
             return '<span class="htagdot">'+t+'</span>';
           }).join("")+'</span>'+
@@ -14454,10 +14697,10 @@ const V4UI=(function(){
             }).join("")+'</span>'+
           '</span>'+
         '</div></li>';
-      }).join("")+'</ul>';
-    }
-    box.innerHTML=html;
+  }
 
+  /* обработчики дневника: поиск, теги, повтор, «похожая», очистка */
+  function bindHist(box, list){
     const s=$("histSearch");
     if(s){
       s.addEventListener("input", function(){
@@ -14492,6 +14735,27 @@ const V4UI=(function(){
     });
     box.querySelectorAll("button[data-q]").forEach(function(b){
       b.addEventListener("click", function(){ run(b.getAttribute("data-q")); });
+    });
+    /* 6.6.0: «похожая» — тот же тип с другими числами. Если генератор не знает
+       тему, честно повторяем пример, а не молчим. */
+    box.querySelectorAll("[data-same]").forEach(function(b){
+      b.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        const src=b.getAttribute("data-same");
+        /* «похожая» берём из тех же генераторов, что кнопка под разбором:
+           тот же тип задачи, другие числа. Не вышло — повторяем пример. */
+        let q2="";
+        try{
+          let rec=null;
+          const all=histReadAll();
+          for(let i=all.length-1;i>=0;i--){ if(all[i].q===src){ rec=all[i]; break; } }
+          const key=(rec && window.__kindKeyOf)? window.__kindKeyOf({kind:rec.k||"", answer:rec.a}) : "lin";
+          const G=window.__GEN_TYPES||{};
+          const made=window.__genSheet? window.__genSheet(G[key]? key:"lin",1,2):null;
+          if(made && made.length) q2=made[0].q;
+        }catch(e){}
+        run(q2||src);
+      });
     });
     const cl=$("histclear");
     if(cl) cl.addEventListener("click", function(){
@@ -19221,7 +19485,7 @@ window.__LEARN={
    Список изменений лежит внутри файла: приложение офлайн, ходить в сеть за ним нельзя.
    Источник — CHANGELOG.md репозитория, короткие строки собираются при выпуске. */
 (function(){
-  const CHANGES=[{"v": "6.4.0", "d": "26.11", "b": ["Разбор открывается по шагам: сначала первый, дальше «Следующий шаг →». Кто торопится — «Показать всё». Отключается в настройках.", "У каждого шага видно, что в нём происходит: перенос, скобки, подобные, формула, проверка. Первый шаг помечен «начало», последний — «ответ».", "Бейдж «✓ проверено подстановкой» стал кнопкой: нажал — и видно саму проверку, а не только слово «проверено».", "Знакомство начинается с дела: «Реши первый пример» — 2x + 4 = 10, одна кнопка, живой ответ.", "Тем на виду две — светлая и тёмная; остальные семь и скины за строкой «Ещё темы». Акцентный цвет — пять вариантов, как было.", "Слова по-человечески: «Скопировать» → «Готово, держи ✦», ошибка разбора больше не звучит как приговор.", "Сверка с nerdamer: приведение подобных, системы через запятую, модуль, корни, пропорции и проценты — 338 примеров без расхождений."]},{"v":"6.1.2","d":"26.11","b":["Способы ввода — нижний лист во всю ширину: раньше в чате меню улетало за экран или оказывалось посреди страницы.","В чате «плюс» в поле превращается в стрелку отправки: пока текста нет — это способы ввода, как только набрал — «отправить» одной кнопкой.","У калькулятора появилась шапка: ✕ закрыть и «Решить». Выбрал клавиатуру — видно, чем её убрать.","Клавиатура закрывается сама, как только пример решён; ответ больше не прячется за панелью.","Красной кнопки «Клавиатура» на пустом экране больше нет: «Решить» появляется только когда есть что решать — набран текст или написаны штрихи.","После ответа кнопка уходит и возвращается, когда набран новый пример.","Шпаргалка и режим «форма/чат» — кружками в шапке."]},{"v":"6.1.1","d":"26.11","b":["Режим «форма / чат» вернулся наверх одним кружком: нажатие переключает, удержание — меню. Рядом кружок шпаргалки.","В чате у поля ввода больше нет второго «плюса»: способ ввода там один — из самого поля.","Кнопка «Решить» внизу видна всегда, в том числе когда пишешь от руки. Пишешь — рядом с ней появляются «Отменить» и «Стереть», и капсула на листе больше не нужна.","В чате кнопка встаёт над строкой ввода: выбрал клавиатуру — отправляешь той же кнопкой."]},{"v":"6.1.0","d":"26.11","b":["Один экран: на стартовом экране было 18 нажимаемых целей, стало 8. Всё, что дублировало другое, убрано — ничего не спрятано за лишним тапом.","Шапка: знак приложения и шестерёнка. Верхние вкладки убраны — разделы живут внизу, с подписями.","В капсуле ввода вместо стрелки «решить» — кружок способа ввода: фото, голос, клавиатура, вставить, шпаргалка. Отправка — Enter на клавиатуре, как в любом поле.","Внизу одна кнопка действия, и она всегда в одном месте: поле пустое — «Клавиатура», есть текст — «Решить», есть штрихи — «Проверить».","На листе — капсула «Отменить · Стереть · Проверить»: появляется с первым штрихом и уходит, когда лист снова чистый.","Форма и чат переехали в меню кружка: отдельной кнопки на экране больше нет."]},
+  const CHANGES=[{"v": "6.6.0", "d": "26.11", "b": ["История стала дневником: записи сгруппированы по дням — «Сегодня», «Вчера», «3 дня назад», дальше дата. Раньше был виден только сегодняшний день, и вчерашняя работа исчезала.", "В шапке истории видно сравнение: «Сегодня — 7 записей · +3 к вчера».", "У каждой записи виден ответ, а рядом кнопка «похожая» — та же тема с другими числами, один тап.", "История хранит 300 записей вместо 60: дневник живёт неделями, а не один вечер.", "В конвертере между полями теперь стрелка с коэффициентом: «↓ × 1000» или «↓ ÷ 1000». Раньше приходилось додумывать направление.", "Под результатом — человеческое сравнение: «5000 м — это 5 км», «1050 м — это примерно 1 км».", "Слайдер «покрутить»: тянете ползунок — значение и пересчёт меняются на ходу. Единицы начинают чувствоваться.", "У температуры вместо бессмысленного множителя — формула шкалы: «°F = °C · 1,8 + 32».", "В разборе конвертера шаги открыты все сразу: их четыре, пошаговый режим там только мешал."]},{"v": "6.4.0", "d": "26.11", "b": ["Разбор открывается по шагам: сначала первый, дальше «Следующий шаг →». Кто торопится — «Показать всё». Отключается в настройках.", "У каждого шага видно, что в нём происходит: перенос, скобки, подобные, формула, проверка. Первый шаг помечен «начало», последний — «ответ».", "Бейдж «✓ проверено подстановкой» стал кнопкой: нажал — и видно саму проверку, а не только слово «проверено».", "Знакомство начинается с дела: «Реши первый пример» — 2x + 4 = 10, одна кнопка, живой ответ.", "Тем на виду две — светлая и тёмная; остальные семь и скины за строкой «Ещё темы». Акцентный цвет — пять вариантов, как было.", "Слова по-человечески: «Скопировать» → «Готово, держи ✦», ошибка разбора больше не звучит как приговор.", "Сверка с nerdamer: приведение подобных, системы через запятую, модуль, корни, пропорции и проценты — 338 примеров без расхождений."]},{"v":"6.1.2","d":"26.11","b":["Способы ввода — нижний лист во всю ширину: раньше в чате меню улетало за экран или оказывалось посреди страницы.","В чате «плюс» в поле превращается в стрелку отправки: пока текста нет — это способы ввода, как только набрал — «отправить» одной кнопкой.","У калькулятора появилась шапка: ✕ закрыть и «Решить». Выбрал клавиатуру — видно, чем её убрать.","Клавиатура закрывается сама, как только пример решён; ответ больше не прячется за панелью.","Красной кнопки «Клавиатура» на пустом экране больше нет: «Решить» появляется только когда есть что решать — набран текст или написаны штрихи.","После ответа кнопка уходит и возвращается, когда набран новый пример.","Шпаргалка и режим «форма/чат» — кружками в шапке."]},{"v":"6.1.1","d":"26.11","b":["Режим «форма / чат» вернулся наверх одним кружком: нажатие переключает, удержание — меню. Рядом кружок шпаргалки.","В чате у поля ввода больше нет второго «плюса»: способ ввода там один — из самого поля.","Кнопка «Решить» внизу видна всегда, в том числе когда пишешь от руки. Пишешь — рядом с ней появляются «Отменить» и «Стереть», и капсула на листе больше не нужна.","В чате кнопка встаёт над строкой ввода: выбрал клавиатуру — отправляешь той же кнопкой."]},{"v":"6.1.0","d":"26.11","b":["Один экран: на стартовом экране было 18 нажимаемых целей, стало 8. Всё, что дублировало другое, убрано — ничего не спрятано за лишним тапом.","Шапка: знак приложения и шестерёнка. Верхние вкладки убраны — разделы живут внизу, с подписями.","В капсуле ввода вместо стрелки «решить» — кружок способа ввода: фото, голос, клавиатура, вставить, шпаргалка. Отправка — Enter на клавиатуре, как в любом поле.","Внизу одна кнопка действия, и она всегда в одном месте: поле пустое — «Клавиатура», есть текст — «Решить», есть штрихи — «Проверить».","На листе — капсула «Отменить · Стереть · Проверить»: появляется с первым штрихом и уходит, когда лист снова чистый.","Форма и чат переехали в меню кружка: отдельной кнопки на экране больше нет."]},
     {"v":"6.0.2","d":"25.11","b":["Рамка вокруг ответа убрана окончательно: ни линии, ни плашки, ни подчёркивания у «Копировать»","Ответ стоит вплотную к полю: лист ограничен 240 px и сжимается по записи — пустого экрана между полем и ответом больше нет","«О приложении» больше не просвечивает шапкой: фон плотный, посторонние элементы скрыты","Капсулы «Ответ / По шагам / Проще / Похожая»: текст внутри пилюли, ничего не вылезает","Кнопки «проще» и озвучки больше не наезжают на заголовок шага"]},{"v":"6.0.0","d":"25.11","b":["«Копировать» у ответа снова удобно нажимать: зона 44 px, подчёркивание осталось тихим","Номер шага вернулся в левое поле: заголовок, абзац и ответ снова на одной вертикали","Автотесты поймали три реальных дефекта — все исправлены"]},{"v":"5.16.1","d":"25.11","b":["Ответ снова стоит сразу под записью: лист после решения сжимается по последней строке, а не занимает пол-экрана","Рамка вокруг ответа убрана во всех местах — и под полем, и под рукописным листом: одна волосяная линия и крупная антиква","«Копировать» стала тихой подписью вместо зелёной кнопки-плашки"]},{"v":"5.16.0","d":"25.11","b":["Знакомство при первом запуске: пять экранов вместо пустого экрана — что умеет, четыре способа ввода, разбор по шагам, приватность","Живые демо внутри: камера с уголками и бегущей линией, рукописная строка с кареткой и распознанным ответом, шаги с номерами","Свайп, стрелки, Escape и точки-индикатор; «Пропустить» на любом шаге","Повторно открыть: «О приложении» → «Знакомство заново»","Оформление в той же системе: киноварь, антиква, волосяные линии, без эмодзи"]},{"v":"5.15.1","d":"25.11","b":["Ответ снова стоит сразу под полем: пустой зазор между капсулой и ответом убран","Рамка вокруг ответа убрана совсем — осталась одна волосяная линия над ним","Текст, шаги и ответ выровнены по одной левой вертикали; номера шагов стоят рядом с текстом, а не в обрезанном поле","Ничего больше не срезается по краям экрана","В неоне и остальных скинах ответ и формулы снова видны: был цвет заливки на тексте"]},{"v":"5.15.0","d":"25.11","b":["Лист больше не плашка: пишем прямо на бумаге страницы, без панели и рамки поверх клетки","Убрана маска с фона: клетка идёт ровно по всей странице, без радиального затухания к краям","Убрано всплывающее облако «пиши здесь» над местом письма — лист пустой и чистый","Пустой лист больше не сворачивается в полоску: писать можно сразу, без лишнего касания","Выбор способа ввода (фото, голос, клавиатура) закрывается сам через 1,2 секунды, если его не трогать","Кнопки, чипы и клавиатура стали «стеклянными»: полупрозрачный материал с размытием, волосяная кромка, мягкая тень","Типографика по оптической шкале: ответ до 42 px, плотный трекинг заголовков, аккуратные переносы","Одно движение на весь интерфейс: 200–300 мс с замедлением в конце, нажатия — с лёгким сжатием","Фокус — кольцо киновари, а не прямоугольная рамка; уважается «уменьшить движение» в системе","Все синие и фиолетовые остатки заменены: 179 оттенков старой палитры сведены к одному акценту и чернилам","У скинов свои бумага и чернила: неон, ретро, матрица, кислота, терминал и синтвейв снова читаются (было 1,5:1, стало 5,6–9,6:1)","Проверка: 320/360/390 × 5 тем — 0 переполнений, 0 обрезанных строк, 0 наложений, все тач-цели ≥44 px"]},{"v":"5.14.0","d":"25.11","b":["Новая визуальная система «Тихая бумага»: тёплая бумага днём, графит ночью, один и тот же акцент в обеих темах","Ответ стал героем экрана: антиква, 34 px, по левому краю, с тонкой линией и подписью «ответ» — раньше он терялся среди шагов","Один акцент вместо пяти цветов: киноварь, как японская печать. Всё остальное — чернила четырёх плотностей","Рамки и тени убраны: карточка стала страницей, шаги разделены волосяной линией 1 px","Шаги нумерованы в левом поле мелкой антиквой, а не кружками с подсветкой","Формулы — на бумаге с киноварной линией слева, без градиентов и свечений","Движение приведено к одному закону: 140 мс, без отскоков; уважается «уменьшить движение» в системе","Клавиатура — плоские клавиши с волосяной рамкой; нижний ряд шаблонов выделен киноварью","Темы остались все: меняют акцент и температуру бумаги, но не ломают типографику и читаемость","Знак в шапке — сплошная киноварная печать вместо сине-голубого градиента","Контраст проверен: ответ 16:1, основной текст 8,6–9,9:1, подписи 5,2–6,2:1 (WCAG AA и выше)"]},{"v":"5.13.4","d":"25.11","b":[
     "Калькулятор стал обычным: сетка 6×5, четыре ряда цифр и постоянный нижний ряд. В нижнем ряду всегда под рукой дробь, корень, степень, модуль и проценты, а последней клавишей справа — смена набора: на ней текущий режим и следующий (123 › √)",
     "Кнопка смены больше не теряется: она в нижнем ряду во всех наборах, а не первой клавишей, которая уезжала за край",
